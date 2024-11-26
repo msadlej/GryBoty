@@ -78,9 +78,9 @@ workspace "Gry boty" "Model architektury C4" {
 	}
     }
 
-    /*configuration {
+    configuration {
         scope softwaresystem
 	
-    }*/
+    }
 
 }
