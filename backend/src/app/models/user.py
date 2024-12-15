@@ -18,5 +18,6 @@ def get_user_by_username(username: str | None = None) -> UserModel | None:
         username=str(user["username"]),
         password_hash=str(user["password_hash"]),
         account_type=AccountType(user["account_type"]),
+        bots=[str(bot) for bot in user["bots"]],
         is_banned=bool(user["is_banned"]),
     )

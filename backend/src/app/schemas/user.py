@@ -22,6 +22,7 @@ class UserModel(BaseModel):
     username: str
     password_hash: str
     account_type: AccountType
+    bots: list[str]
     is_banned: bool | None = None
 
 
