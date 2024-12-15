@@ -35,6 +35,19 @@ class User:
             {"$set": {"is_banned": True}}
         )
 
+    def get_user_by_id(self, user_id: ObjectId) -> Optional[Dict]:
+        return self.collection.find_one({"_id": user_id})
+    
+    def get_user_by_username(self, username: str) -> Optional[Dict]:
+        return self.collection.find_one({"username": username})
+    
+    def get_user_bots(self, user_id: ObjectId) -> List[ObjectId]:
+        user = self.get_user_by_id(user_id)
+        return user.get("bots", []) if user else []
+    
+    def get_all_users(self) -> List[Dict]:
+        return list(self.collection.find())
+
 class Bot:
     def __init__(self, db: MongoDB):
         self.collection = db.db.bots
@@ -68,6 +81,27 @@ class Bot:
             {"_id": bot_id},
             {"$set": {"is_validated": True}}
         )
+    
+    def get_bot_by_id(self, bot_id: ObjectId) -> Optional[Dict]:
+        return self.collection.find_one({"_id": bot_id})
+    
+    def get_bots_by_game_type(self, game_type_id: ObjectId) -> List[Dict]:
+        return list(self.collection.find({"game_type": game_type_id}))
+    
+    def get_validated_bots(self) -> List[Dict]:
+        return list(self.collection.find({"is_validated": True}))
+    
+    def get_bot_stats(self, bot_id: ObjectId) -> Optional[Dict]:
+        bot = self.get_bot_by_id(bot_id)
+        if bot:
+            return {
+                "games_played": bot.get("games_played", 0),
+                "wins": bot.get("wins", 0),
+                "losses": bot.get("losses", 0),
+                "total_tournaments": bot.get("total_tournaments", 0),
+                "tournaments_won": bot.get("tournaments_won", 0)
+            }
+        return None
 
 class GameType:
     def __init__(self, db: MongoDB):
@@ -80,6 +114,15 @@ class GameType:
         }
         result = self.collection.insert_one(game_type_data)
         return result.inserted_id
+    
+    def get_game_type_by_id(self, game_type_id: ObjectId) -> Optional[Dict]:
+        return self.collection.find_one({"_id": game_type_id})
+    
+    def get_game_type_by_name(self, name: str) -> Optional[Dict]:
+        return self.collection.find_one({"name": name})
+    
+    def get_all_game_types(self) -> List[Dict]:
+        return list(self.collection.find())
 
 class Tournament:
     def __init__(self, db: MongoDB):
@@ -110,6 +153,23 @@ class Tournament:
             return True
         return False
 
+    def get_tournament_by_id(self, tournament_id: ObjectId) -> Optional[Dict]:
+        return self.collection.find_one({"_id": tournament_id})
+    
+    def get_tournaments_by_game_type(self, game_type_id: ObjectId) -> List[Dict]:
+        return list(self.collection.find({"game_type": game_type_id}))
+    
+    def get_tournaments_by_creator(self, creator_id: ObjectId) -> List[Dict]:
+        return list(self.collection.find({"creator": creator_id}))
+    
+    def get_upcoming_tournaments(self) -> List[Dict]:
+        current_date = datetime.now()
+        return list(self.collection.find({"start_date": {"$gt": current_date}}))
+    
+    def get_tournament_participants(self, tournament_id: ObjectId) -> List[ObjectId]:
+        tournament = self.get_tournament_by_id(tournament_id)
+        return tournament.get("participants", []) if tournament else []
+
 class Match:
     def __init__(self, db: MongoDB):
         self.collection = db.db.matches
@@ -138,3 +198,21 @@ class Match:
             {"_id": match_id},
             {"$set": {"winner": winner_id}}
         )
+
+    def get_match_by_id(self, match_id: ObjectId) -> Optional[Dict]:
+        return self.collection.find_one({"_id": match_id})
+    
+    def get_matches_by_bot(self, bot_id: ObjectId) -> List[Dict]:
+        return list(self.collection.find({
+            "$or": [
+                {"players.bot1": bot_id},
+                {"players.bot2": bot_id}
+            ]
+        }))
+    
+    def get_match_moves(self, match_id: ObjectId) -> List[str]:
+        match = self.get_match_by_id(match_id)
+        return match.get("moves", []) if match else []
+    
+    def get_matches_by_winner(self, winner_id: ObjectId) -> List[Dict]:
+        return list(self.collection.find({"winner": winner_id}))
