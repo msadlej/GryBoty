@@ -24,7 +24,7 @@ def get_tournaments_by_creator(creator: UserModel) -> list[TournamentModel] | No
             creator=str(tournament["creator"]),
             start_date=str(tournament["start_date"]),
             access_code=str(tournament["access_code"]),
-            max_participants=tournament["max_participants"],
+            max_participants=int(tournament["max_participants"]),
             participants=[
                 str(participant) for participant in tournament["participants"]
             ],

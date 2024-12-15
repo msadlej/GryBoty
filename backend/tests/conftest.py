@@ -12,6 +12,7 @@ def patch_get_user_by_username(monkeypatch):
                 username="username",
                 password_hash=get_password_hash("password"),
                 account_type=AccountType.ADMIN,
+                bots=[],
                 is_banned=False,
             )
             if username == "username"

@@ -19,6 +19,7 @@ def test_authenticate_user(patch_get_user_by_username):
     assert user is not None
     assert user.username == "username"
     assert user.account_type == AccountType.ADMIN
+    assert user.bots == []
     assert not user.is_banned
 
     user = authenticate_user("username", "wrong_password")
