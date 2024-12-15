@@ -1,10 +1,11 @@
+from app.routers import users, tournaments
 from fastapi import FastAPI, Response
-from app.routers import users
 import uvicorn
 
 
 app = FastAPI()
 app.include_router(users.router)
+app.include_router(tournaments.router)
 
 
 @app.get("/")
