@@ -12,7 +12,7 @@ class TokenData(BaseModel):
 
 
 class AccountType(Enum):
-    BASIC: str = "basic"
+    STANDARD: str = "standard"
     PREMIUM: str = "premium"
     ADMIN: str = "admin"
 

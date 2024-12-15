@@ -18,11 +18,11 @@ def test_token():
 
 
 def test_account_type():
-    basic_account = AccountType("basic")
+    standard_account = AccountType("standard")
     premium_account = AccountType("premium")
     admin_account = AccountType("admin")
 
-    assert basic_account == AccountType.BASIC
+    assert standard_account == AccountType.STANDARD
     assert premium_account == AccountType.PREMIUM
     assert admin_account == AccountType.ADMIN
 
@@ -35,19 +35,19 @@ def test_user():
         id="id",
         username="username",
         password_hash="password_hash",
-        account_type=AccountType("basic"),
+        account_type=AccountType("standard"),
         is_banned=True,
     )
 
     assert db_user.id == "id"
     assert db_user.username == "username"
     assert db_user.password_hash == "password_hash"
-    assert db_user.account_type == AccountType.BASIC
+    assert db_user.account_type == AccountType.STANDARD
     assert db_user.is_banned
 
     db_user_dict = db_user.model_dump()
     user = User(**db_user_dict)
 
     assert user.username == "username"
-    assert user.account_type == AccountType.BASIC
+    assert user.account_type == AccountType.STANDARD
     assert user.is_banned
