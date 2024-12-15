@@ -20,7 +20,7 @@ class AccountType(Enum):
 class User(BaseModel):
     username: str
     account_type: AccountType
-    disabled: bool | None = None
+    is_banned: bool | None = None
 
 
 class UserCreate(BaseModel):
@@ -33,5 +33,5 @@ class UserUpdate(BaseModel):
 
 
 class DBUser(User):
-    id: str
-    hashed_password: str
+    _id: str
+    password_hash: str
