@@ -1,4 +1,4 @@
-# ZPRP Kolokwium 1
+# Backend
 FastAPI-based backend for gry_boty
 
 
