@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "pytest", "pytest-cov", "mypy", "flake8", "passlib[bcrypt]", "pyjwt", "fastapi[standard]"]
+requires = ["setuptools", "wheel", "pytest", "pytest-cov", "mypy", "flake8", "fastapi[standard]", "passlib[bcrypt]", "pyjwt"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
