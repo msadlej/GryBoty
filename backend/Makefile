@@ -6,22 +6,19 @@ PIP = $(VENV)/bin/pip
 
 build:
 	python3 -m venv $(VENV)
-	$(PIP) install -r requirements.txt
 	$(PIP) install .
 
 build-dev:
 	python3 -m venv $(VENV)
-	$(PIP) install -r requirements_dev.txt
-	$(PIP) install -r requirements.txt
-	$(PIP) install -e .
+	$(PIP) install -e .[testing]
 
 test:
 	$(VENV)/bin/pytest
-	$(VENV)/bin/flake8 app tests
-	$(VENV)/bin/mypy app
+	$(VENV)/bin/flake8 src tests
+	$(VENV)/bin/mypy src
 
 run:
-	$(PYTHON) app/main.py
+	$(PYTHON) src/app/main.py
 
 clean:
 	rm -rf .venv
