@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.models.user import get_user_by_username
-from app.schemas.user import TokenData, DBUser
+from app.schemas.user import TokenData, UserModel
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from typing import Annotated, Any
@@ -26,8 +26,8 @@ def get_password_hash(password: str) -> str:
     return hashed_password
 
 
-def authenticate_user(username: str, password: str) -> DBUser | None:
-    user: DBUser | None = get_user_by_username(username)
+def authenticate_user(username: str, password: str) -> UserModel | None:
+    user: UserModel | None = get_user_by_username(username)
 
     if user is None or not verify_password(password, user.password_hash):
         return None
@@ -51,7 +51,7 @@ def create_access_token(
     return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> DBUser:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
     credentials_exception: HTTPException = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -69,7 +69,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> DBU
     except InvalidTokenError:
         raise credentials_exception
 
-    user: DBUser | None = get_user_by_username(token_data.username)
+    user: UserModel | None = get_user_by_username(token_data.username)
     if user is None:
         raise credentials_exception
 
@@ -77,8 +77,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> DBU
 
 
 async def get_current_active_user(
-    current_user: Annotated[DBUser, Depends(get_current_user)]
-) -> DBUser:
+    current_user: Annotated[UserModel, Depends(get_current_user)]
+) -> UserModel:
     if current_user.is_banned:
         raise HTTPException(status_code=400, detail="Inactive user")
 

@@ -1,11 +1,5 @@
 import pytest
-from app.schemas.user import (
-    Token,
-    TokenData,
-    AccountType,
-    User,
-    DBUser,
-)
+from app.schemas.user import Token, TokenData, AccountType, UserModel
 
 
 def test_token():
@@ -31,7 +25,7 @@ def test_account_type():
 
 
 def test_user():
-    db_user = DBUser(
+    user = UserModel(
         id="id",
         username="username",
         password_hash="password_hash",
@@ -39,15 +33,8 @@ def test_user():
         is_banned=True,
     )
 
-    assert db_user.id == "id"
-    assert db_user.username == "username"
-    assert db_user.password_hash == "password_hash"
-    assert db_user.account_type == AccountType.STANDARD
-    assert db_user.is_banned
-
-    db_user_dict = db_user.model_dump()
-    user = User(**db_user_dict)
-
+    assert user.id == "id"
     assert user.username == "username"
+    assert user.password_hash == "password_hash"
     assert user.account_type == AccountType.STANDARD
     assert user.is_banned

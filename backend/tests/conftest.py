@@ -1,13 +1,13 @@
 from app.utils.authentication import get_password_hash
-from app.schemas.user import DBUser, AccountType
+from app.schemas.user import UserModel, AccountType
 import pytest
 
 
 @pytest.fixture
 def patch_get_user_by_username(monkeypatch):
-    def mock_get(username: str | None) -> DBUser | None:
+    def mock_get(username: str | None) -> UserModel | None:
         return (
-            DBUser(
+            UserModel(
                 id="1",
                 username="username",
                 password_hash=get_password_hash("password"),
