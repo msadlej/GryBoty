@@ -14,8 +14,8 @@ build-dev:
 
 test:
 	$(VENV)/bin/pytest
-	$(VENV)/bin/flake8 src tests
-	$(VENV)/bin/mypy src
+	$(VENV)/bin/flake8 src/app tests
+	$(VENV)/bin/mypy src/app
 
 run:
 	$(PYTHON) src/app/main.py
