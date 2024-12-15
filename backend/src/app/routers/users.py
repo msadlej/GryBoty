@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.schemas.user import Token, User
+from app.schemas.user import Token, UserModel
 from datetime import timedelta
 from app.utils.authentication import (
     authenticate_user,
@@ -32,6 +32,6 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/users/me/", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+@router.get("/users/me/", response_model=UserModel)
+async def read_users_me(current_user: UserModel = Depends(get_current_active_user)):
     return current_user

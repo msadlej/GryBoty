@@ -1,8 +1,8 @@
-from app.schemas.user import DBUser, AccountType
+from app.schemas.user import UserModel, AccountType
 from database.main import MongoDB, User
 
 
-def get_user_by_username(username: str | None = None) -> DBUser | None:
+def get_user_by_username(username: str | None = None) -> UserModel | None:
     if username is None:
         return None
 
@@ -13,7 +13,7 @@ def get_user_by_username(username: str | None = None) -> DBUser | None:
     if user is None:
         return None
 
-    return DBUser(
+    return UserModel(
         id=str(user["_id"]),
         username=str(user["username"]),
         password_hash=str(user["password_hash"]),

@@ -17,8 +17,10 @@ class AccountType(Enum):
     ADMIN: str = "admin"
 
 
-class User(BaseModel):
+class UserModel(BaseModel):
+    id: str
     username: str
+    password_hash: str
     account_type: AccountType
     is_banned: bool | None = None
 
@@ -30,8 +32,3 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     password: str
-
-
-class DBUser(User):
-    id: str
-    password_hash: str
