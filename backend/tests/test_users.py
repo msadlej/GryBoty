@@ -30,6 +30,7 @@ def test_user():
         username="username",
         password_hash="password_hash",
         account_type=AccountType("standard"),
+        bots=["id"],
         is_banned=True,
     )
 
@@ -37,4 +38,5 @@ def test_user():
     assert user.username == "username"
     assert user.password_hash == "password_hash"
     assert user.account_type == AccountType.STANDARD
+    assert user.bots == ["id"]
     assert user.is_banned
