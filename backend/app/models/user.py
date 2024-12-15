@@ -40,7 +40,7 @@ def get_user_by_username(username: str | None) -> DBUser | None:
     for user in users_collection:
         if user["username"] == username:
             return DBUser(
-                _id=str(user["_id"]),
+                id=str(user["_id"]),
                 username=str(user["username"]),
                 password_hash=str(user["password_hash"]),
                 account_type=AccountType(user["account_type"]),

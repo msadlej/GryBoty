@@ -33,5 +33,5 @@ class UserUpdate(BaseModel):
 
 
 class DBUser(User):
-    _id: str
+    id: str
     password_hash: str
