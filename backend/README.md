@@ -1,5 +1,5 @@
 # Backend
-FastAPI-based backend for gry_boty
+FastAPI-based backend for the Gry Boty project.
 
 
 ## Table of Contents
