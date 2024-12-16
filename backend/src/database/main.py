@@ -9,6 +9,15 @@ class MongoDB:
         self.client = MongoClient(connection_string)
         self.db = self.client.pzsp_database
 
+    def get_all_users(self) -> List[Dict]:
+        return list(self.db.users.find())
+
+    def get_all_tournaments(self) -> List[Dict]:
+        return list(self.db.tournaments.find())
+
+    def get_all_bots(self) -> List[Dict]:
+        return list(self.db.bots.find())
+
 
 class User:
     def __init__(self, db: MongoDB):
@@ -93,6 +102,9 @@ class Bot:
                 "tournaments_won": bot.get("tournaments_won", 0),
             }
         return None
+
+    def get_all_bots(self) -> List[Dict]:
+        return list(self.collection.find())
 
 
 class GameType:
@@ -180,6 +192,9 @@ class Tournament:
 
     def get_tournaments_by_bot_id(self, bot_id: ObjectId) -> List[Dict]:
         return list(self.collection.find({"participants": bot_id}))
+    
+    def get_all_tournaments(self) -> List[Dict]:
+        return list(self.collection.find())
 
 
 class Match:
