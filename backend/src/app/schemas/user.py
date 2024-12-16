@@ -4,21 +4,29 @@ from enum import Enum
 
 
 class Token(BaseModel):
+    """Represents a token"""
+
     access_token: str
     token_type: str
 
 
 class TokenData(BaseModel):
+    """Represents the data stored in a token"""
+
     username: str | None = None
 
 
 class AccountType(Enum):
+    """Represents the type of an account"""
+
     STANDARD: str = "standard"
     PREMIUM: str = "premium"
     ADMIN: str = "admin"
 
 
 class UserModel(BaseModel):
+    """Represents a user"""
+
     id: MongoObjectId = Field(alias="_id")
     username: str
     password_hash: str

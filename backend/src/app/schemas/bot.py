@@ -3,6 +3,8 @@ from pyobjectID import MongoObjectId
 
 
 class BotModel(BaseModel):
+    """Represents a bot"""
+
     id: MongoObjectId = Field(alias="_id")
     name: str
     game_type: MongoObjectId

@@ -6,6 +6,10 @@ from typing import Any
 
 
 def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
+    """
+    Retrieve all tournaments that the user has created or is participating in.
+    """
+
     db = MongoDB()
     tournaments = Tournament(db)
 
@@ -21,6 +25,10 @@ def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
 def check_tournament_access(
     current_user: UserModel, tournament: dict[str, Any]
 ) -> bool:
+    """
+    Check if the user has access to the tournament.
+    """
+
     is_admin: bool = current_user.account_type == AccountType.ADMIN
     is_creator: bool = ObjectId(current_user.id) == tournament["creator"]
     is_participant: bool = any(
@@ -33,6 +41,11 @@ def check_tournament_access(
 def get_tournament_by_id(
     current_user: UserModel, tournament_id: str
 ) -> TournamentModel | None:
+    """
+    Retrieve a tournament from the database by its ID.
+    Returns None if the tournament does not exist or the user does not have access to it.
+    """
+
     db = MongoDB()
     tournaments = Tournament(db)
     tournament: dict[str, Any] | None = tournaments.get_tournament_by_id(
@@ -46,6 +59,10 @@ def get_tournament_by_id(
 
 
 def get_all_tournaments() -> list[TournamentModel]:
+    """
+    Retrieve all tournaments from the database.
+    """
+
     db = MongoDB()
     tournaments = Tournament(db)
     all_tournaments: list[dict[str, Any]] = tournaments.get_all_tournaments()

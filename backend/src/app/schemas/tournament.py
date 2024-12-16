@@ -4,6 +4,8 @@ from datetime import datetime
 
 
 class TournamentModel(BaseModel):
+    """Represents a tournament"""
+
     id: MongoObjectId = Field(alias="_id")
     name: str
     description: str

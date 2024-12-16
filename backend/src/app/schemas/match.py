@@ -3,6 +3,8 @@ from pyobjectID import MongoObjectId
 
 
 class MatchModel(BaseModel):
+    """Represents a match"""
+
     id: MongoObjectId = Field(alias="_id")
     game_num: int
     players: dict[str, MongoObjectId]
