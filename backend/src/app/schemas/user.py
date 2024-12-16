@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pyobjectID import MongoObjectId
 from enum import Enum
 
 
@@ -18,12 +19,12 @@ class AccountType(Enum):
 
 
 class UserModel(BaseModel):
-    id: str
+    id: MongoObjectId = Field(alias="_id")
     username: str
     password_hash: str
     account_type: AccountType
-    bots: list[str]
-    is_banned: bool | None = None
+    bots: list[MongoObjectId]
+    is_banned: bool
 
 
 class UserCreate(BaseModel):
@@ -32,4 +33,7 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    password: str
+    password_hash: str | None = None
+    account_type: AccountType | None = None
+    bots: list[MongoObjectId] | None = None
+    is_banned: bool | None = None

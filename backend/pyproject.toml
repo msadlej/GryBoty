@@ -1,11 +1,14 @@
 [build-system]
-requires = ["fastapi[standard]", "passlib[bcrypt]", "pymongo", "pyjwt", "setuptools", "wheel", "pytest", "pytest-cov", "mypy", "flake8"]
+requires = ["fastapi[standard]", "passlib[bcrypt]", "pyjwt", "pymongo", "pyobjectid", "setuptools", "wheel", "pytest", "pytest-cov", "mypy", "flake8"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 addopts = "--cov=src/app"
 testpaths = [
     "tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
 ]
 
 [tool.mypy]

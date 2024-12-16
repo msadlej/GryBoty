@@ -4,6 +4,7 @@ from app.utils.authentication import (
     get_password_hash,
     authenticate_user,
 )
+import pytest
 
 
 def test_verify_password():
@@ -14,12 +15,13 @@ def test_verify_password():
     assert not verify_password("wrong_password", hashed_password)
 
 
+@pytest.mark.filterwarnings("ignore:`__get_validators__` is deprecated")
 def test_authenticate_user(patch_get_user_by_username):
     user = authenticate_user("username", "password")
     assert user is not None
     assert user.username == "username"
     assert user.account_type == AccountType.ADMIN
-    assert user.bots == []
+    assert not user.bots
     assert not user.is_banned
 
     user = authenticate_user("username", "wrong_password")

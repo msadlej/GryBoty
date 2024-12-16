@@ -1,5 +1,6 @@
-import pytest
 from app.schemas.user import Token, TokenData, AccountType, UserModel
+from bson import ObjectId
+import pytest
 
 
 def test_token():
@@ -24,19 +25,21 @@ def test_account_type():
         AccountType("invalid")
 
 
+@pytest.mark.filterwarnings("ignore:`__get_validators__` is deprecated")
 def test_user():
-    user = UserModel(
-        id="id",
-        username="username",
-        password_hash="password_hash",
-        account_type=AccountType("standard"),
-        bots=["id"],
-        is_banned=True,
-    )
+    user_dict = {
+        "_id": ObjectId(),
+        "username": "username",
+        "password_hash": "password_hash",
+        "account_type": "standard",
+        "bots": [ObjectId()],
+        "is_banned": True,
+    }
 
-    assert user.id == "id"
+    user = UserModel(**user_dict)
+
     assert user.username == "username"
     assert user.password_hash == "password_hash"
     assert user.account_type == AccountType.STANDARD
-    assert user.bots == ["id"]
+    assert user.bots
     assert user.is_banned

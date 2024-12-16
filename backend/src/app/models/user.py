@@ -1,5 +1,5 @@
-from app.schemas.user import UserModel, AccountType
 from database.main import MongoDB, User
+from app.schemas.user import UserModel
 
 
 def get_user_by_username(username: str | None = None) -> UserModel | None:
@@ -13,11 +13,4 @@ def get_user_by_username(username: str | None = None) -> UserModel | None:
     if user is None:
         return None
 
-    return UserModel(
-        id=str(user["_id"]),
-        username=str(user["username"]),
-        password_hash=str(user["password_hash"]),
-        account_type=AccountType(user["account_type"]),
-        bots=[str(bot) for bot in user["bots"]],
-        is_banned=bool(user["is_banned"]),
-    )
+    return UserModel(**user)
