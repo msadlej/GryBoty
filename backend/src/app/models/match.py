@@ -7,12 +7,17 @@ from bson import ObjectId
 from typing import Any
 
 
-def get_match_by_id(match_id: str) -> MatchModel | None:
+def get_match_by_id(
+    current_user: UserModel, tournament_id: str, match_id: str
+) -> MatchModel | None:
     db = MongoDB()
     matches = Match(db)
     match: dict[str, Any] | None = matches.get_match_by_id(ObjectId(match_id))
+    tournament: TournamentModel | None = get_tournament_by_id(
+        current_user, tournament_id
+    )
 
-    if match is None:
+    if match is None or tournament is None:
         return None
 
     return MatchModel(**match)
@@ -31,7 +36,7 @@ def get_matches_by_tournament(
     result = [
         match
         for match_id in tournament.matches
-        if (match := get_match_by_id(match_id)) is not None
+        if (match := get_match_by_id(current_user, tournament_id, match_id)) is not None
     ]
 
     if not result:

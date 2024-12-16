@@ -9,18 +9,20 @@ from typing import Annotated
 router = APIRouter()
 
 
-@router.get("/tournaments/", response_model=list[TournamentModel])
+@router.get("/tournaments/", response_model=list[TournamentModel] | dict[str, str])
 async def read_own_tournaments(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
 ):
     tournaments: list[TournamentModel] | None = get_own_tournaments(current_user)
 
     if tournaments is None:
-        return {"detail": "No tournaments found."}
+        return {"detail": f"No tournaments found for user: {current_user.id}."}
     return tournaments
 
 
-@router.get("/tournaments/{tournament_id}", response_model=TournamentModel)
+@router.get(
+    "/tournaments/{tournament_id}", response_model=TournamentModel | dict[str, str]
+)
 async def read_tournament_by_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     tournament_id: str,
@@ -30,5 +32,5 @@ async def read_tournament_by_id(
     )
 
     if tournament is None:
-        return {"detail": "Tournament not found."}
+        return {"detail": f"Tournament: {tournament_id} not found."}
     return tournament
