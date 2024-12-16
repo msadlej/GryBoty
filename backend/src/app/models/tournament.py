@@ -1,6 +1,6 @@
+from app.schemas.user import UserModel, AccountType
 from app.schemas.tournament import TournamentModel
 from database.main import MongoDB, Tournament
-from app.schemas.user import UserModel
 from bson import ObjectId
 from typing import Any
 
@@ -21,12 +21,13 @@ def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
 def check_tournament_access(
     current_user: UserModel, tournament: dict[str, Any]
 ) -> bool:
+    is_admin: bool = current_user.account_type == AccountType.ADMIN
     is_creator: bool = ObjectId(current_user.id) == tournament["creator"]
     is_participant: bool = any(
         ObjectId(bot_id) in tournament["participants"] for bot_id in current_user.bots
     )
 
-    return is_creator or is_participant
+    return any((is_admin, is_creator, is_participant))
 
 
 def get_tournament_by_id(
