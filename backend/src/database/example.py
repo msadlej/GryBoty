@@ -31,7 +31,12 @@ if __name__ == "__main__":
         "$2b$12$QyMt0LGYTvnM4kYPcGSV5uViMaEW/UvQXAZ5qk0iJn7d9XhxWU5Oq",
         "standard",
     )
-    users.ban_user(jakub_id)
+    michal_id = users.create_user(
+        "michal",
+        "$2b$12$za1Gr8TgVfzzB50wWiVREuiljdBcXeW/90LZuzlWbhbkoOblJ8LNS",
+        "standard",
+    )
+    users.ban_user(michal_id)
 
     # Add a game to the database
     chess_id = game_types.create_game_type(
@@ -39,33 +44,35 @@ if __name__ == "__main__":
     )
 
     # Add bots to the database
-    smakuch_bot_id = bots.create_bot("Chess_Bot_1", chess_id, "chess_bot_code_here")
-    adam_bot_id = bots.create_bot("Chess_Bot_2", chess_id, "chess_bot_code_here")
-    users.add_bot(smakuch_id, smakuch_bot_id)
+    adam_bot_id = bots.create_bot("Chess_Bot_1", chess_id, "chess_bot_code_here")
+    jakub_bot_id = bots.create_bot("Chess_Bot_2", chess_id, "chess_bot_code_here")
     users.add_bot(adam_id, adam_bot_id)
+    users.add_bot(jakub_id, jakub_bot_id)
 
     # Add a tournament to the database
     tournament_id = tournaments.create_tournament(
         "Chess Tournament",
         "Description of the tournament",
         chess_id,
-        admin_id,
+        smakuch_id,
         datetime.now().strftime("%Y-%m-%d %H:%M"),
         "7314",
         16,
     )
 
     # Add participants to the tournament
-    tournaments.add_participant(tournament_id, smakuch_bot_id)
     tournaments.add_participant(tournament_id, adam_bot_id)
-    match_id = matches.create_match(1, smakuch_bot_id, adam_bot_id)
+    tournaments.add_participant(tournament_id, jakub_bot_id)
+    match_id = matches.create_match(1, adam_bot_id, jakub_bot_id)
+    tournaments.add_match(tournament_id, match_id)
 
     # Simulate a match
     matches.add_move(match_id, "e2e4")
     matches.add_move(match_id, "e7e5")
     matches.add_move(match_id, "f2f4")
     matches.add_move(match_id, "f7f5")
-    matches.set_winner(match_id, smakuch_bot_id)
+    matches.set_winner(match_id, adam_bot_id)
 
-    bots.update_stats(smakuch_bot_id, won=True)
-    bots.update_stats(adam_bot_id, won=False)
+    # Update bot stats
+    bots.update_stats(adam_bot_id, won=True)
+    bots.update_stats(jakub_bot_id, won=False)
