@@ -9,6 +9,15 @@ class MongoDB:
         self.client = MongoClient(connection_string)
         self.db = self.client.pzsp_database
 
+    def get_all_users(self) -> List[Dict]:
+        return list(self.db.users.find())
+
+    def get_all_tournaments(self) -> List[Dict]:
+        return list(self.db.tournaments.find())
+
+    def get_all_bots(self) -> List[Dict]:
+        return list(self.db.bots.find())
+
 
 class User:
     def __init__(self, db: MongoDB):
@@ -94,6 +103,9 @@ class Bot:
             }
         return None
 
+    def get_all_bots(self) -> List[Dict]:
+        return list(self.collection.find())
+
 
 class GameType:
     def __init__(self, db: MongoDB):
@@ -151,6 +163,16 @@ class Tournament:
             return True
         return False
 
+    def add_match(self, tournament_id: ObjectId, match_id: ObjectId) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id}, 
+            {"$push": {"matches": match_id}}
+        )
+
+    def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
+        tournament = self.get_tournament_by_id(tournament_id)
+        return tournament.get("matches", []) if tournament else []
+
     def get_tournament_by_id(self, tournament_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"_id": tournament_id})
 
@@ -170,6 +192,9 @@ class Tournament:
 
     def get_tournaments_by_bot_id(self, bot_id: ObjectId) -> List[Dict]:
         return list(self.collection.find({"participants": bot_id}))
+    
+    def get_all_tournaments(self) -> List[Dict]:
+        return list(self.collection.find())
 
 
 class Match:
