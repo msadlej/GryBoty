@@ -17,7 +17,7 @@ async def read_own_tournaments(
 
     if tournaments is None:
         return {"detail": "No tournaments found."}
-    return get_tournaments_by_creator(current_user)
+    return tournaments
 
 
 @router.get("/tournaments/{tournament_id}")
@@ -31,4 +31,4 @@ async def read_tournament_by_id(
 
     if tournament is None:
         return {"detail": "Tournament not found."}
-    return get_tournament_by_id(current_user, tournament_id)
+    return tournament
