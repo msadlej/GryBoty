@@ -9,7 +9,7 @@ from typing import Annotated
 router = APIRouter()
 
 
-@router.get("/tournaments/{tournament_id}/matches")
+@router.get("/tournaments/{tournament_id}/matches", response_model=list[MatchModel])
 async def read_matches_by_tournament_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     tournament_id: str,
@@ -23,7 +23,7 @@ async def read_matches_by_tournament_id(
     return matches
 
 
-@router.get("/matches/{match_id}")
+@router.get("/matches/{match_id}", response_model=MatchModel)
 async def read_match_by_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     match_id: str,

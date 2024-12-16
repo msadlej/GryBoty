@@ -26,7 +26,7 @@ def check_tournament_access(
 ) -> bool:
     is_creator: bool = ObjectId(current_user.id) == tournament["creator"]
     is_participant: bool = any(
-        ObjectId(bot_id) in current_user.bots for bot_id in tournament["participants"]
+        ObjectId(bot_id) in tournament["participants"] for bot_id in current_user.bots
     )
 
     return is_creator or is_participant
