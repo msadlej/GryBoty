@@ -15,13 +15,7 @@ def get_match_by_id(match_id: str) -> MatchModel | None:
     if match is None:
         return None
 
-    return MatchModel(
-        id=str(match["_id"]),
-        game_num=int(match["game_num"]),
-        players={key: str(player) for key, player in match["players"].items()},
-        moves=match["moves"],
-        winner=str(match["winner"]),
-    )
+    return MatchModel(**match)
 
 
 def get_matches_by_tournament(

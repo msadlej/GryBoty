@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pyobjectID import MongoObjectId
 
 
 class MatchModel(BaseModel):
-    id: str
+    id: MongoObjectId = Field(alias="_id")
     game_num: int
-    players: dict[str, str]
+    players: dict[str, MongoObjectId]
     moves: list[str]
-    winner: str
+    winner: MongoObjectId
