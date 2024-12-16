@@ -45,3 +45,11 @@ def get_tournament_by_id(
         return None
 
     return TournamentModel(**tournament)
+
+
+def get_all_tournaments() -> list[TournamentModel]:
+    db = MongoDB()
+    tournaments = Tournament(db)
+    all_tournaments: list[dict[str, Any]] = tournaments.get_all_tournaments()
+
+    return [TournamentModel(**tournament) for tournament in all_tournaments]
