@@ -170,6 +170,9 @@ class Tournament:
         tournament = self.get_tournament_by_id(tournament_id)
         return tournament.get("participants", []) if tournament else []
 
+    def get_tournaments_by_bot_id(self, bot_id: ObjectId) -> List[Dict]:
+        return list(self.collection.find({"participants": bot_id}))
+
 class Match:
     def __init__(self, db: MongoDB):
         self.collection = db.db.matches
