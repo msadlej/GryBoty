@@ -182,6 +182,9 @@ class Tournament:
     def get_tournaments_by_creator(self, creator_id: ObjectId) -> List[Dict]:
         return list(self.collection.find({"creator": creator_id}))
 
+    def get_tournament_by_match(self, match_id: ObjectId) -> Optional[Dict]:
+        return self.collection.find_one({"matches": match_id})
+
     def get_upcoming_tournaments(self) -> List[Dict]:
         current_date = datetime.now()
         return list(self.collection.find({"start_date": {"$gt": current_date}}))
