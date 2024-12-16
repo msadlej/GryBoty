@@ -36,7 +36,12 @@ if __name__ == "__main__":
         "$2b$12$za1Gr8TgVfzzB50wWiVREuiljdBcXeW/90LZuzlWbhbkoOblJ8LNS",
         "standard",
     )
-    users.ban_user(michal_id)
+    szlenki_id = users.create_user(
+        "szlenki",
+        "$2b$12$QbakVoNNX46e93WcZAUPq.MVaT.ec13IcpNR2vE5iS2sd9PWBnZK2",
+        "standard",
+    )
+    users.ban_user(szlenki_id)
 
     # Add a game to the database
     chess_id = game_types.create_game_type(
