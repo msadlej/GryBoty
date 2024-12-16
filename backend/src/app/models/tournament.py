@@ -5,7 +5,7 @@ from bson import ObjectId
 from typing import Any
 
 
-def get_own_tournaments(current_user: UserModel) -> list[TournamentModel] | None:
+def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
     db = MongoDB()
     tournaments = Tournament(db)
 
@@ -14,9 +14,6 @@ def get_own_tournaments(current_user: UserModel) -> list[TournamentModel] | None
     )
     for bot_id in current_user.bots:
         own_tournaments.extend(tournaments.get_tournaments_by_bot_id(ObjectId(bot_id)))
-
-    if not own_tournaments:
-        return None
 
     return [TournamentModel(**tournament) for tournament in own_tournaments]
 

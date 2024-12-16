@@ -1,6 +1,7 @@
 from app.models.tournament import get_own_tournaments, get_tournament_by_id
 from app.utils.authentication import get_current_active_user
 from app.schemas.tournament import TournamentModel
+from fastapi import HTTPException, status
 from fastapi import APIRouter, Depends
 from app.schemas.user import UserModel
 from typing import Annotated
@@ -9,20 +10,16 @@ from typing import Annotated
 router = APIRouter()
 
 
-@router.get("/tournaments/", response_model=list[TournamentModel] | dict[str, str])
+@router.get("/tournaments/", response_model=list[TournamentModel])
 async def read_own_tournaments(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
 ):
-    tournaments: list[TournamentModel] | None = get_own_tournaments(current_user)
+    tournaments: list[TournamentModel] = get_own_tournaments(current_user)
 
-    if tournaments is None:
-        return {"detail": f"No tournaments found for user: {current_user.id}."}
     return tournaments
 
 
-@router.get(
-    "/tournaments/{tournament_id}", response_model=TournamentModel | dict[str, str]
-)
+@router.get("/tournaments/{tournament_id}", response_model=TournamentModel)
 async def read_tournament_by_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     tournament_id: str,
@@ -32,5 +29,9 @@ async def read_tournament_by_id(
     )
 
     if tournament is None:
-        return {"detail": f"Tournament: {tournament_id} not found."}
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tournament: {tournament_id} not found.",
+        )
+
     return tournament

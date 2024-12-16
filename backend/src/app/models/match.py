@@ -39,6 +39,4 @@ def get_matches_by_tournament(
         if (match := get_match_by_id(current_user, tournament_id, match_id)) is not None
     ]
 
-    if not result:
-        return None
     return result
