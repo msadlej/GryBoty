@@ -8,8 +8,8 @@ from typing import Any
 def get_tournaments_by_creator(creator: UserModel) -> list[TournamentModel] | None:
     db = MongoDB()
     tournaments = Tournament(db)
-    tournaments_by_creator = tournaments.get_tournaments_by_creator(
-        ObjectId(creator.id)
+    tournaments_by_creator: list[dict[str, Any]] = (
+        tournaments.get_tournaments_by_creator(ObjectId(creator.id))
     )
 
     if not tournaments_by_creator:
@@ -37,9 +37,12 @@ def get_tournaments_by_creator(creator: UserModel) -> list[TournamentModel] | No
 def check_tournament_access(
     current_user: UserModel, tournament: dict[str, Any]
 ) -> bool:
-    return current_user.id == str(tournament["creator"]) or any(
+    is_creator: bool = current_user.id == str(tournament["creator"])
+    is_participant: bool = any(
         str(bot_id) in current_user.bots for bot_id in tournament["participants"]
     )
+
+    return is_creator or is_participant
 
 
 def get_tournament_by_id(
@@ -47,7 +50,9 @@ def get_tournament_by_id(
 ) -> TournamentModel | None:
     db = MongoDB()
     tournaments = Tournament(db)
-    tournament = tournaments.get_tournament_by_id(ObjectId(tournament_id))
+    tournament: dict[str, Any] | None = tournaments.get_tournament_by_id(
+        ObjectId(tournament_id)
+    )
 
     if tournament is None or not check_tournament_access(current_user, tournament):
         return None
@@ -60,7 +65,7 @@ def get_tournament_by_id(
         creator=str(tournament["creator"]),
         start_date=str(tournament["start_date"]),
         access_code=str(tournament["access_code"]),
-        max_participants=tournament["max_participants"],
+        max_participants=int(tournament["max_participants"]),
         participants=[str(participant) for participant in tournament["participants"]],
         matches=[str(match) for match in tournament["matches"]],
     )
