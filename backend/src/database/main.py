@@ -151,6 +151,16 @@ class Tournament:
             return True
         return False
 
+    def add_match(self, tournament_id: ObjectId, match_id: ObjectId) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id}, 
+            {"$push": {"matches": match_id}}
+        )
+
+    def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
+        tournament = self.get_tournament_by_id(tournament_id)
+        return tournament.get("matches", []) if tournament else []
+
     def get_tournament_by_id(self, tournament_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"_id": tournament_id})
 
