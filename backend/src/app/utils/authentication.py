@@ -17,16 +17,29 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verify the plain password against the hashed password.
+    """
+
     result: bool = pwd_context.verify(plain_password, hashed_password)
     return result
 
 
 def get_password_hash(password: str) -> str:
+    """
+    Get the hashed password.
+    """
+
     hashed_password: str = pwd_context.hash(password)
     return hashed_password
 
 
 def authenticate_user(username: str, password: str) -> UserModel | None:
+    """
+    Authenticate the user with the password.
+    Returns None if the user is not found or the password is incorrect.
+    """
+
     user: UserModel | None = get_user_by_username(username)
 
     if user is None or not verify_password(password, user.password_hash):
@@ -37,6 +50,10 @@ def authenticate_user(username: str, password: str) -> UserModel | None:
 def create_access_token(
     data: dict[str, Any], expires_delta: timedelta | None = None
 ) -> str:
+    """
+    Create the access token.
+    """
+
     to_encode: dict[str, Any] = data.copy()
     expire: datetime = datetime.now(timezone.utc)
 
@@ -52,6 +69,10 @@ def create_access_token(
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
+    """
+    Get the current user from the token.
+    """
+
     credentials_exception: HTTPException = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -79,6 +100,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
 async def get_current_active_user(
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> UserModel:
+    """
+    Get the current active user.
+    Raises an exception if the user is inactive.
+    """
+
     if current_user.is_banned:
         raise HTTPException(status_code=400, detail="Inactive user")
 

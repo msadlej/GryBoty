@@ -1,10 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pyobjectID import MongoObjectId
 
 
 class BotModel(BaseModel):
-    id: str
+    """Represents a bot"""
+
+    id: MongoObjectId = Field(alias="_id")
     name: str
-    game_type: str
+    game_type: MongoObjectId
     code: str
     is_validated: bool
     games_played: int

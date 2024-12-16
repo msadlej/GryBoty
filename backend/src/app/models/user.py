@@ -1,8 +1,14 @@
-from app.schemas.user import UserModel, AccountType
 from database.main import MongoDB, User
+from app.schemas.user import UserModel
+from typing import Any
 
 
 def get_user_by_username(username: str | None = None) -> UserModel | None:
+    """
+    Retrieve a user from the database by their username.
+    Returns None if the user does not exist.
+    """
+
     if username is None:
         return None
 
@@ -13,11 +19,13 @@ def get_user_by_username(username: str | None = None) -> UserModel | None:
     if user is None:
         return None
 
-    return UserModel(
-        id=str(user["_id"]),
-        username=str(user["username"]),
-        password_hash=str(user["password_hash"]),
-        account_type=AccountType(user["account_type"]),
-        bots=[str(bot) for bot in user["bots"]],
-        is_banned=bool(user["is_banned"]),
-    )
+    return UserModel(**user)
+
+
+def get_all_users() -> list[UserModel]:
+    """Retrieve all users from the database"""
+
+    db = MongoDB()
+    all_users: list[dict[str, Any]] = db.get_all_users()
+
+    return [UserModel(**user) for user in all_users]
