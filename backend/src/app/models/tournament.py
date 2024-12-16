@@ -5,14 +5,17 @@ from bson import ObjectId
 from typing import Any
 
 
-def get_tournaments_by_creator(creator: UserModel) -> list[TournamentModel] | None:
+def get_own_tournaments(current_user: UserModel) -> list[TournamentModel] | None:
     db = MongoDB()
     tournaments = Tournament(db)
-    tournaments_by_creator: list[dict[str, Any]] = (
-        tournaments.get_tournaments_by_creator(ObjectId(creator.id))
-    )
 
-    if not tournaments_by_creator:
+    own_tournaments: list[dict[str, Any]] = tournaments.get_tournaments_by_creator(
+        ObjectId(current_user.id)
+    )
+    for bot_id in current_user.bots:
+        own_tournaments.extend(tournaments.get_tournaments_by_bot_id(ObjectId(bot_id)))
+
+    if not own_tournaments:
         return None
 
     return [
@@ -30,7 +33,7 @@ def get_tournaments_by_creator(creator: UserModel) -> list[TournamentModel] | No
             ],
             matches=[str(match) for match in tournament["matches"]],
         )
-        for tournament in tournaments_by_creator
+        for tournament in own_tournaments
     ]
 
 

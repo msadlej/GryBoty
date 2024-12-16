@@ -1,4 +1,4 @@
-from app.models.tournament import get_tournaments_by_creator, get_tournament_by_id
+from app.models.tournament import get_own_tournaments, get_tournament_by_id
 from app.utils.authentication import get_current_active_user
 from app.schemas.tournament import TournamentModel
 from fastapi import APIRouter, Depends
@@ -13,7 +13,7 @@ router = APIRouter()
 async def read_own_tournaments(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
 ):
-    tournaments: list[TournamentModel] | None = get_tournaments_by_creator(current_user)
+    tournaments: list[TournamentModel] | None = get_own_tournaments(current_user)
 
     if tournaments is None:
         return {"detail": "No tournaments found."}
