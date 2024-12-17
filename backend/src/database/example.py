@@ -44,21 +44,25 @@ if __name__ == "__main__":
     users.ban_user(szlenki_id)
 
     # Add a game to the database
-    chess_id = game_types.create_game_type(
-        "Chess", "Classical chess game with standard rules"
+    morris_id = game_types.create_game_type(
+        "Morris", "Classical chess game with standard rules"
     )
 
     # Add bots to the database
-    adam_bot_id = bots.create_bot("Chess_Bot_1", chess_id, "chess_bot_code_here")
-    jakub_bot_id = bots.create_bot("Chess_Bot_2", chess_id, "chess_bot_code_here")
+    adam_bot_id = bots.create_bot(
+        "Morris_Bot_1", morris_id, "bots/example_bots/SixMensMorris/bot_1.py"
+    )
+    jakub_bot_id = bots.create_bot(
+        "Morris_Bot_2", morris_id, "bots/example_bots/SixMensMorris/bot_2.py"
+    )
     users.add_bot(adam_id, adam_bot_id)
     users.add_bot(jakub_id, jakub_bot_id)
 
     # Add a tournament to the database
     tournament_id = tournaments.create_tournament(
-        "Chess Tournament",
-        "Description of the tournament",
-        chess_id,
+        "SixMensMorris Tournament",
+        "A tournament of the Six Men's Morris game",
+        morris_id,
         smakuch_id,
         datetime.now().strftime("%Y-%m-%d %H:%M"),
         "7314",
@@ -72,12 +76,12 @@ if __name__ == "__main__":
     tournaments.add_match(tournament_id, match_id)
 
     # Simulate a match
-    matches.add_move(match_id, "e2e4")
-    matches.add_move(match_id, "e7e5")
-    matches.add_move(match_id, "f2f4")
-    matches.add_move(match_id, "f7f5")
-    matches.set_winner(match_id, adam_bot_id)
+    # matches.add_move(match_id, "e2e4")
+    # matches.add_move(match_id, "e7e5")
+    # matches.add_move(match_id, "f2f4")
+    # matches.add_move(match_id, "f7f5")
+    # matches.set_winner(match_id, adam_bot_id)
 
-    # Update bot stats
-    bots.update_stats(adam_bot_id, won=True)
-    bots.update_stats(jakub_bot_id, won=False)
+    # # Update bot stats
+    # bots.update_stats(adam_bot_id, won=True)
+    # bots.update_stats(jakub_bot_id, won=False)

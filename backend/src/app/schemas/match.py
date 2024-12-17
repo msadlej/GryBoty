@@ -9,4 +9,4 @@ class MatchModel(BaseModel):
     game_num: int
     players: dict[str, MongoObjectId]
     moves: list[str]
-    winner: MongoObjectId
+    winner: MongoObjectId | None
