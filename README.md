@@ -1,28 +1,15 @@
-# Opis zmian
-- Dodałem dwa boty w katalogu `src/bots/example_bots/SixMensMorris` - te boty wykorzystamy w prezentacji
-- `src/app/services/bot_runner.py` uruchamia rozgrywkę dla danych botów i gry; podaje się jako argumenty wywołania z linii komend:
-     - `plik_gry.py` - np. `src/two_player_games/games/morris.py`,
-     - nazwa głównej klasy gry (string) - np. `SixMensMorris`,
-     - `plik_bot_1.py` - np. `src/bots/example_bots/SixMensMorris/bot_1.py`,
-     - `plik_bot_2.py` - np. `src/bots/example_bots/SixMensMorris/bot_2.py`
-- Do `bot_runner.py` napisałem kilka testów
-- `bot_runner.py` zwraca krotkę: (`ścieżka pliku bota, który wygrał rozgrywkę lub None (gdy remis)`, `słownik z zapisanymi ruchami botów (klucze słownika to ścieżki plików botów)`)
+# Cel projektu
 
-# Uruchomienie gry w kontenerze
-Dockerfile znajduje się w katalogu `docker/run_game`
+Celem jest stworzenie systemu w formie aplikacji webowej, który pozwoli na porównywanie botów stworzonych do grania w deterministyczne gry dwuosobowe (np. kółko i krzyżyk, Connect Four) metodą turniejową. Aplikacja będzie służyć zarówno użytkownikom, którzy chcą przetestować swoje algorytmy w warunkach turniejowych, jak i organizatorom takich turniejów.
+
+System zapewni możliwość rejestracji nowych użytkowników, logowania do konta oraz edycji profilu (np. zmiana hasła). System powinien pozwolić użytkownikom na wgranie kodu źródłowego bota napisanego w Pythonie 3 zgodnego z  przedefiniowanymi wymaganiami gry. Wymagania te określają przede wszystkim format kodu źródłowego zgodny z dostarczoną abstrakcyjną implementacją gry, obejmującą odpowiednie klasy i metody. 
 
 
-W katalogu głównym projektu:
-```bash
-docker build -t game-container -f docker/run_game/Dockerfile .
+Dodatkowo użytkownik powinien mieć możliwość wyboru turnieju, dołączenia do turnieju bota realizującego formułę gry w jakiej przeprowadzany jest turniej, oraz na wgląd do uzyskanych wyników (rezultatów rozgrywek turniejowych odbytych przed bota). Widok wyników powinien obejmować zarówno szczegóły rozgrywki (dokładny zapis ruchów bota oraz jego przeciwnika), jak i ogólny obraz wyników danego turnieju w formie drabinki turniejowej.
 
-docker run -it -v $(pwd)/src:/src -w /code   game-container python src/app/services/bot_runner.py     src/two_player_games/games/morris.py SixMensMorris     src/bots/example_bots/SixMensMorris/bot_1.py     src/bots/example_bots/SixMensMorris/bot_2.py
-```
-**Na chwilę obecną `bot_runner.py` printuje wynik**
 
-Rezultat przykładowego uruchomienia:
-```bash
-docker run -it -v $(pwd)/src:/src -w /code   game-container python src/app/services/bot_runner.py     src/two_player_games/games/morris.py SixMensMorris     src/bots/example_bots/SixMensMorris/bot_1.py     src/bots/example_bots/SixMensMorris/bot_2.py
-          
-('src/bots/example_bots/SixMensMorris/bot_2.py', {'src/bots/example_bots/SixMensMorris/bot_1.py': [<morris.MorrisMove object at 0x781a734feed0>, <morris.MorrisMove object at 0x781a734ff0d0>, <morris.MorrisMove object at 0x781a734ff1d0>, <morris.MorrisMove object at 0x781a734ff090>, <morris.MorrisMove object at 0x781a734ff410>, <morris.MorrisMove object at 0x781a734ff350>, <morris.MorrisMove object at 0x781a734ff790>, <morris.MorrisMove object at 0x781a734ff7d0>, <morris.MorrisMove object at 0x781a734ffa50>, <morris.MorrisMove object at 0x781a734ffbd0>, <morris.MorrisMove object at 0x781a734ffc90>, <morris.MorrisMove object at 0x781a734ffe10>, <morris.MorrisMove object at 0x781a734fff10>, <morris.MorrisMove object at 0x781a735041d0>, <morris.MorrisMove object at 0x781a735042d0>], 'src/bots/example_bots/SixMensMorris/bot_2.py': [<morris.MorrisMove object at 0x781a734fefd0>, <morris.MorrisMove object at 0x781a734ff110>, <morris.MorrisMove object at 0x781a734ff150>, <morris.MorrisMove object at 0x781a734ff390>, <morris.MorrisMove object at 0x781a734ff510>, <morris.MorrisMove object at 0x781a734ff810>, <morris.MorrisMove object at 0x781a734ff890>, <morris.MorrisMove object at 0x781a734ffa10>, <morris.MorrisMove object at 0x781a734ff850>, <morris.MorrisMove object at 0x781a734ff9d0>, <morris.MorrisMove object at 0x781a734ffed0>, <morris.MorrisMove object at 0x781a734fff50>, <morris.MorrisMove object at 0x781a73504150>, <morris.MorrisMove object at 0x781a73504410>, <morris.MorrisMove object at 0x781a73504590>]})
-```
+Ponadto, system powinien umożliwiać wyznaczonym użytkownikom (tzw. Użytkownikom Premium) na wgrywanie i konfigurację turnieju: dodanie do niego użytkowników, usuwanie z niego użytkowników, ustalenie limitu graczy, ustawienie daty rozpoczęcia oraz wgląd do wyników turnieju, a także edycję warunków turnieju po jego ogłoszeniu. Użytkownicy Premium powinni móc zaprosić innych użytkowników na podstawie wygenerowanego unikalnego dla turnieju kodu dołączenia oraz mieć sposobność banowania/odbanowania (uniemożliwienia/umożliwienia użytkownikom brania udziału w turniejach oraz tworzenia botów) użytkowników, którzy np. naruszyli zasady bezpieczeństwa systemu lub otrzymali kod dołączenia do turnieju w niepożądany sposób od osób trzecich. 
+
+W systemie będzie istniał jeden główny administrator - tzw. Superużytkownik z uprawnieniami Użytkownika Premium, którego kompetencje będą ponadto rozszerzone o możliwość nadawania zwykłym użytkownikom statusu Użytkownika Premium mogącego tworzyć turnieje. 
+
+Dodatkowo realizowany projekt powinien zapewnić  uczciwość i bezpieczeństwo systemu, zatem system będzie odpowiednio izolował środowisko wykonawcze wgrywanych botów, zapobiegając nieautoryzowanemu dostępowi do zasobów systemu.
