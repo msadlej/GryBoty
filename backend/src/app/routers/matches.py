@@ -81,8 +81,8 @@ async def run_match(
 
     if winner is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Match: {match_id} not found.",
+            status_code=status.HTTP_200_OK,
+            detail=f"Match: {match_id} ended in a draw.",
         )
 
     return winner
