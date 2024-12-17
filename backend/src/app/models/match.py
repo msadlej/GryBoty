@@ -1,7 +1,7 @@
 from app.models.tournament import get_tournament_by_id
 from app.schemas.tournament import TournamentModel
+from database.main import MongoDB, Match, Bot
 from app.models.bot import get_bot_by_id
-from database.main import MongoDB, Match
 from app.schemas.match import MatchModel
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
@@ -56,23 +56,36 @@ def get_matches_by_tournament(
 
 def update_match(
     current_user: UserModel, tournament_id: str, match_id: str, run_logs: str
-) -> MatchModel | None:
+) -> BotModel | None:
     match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
 
     if match is None:
         return None
 
     winner_code: str = run_logs.split(",")[0][1:]
-    bot_1: BotModel = get_bot_by_id(match.players["bot1"])
-    bot_2: BotModel = get_bot_by_id(match.players["bot2"])
+    bot_1: BotModel | None = get_bot_by_id(match.players["bot1"])
+    bot_2: BotModel | None = get_bot_by_id(match.players["bot2"])
+
+    if bot_1 is None or bot_2 is None:
+        return None
 
     if winner_code == bot_1.code:
         winner_id = bot_1.id
+        loser_id = bot_2.id
     else:
         winner_id = bot_2.id
+        loser_id = bot_1.id
 
     db = MongoDB()
     matches = Match(db)
     matches.set_winner(ObjectId(match_id), ObjectId(winner_id))
+    bots = Bot(db)
+    bots.update_stats(winner_id, won=True)
+    bots.update_stats(loser_id, won=False)
 
-    return get_match_by_id(current_user, tournament_id, match_id)
+    winner: BotModel | None = get_bot_by_id(winner_id)
+
+    if winner is None:
+        return None
+
+    return winner

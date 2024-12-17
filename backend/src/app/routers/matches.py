@@ -1,10 +1,11 @@
 from app.models.match import get_matches_by_tournament, get_match_by_id, update_match
 from app.utils.authentication import get_current_active_user
-from app.utils.run_docker import run_docker_commands
+from app.utils.run_docker import run_game
 from fastapi import HTTPException, status
 from app.schemas.match import MatchModel
 from fastapi import APIRouter, Depends
 from app.schemas.user import UserModel
+from app.schemas.bot import BotModel
 from typing import Annotated
 
 
@@ -54,7 +55,7 @@ async def read_match_by_id(
 
 @router.put(
     "/tournaments/{tournament_id}/matches/{match_id}/run",
-    response_model=MatchModel,
+    response_model=BotModel,
 )
 async def run_match(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
@@ -69,19 +70,19 @@ async def run_match(
             detail=f"Match: {match_id} not found.",
         )
 
-    build_logs, run_logs = run_docker_commands()
+    run_logs = run_game()
 
-    if "Error" in build_logs or "Error" in run_logs:
+    if "Error" in run_logs:
         raise HTTPException(status_code=500, detail="Error running Docker commands")
 
-    match: MatchModel | None = update_match(
+    winner: BotModel | None = update_match(
         current_user, tournament_id, match_id, run_logs
     )
 
-    if match is None:
+    if winner is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Match: {match_id} not found.",
         )
 
-    return match
+    return winner
