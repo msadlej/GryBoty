@@ -9,12 +9,12 @@
 - `bot_runner.py` zwraca krotkę: (`ścieżka pliku bota, który wygrał rozgrywkę lub None (gdy remis)`, `słownik z zapisanymi ruchami botów (klucze słownika to ścieżki plików botów)`)
 
 # Uruchomienie gry w kontenerze
-Dockerfile znajduje się w katalogu `docker/run_game`
+Dockerfile znajduje się w katalogu `docker/`
 
 
-W katalogu głównym projektu:
+W katalogu 'docker/' projektu:
 ```bash
-docker build -t game-container -f docker/run_game/Dockerfile .
+docker build -t game-container -f Dockerfile .
 
 docker run -it -v $(pwd)/src:/src -w /code   game-container python src/app/services/bot_runner.py     src/two_player_games/games/morris.py SixMensMorris     src/bots/example_bots/SixMensMorris/bot_1.py     src/bots/example_bots/SixMensMorris/bot_2.py
 ```
