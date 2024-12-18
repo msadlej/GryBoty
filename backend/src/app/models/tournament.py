@@ -52,10 +52,11 @@ def get_tournament_by_id(
         ObjectId(tournament_id)
     )
 
-    if tournament is None or not check_tournament_access(current_user, tournament):
-        return None
-
-    return TournamentModel(**tournament)
+    return (
+        TournamentModel(**tournament)
+        if tournament is not None and check_tournament_access(current_user, tournament)
+        else None
+    )
 
 
 def get_all_tournaments() -> list[TournamentModel]:

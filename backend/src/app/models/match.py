@@ -24,10 +24,7 @@ def get_match_by_id(
         current_user, tournament_id
     )
 
-    if match is None or tournament is None:
-        return None
-
-    return MatchModel(**match)
+    return MatchModel(**match) if match is not None and tournament is not None else None
 
 
 def get_matches_by_tournament(
@@ -42,26 +39,26 @@ def get_matches_by_tournament(
         current_user, tournament_id
     )
 
-    if tournament is None:
-        return None
-
-    result = [
-        match
-        for match_id in tournament.matches
-        if (match := get_match_by_id(current_user, tournament_id, match_id)) is not None
-    ]
-
-    return result
+    return (
+        [
+            match
+            for match_id in tournament.matches
+            if (match := get_match_by_id(current_user, tournament_id, match_id))
+            is not None
+        ]
+        if tournament is not None
+        else None
+    )
 
 
 def update_match(
-    current_user: UserModel, tournament_id: str, match_id: str, run_logs: str
+    current_user: UserModel, tournament_id: str, match_id: str, docker_logs: str
 ) -> BotModel | None:
     match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
     if match is None:
         return None
 
-    winner_code: str = run_logs.split(",")[0][1:]
+    winner_code: str = docker_logs.split(",")[0][1:]
     bot_1: BotModel | None = get_bot_by_id(match.players["bot1"])
     bot_2: BotModel | None = get_bot_by_id(match.players["bot2"])
     if bot_1 is None or bot_2 is None:

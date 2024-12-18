@@ -9,11 +9,11 @@ from app.schemas.bot import BotModel
 from typing import Annotated
 
 
-router = APIRouter()
+router = APIRouter(prefix="/tournaments/{tournament_id}")
 
 
 @router.get(
-    "/tournaments/{tournament_id}/matches",
+    "/matches",
     response_model=list[MatchModel],
 )
 async def read_matches_by_tournament_id(
@@ -34,7 +34,7 @@ async def read_matches_by_tournament_id(
 
 
 @router.get(
-    "/tournaments/{tournament_id}/matches/{match_id}",
+    "/matches/{match_id}",
     response_model=MatchModel,
 )
 async def read_match_by_id(
@@ -54,7 +54,7 @@ async def read_match_by_id(
 
 
 @router.put(
-    "/tournaments/{tournament_id}/matches/{match_id}/run",
+    "/matches/{match_id}/run",
     response_model=BotModel,
 )
 async def run_match(
@@ -70,13 +70,12 @@ async def run_match(
             detail=f"Match: {match_id} not found.",
         )
 
-    run_logs = run_game()
-
-    if "Error" in run_logs:
+    docker_logs: str | None = run_game()
+    if docker_logs is None:
         raise HTTPException(status_code=500, detail="Error running Docker commands")
 
     winner: BotModel | None = update_match(
-        current_user, tournament_id, match_id, run_logs
+        current_user, tournament_id, match_id, docker_logs
     )
 
     if winner is None:

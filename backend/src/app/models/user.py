@@ -16,10 +16,7 @@ def get_user_by_username(username: str | None = None) -> UserModel | None:
     users = User(db)
     user = users.get_user_by_username(username)
 
-    if user is None:
-        return None
-
-    return UserModel(**user)
+    return UserModel(**user) if user is not None else None
 
 
 def get_all_users() -> list[UserModel]:
