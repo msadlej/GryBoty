@@ -53,7 +53,7 @@ def get_matches_by_tournament(
 
 def update_match(
     current_user: UserModel, tournament_id: str, match_id: str, docker_logs: str
-) -> BotModel | None:
+) -> dict[str, BotModel] | None:
     match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
     if match is None:
         return None
@@ -67,15 +67,18 @@ def update_match(
     winner_id, loser_id = (
         (bot_1.id, bot_2.id) if winner_code == bot_1.code else (bot_2.id, bot_1.id)
     )
-    winner: BotModel | None = get_bot_by_id(winner_id)
-    if winner is None:
-        return None
 
     db = MongoDB()
     matches = Match(db)
     matches.set_winner(ObjectId(match_id), ObjectId(winner_id))
     bots = Bot(db)
-    bots.update_stats(winner_id, won=True)
-    bots.update_stats(loser_id, won=False)
+    bots.update_stats(ObjectId(winner_id), won=True)
+    bots.update_stats(ObjectId(loser_id), won=False)
 
-    return winner
+    winner: BotModel | None = get_bot_by_id(winner_id)
+    loser: BotModel | None = get_bot_by_id(loser_id)
+    return (
+        {"winner": winner, "loser": loser}
+        if winner is not None and loser is not None
+        else None
+    )

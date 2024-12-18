@@ -55,7 +55,7 @@ async def read_match_by_id(
 
 @router.put(
     "/matches/{match_id}/run",
-    response_model=BotModel,
+    response_model=dict[str, BotModel] | None,
 )
 async def run_match(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
@@ -63,7 +63,6 @@ async def run_match(
     match_id: str,
 ):
     match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
-
     if match is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -74,14 +73,14 @@ async def run_match(
     if docker_logs is None:
         raise HTTPException(status_code=500, detail="Error running Docker commands")
 
-    winner: BotModel | None = update_match(
+    result: dict[str, BotModel] | None = update_match(
         current_user, tournament_id, match_id, docker_logs
     )
 
-    if winner is None:
+    if result is None:
         raise HTTPException(
             status_code=status.HTTP_200_OK,
             detail=f"Match: {match_id} ended in a draw.",
         )
 
-    return winner
+    return result

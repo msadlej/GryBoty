@@ -57,6 +57,8 @@ if __name__ == "__main__":
     )
     users.add_bot(adam_id, adam_bot_id)
     users.add_bot(jakub_id, jakub_bot_id)
+    bots.validate_bot(adam_bot_id)
+    bots.validate_bot(jakub_bot_id)
 
     # Add a tournament to the database
     tournament_id = tournaments.create_tournament(
