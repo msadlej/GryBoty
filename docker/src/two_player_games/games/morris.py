@@ -92,6 +92,24 @@ class MorrisMove(Move):
             self.take_pawn == o.take_pawn and self.place_pawn == o.place_pawn
             and self.remove_pawn == o.remove_pawn
         )
+ 
+    def __str__(self):
+        if self.take_pawn is None and self.remove_pawn is None:
+            return f"Umieszczenie pionka na polu {self.place_pawn}"
+
+        # Moving a pawn
+        if self.take_pawn is not None and self.remove_pawn is None:
+            return (
+                f"Przesunięcie pionka z pola {self.take_pawn} na pole {self.place_pawn}"
+            )
+
+        # Placing or moving and removing an opponent's pawn
+        if self.remove_pawn is not None:
+            action = "Umieszczenie" if self.take_pawn is None else "Przesunięcie"
+            return (
+                f"{action} pionka z pola {self.take_pawn or 'N/A'} "
+                f"na pole {self.place_pawn}, usunięcie pionka przeciwnika z pola {self.remove_pawn}"
+            )
 
 
 class MorrisState(State):
