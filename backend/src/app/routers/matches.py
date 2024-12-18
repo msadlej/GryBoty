@@ -1,7 +1,7 @@
 from app.models.match import get_matches_by_tournament, get_match_by_id, update_match
 from app.utils.authentication import get_current_active_user
 from app.models.tournament import check_tournament_creator
-from app.utils.run_docker import run_game
+from app.utils.docker import run_game
 from fastapi import HTTPException, status
 from app.schemas.match import MatchModel
 from app.models.bot import get_bot_by_id
@@ -70,6 +70,7 @@ async def run_match(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Match: {match_id} not found.",
         )
+
     if not check_tournament_creator(current_user, tournament_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
