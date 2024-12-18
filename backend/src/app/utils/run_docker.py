@@ -1,45 +1,39 @@
-import os
+from typing import Any
 import subprocess
 import shlex
+import json
+import os
 
 
 class DockerCommandRunner:
-    def __init__(self, base_dir=None):
+    """Class to run Docker commands"""
+
+    def __init__(self, base_dir: str | None = None):
         """
         Initialize Docker command runner with optional base directory
-
-        :param base_dir: Base directory to change to before running commands
         """
         self.base_dir = base_dir or os.getcwd()
 
     def run_docker_commands(self, build_command, run_command):
         """
-        Run Docker build and run commands with directory change
-
-        :param build_command: Docker build command
-        :param run_command: Docker run command
-        :return: Dictionary with execution results
+        Run Docker build and commands with directory change
         """
+
         try:
-            # Store the current working directory
             original_dir = os.getcwd()
 
             try:
-                # Change to the specified base directory
                 os.chdir(self.base_dir)
 
-                # Execute build command
                 build_result = self._run_command(build_command)
                 if not build_result["success"]:
                     return build_result
 
-                # Execute run command
                 run_result = self._run_command(run_command)
 
                 return run_result
 
             finally:
-                # Always change back to the original directory
                 os.chdir(original_dir)
 
         except Exception as e:
@@ -48,23 +42,16 @@ class DockerCommandRunner:
     def _run_command(self, command):
         """
         Execute a shell command and capture its output
-
-        :param command: Command to execute
-        :return: Dictionary with command execution results
         """
-        try:
-            # Split the command to handle both simple and complex commands
-            split_command = shlex.split(command)
 
-            # Run the command and capture output
+        try:
+            split_command = shlex.split(command)
             process = subprocess.Popen(
                 split_command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
             )
-
-            # Capture stdout and stderr
             stdout, stderr = process.communicate()
 
             return {
@@ -78,14 +65,13 @@ class DockerCommandRunner:
             return {"success": False, "error": str(e), "type": type(e).__name__}
 
 
-def run_game():
-    # Specify the directory containing your Docker context
+def run_game() -> dict[str, Any] | None:
+    """
+    Run an example game using Docker
+    """
+
     docker_dir = "../docker"
-
-    # Build command
-    build_cmd = "docker build -t game-container -f docker/run_game/Dockerfile ."
-
-    # Run command (note: $(pwd) is replaced with actual path handling in Python)
+    build_cmd = "docker build -t game-container -f Dockerfile ."
     run_cmd = (
         "docker run -it "
         "-v {pwd}/src:/src "
@@ -97,11 +83,11 @@ def run_game():
         "src/bots/example_bots/SixMensMorris/bot_2.py"
     ).format(pwd=os.getcwd())
 
-    # Create runner
     runner = DockerCommandRunner(base_dir=docker_dir)
-
-    # Execute commands
     result = runner.run_docker_commands(build_cmd, run_cmd)
 
-    # Return match winner
-    return result["stdout"] if result["success"] else result["stderr"]
+    if not result["success"]:
+        return None
+
+    data: dict[str, Any] | None = json.loads(result["stdout"])
+    return data

@@ -1,19 +1,21 @@
 from app.models.match import get_matches_by_tournament, get_match_by_id, update_match
 from app.utils.authentication import get_current_active_user
+from app.models.tournament import check_tournament_creator
 from app.utils.run_docker import run_game
 from fastapi import HTTPException, status
 from app.schemas.match import MatchModel
+from app.models.bot import get_bot_by_id
 from fastapi import APIRouter, Depends
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
-from typing import Annotated
+from typing import Annotated, Any
 
 
-router = APIRouter()
+router = APIRouter(prefix="/tournaments/{tournament_id}")
 
 
 @router.get(
-    "/tournaments/{tournament_id}/matches",
+    "/matches",
     response_model=list[MatchModel],
 )
 async def read_matches_by_tournament_id(
@@ -34,7 +36,7 @@ async def read_matches_by_tournament_id(
 
 
 @router.get(
-    "/tournaments/{tournament_id}/matches/{match_id}",
+    "/matches/{match_id}",
     response_model=MatchModel,
 )
 async def read_match_by_id(
@@ -54,10 +56,48 @@ async def read_match_by_id(
 
 
 @router.put(
-    "/tournaments/{tournament_id}/matches/{match_id}/run",
-    response_model=BotModel,
+    "/matches/{match_id}/run",
+    response_model=dict[str, BotModel] | None,
 )
 async def run_match(
+    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    tournament_id: str,
+    match_id: str,
+):
+    match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
+    if match is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Match: {match_id} not found.",
+        )
+    if not check_tournament_creator(current_user, tournament_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have access to run this match.",
+        )
+
+    docker_logs: dict[str, Any] | None = run_game()
+    if docker_logs is None:
+        raise HTTPException(status_code=500, detail="Error running Docker commands")
+
+    result: dict[str, BotModel] | None = update_match(
+        current_user, tournament_id, match_id, docker_logs
+    )
+
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_200_OK,
+            detail=f"Match: {match_id} ended in a draw.",
+        )
+
+    return result
+
+
+@router.get(
+    "/matches/{match_id}/bots",
+    response_model=dict[str, BotModel | None],
+)
+async def read_bots_by_match_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     tournament_id: str,
     match_id: str,
@@ -70,19 +110,7 @@ async def run_match(
             detail=f"Match: {match_id} not found.",
         )
 
-    run_logs = run_game()
+    bot_1: BotModel | None = get_bot_by_id(match.players["bot1"])
+    bot_2: BotModel | None = get_bot_by_id(match.players["bot2"])
 
-    if "Error" in run_logs:
-        raise HTTPException(status_code=500, detail="Error running Docker commands")
-
-    winner: BotModel | None = update_match(
-        current_user, tournament_id, match_id, run_logs
-    )
-
-    if winner is None:
-        raise HTTPException(
-            status_code=status.HTTP_200_OK,
-            detail=f"Match: {match_id} ended in a draw.",
-        )
-
-    return winner
+    return {"bot1": bot_1, "bot2": bot_2}
