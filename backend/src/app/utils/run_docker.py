@@ -1,6 +1,8 @@
-import os
+from typing import Any
 import subprocess
 import shlex
+import json
+import os
 
 
 class DockerCommandRunner:
@@ -63,7 +65,7 @@ class DockerCommandRunner:
             return {"success": False, "error": str(e), "type": type(e).__name__}
 
 
-def run_game() -> str | None:
+def run_game() -> dict[str, Any] | None:
     """
     Run an example game using Docker
     """
@@ -84,4 +86,8 @@ def run_game() -> str | None:
     runner = DockerCommandRunner(base_dir=docker_dir)
     result = runner.run_docker_commands(build_cmd, run_cmd)
 
-    return result["stdout"] if result["success"] else None
+    if not result["success"]:
+        return None
+
+    data: dict[str, Any] | None = json.loads(result["stdout"])
+    return data

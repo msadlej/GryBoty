@@ -36,12 +36,12 @@ if __name__ == "__main__":
         "$2b$12$za1Gr8TgVfzzB50wWiVREuiljdBcXeW/90LZuzlWbhbkoOblJ8LNS",
         "standard",
     )
-    szlenki_id = users.create_user(
-        "szlenki",
-        "$2b$12$QbakVoNNX46e93WcZAUPq.MVaT.ec13IcpNR2vE5iS2sd9PWBnZK2",
+    marcin_id = users.create_user(
+        "marcin",
+        "$2b$12$rMRrhTnpEb6kDJZ9nHeWSOVf72WcySUQACT4JHNPI69odwwruHxDa",
         "standard",
     )
-    users.ban_user(szlenki_id)
+    users.ban_user(marcin_id)
 
     # Add a game to the database
     morris_id = game_types.create_game_type(
@@ -76,14 +76,3 @@ if __name__ == "__main__":
     tournaments.add_participant(tournament_id, jakub_bot_id)
     match_id = matches.create_match(1, adam_bot_id, jakub_bot_id)
     tournaments.add_match(tournament_id, match_id)
-
-    # Simulate a match
-    # matches.add_move(match_id, "e2e4")
-    # matches.add_move(match_id, "e7e5")
-    # matches.add_move(match_id, "f2f4")
-    # matches.add_move(match_id, "f7f5")
-    # matches.set_winner(match_id, adam_bot_id)
-
-    # # Update bot stats
-    # bots.update_stats(adam_bot_id, won=True)
-    # bots.update_stats(jakub_bot_id, won=False)

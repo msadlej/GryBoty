@@ -74,7 +74,10 @@ def get_bots_by_tournament(
 
 
 def update_match(
-    current_user: UserModel, tournament_id: str, match_id: str, docker_logs: str
+    current_user: UserModel,
+    tournament_id: str,
+    match_id: str,
+    docker_logs: dict[str, Any],
 ) -> dict[str, BotModel] | None:
     """
     Runs a match and updates the database with the results.
@@ -84,7 +87,9 @@ def update_match(
     if match is None:
         return None
 
-    winner_code: str = docker_logs.split(",")[0][1:]
+    winner_code: str = docker_logs["winner"]
+    moves: list[str] = docker_logs["moves"]
+
     bot_1: BotModel | None = get_bot_by_id(match.players["bot1"])
     bot_2: BotModel | None = get_bot_by_id(match.players["bot2"])
     if bot_1 is None or bot_2 is None:
@@ -97,6 +102,9 @@ def update_match(
     db = MongoDB()
     matches = Match(db)
     matches.set_winner(ObjectId(match_id), ObjectId(winner_id))
+    for move in moves:
+        matches.add_move(ObjectId(match_id), move)
+
     bots = Bot(db)
     bots.update_stats(ObjectId(winner_id), won=True)
     bots.update_stats(ObjectId(loser_id), won=False)

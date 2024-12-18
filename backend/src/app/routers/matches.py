@@ -8,7 +8,7 @@ from app.models.bot import get_bot_by_id
 from fastapi import APIRouter, Depends
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
-from typing import Annotated
+from typing import Annotated, Any
 
 
 router = APIRouter(prefix="/tournaments/{tournament_id}")
@@ -76,7 +76,7 @@ async def run_match(
             detail="User does not have access to run this match.",
         )
 
-    docker_logs: str | None = run_game()
+    docker_logs: dict[str, Any] | None = run_game()
     if docker_logs is None:
         raise HTTPException(status_code=500, detail="Error running Docker commands")
 
