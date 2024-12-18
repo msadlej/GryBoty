@@ -2,6 +2,7 @@ import importlib.util
 import inspect
 import os
 import sys
+import json
 
 
 class BotRunner:
@@ -10,7 +11,7 @@ class BotRunner:
         self.bot_1 = self.get_class(bot_1_path)
         self.bot_2 = self.get_class(bot_2_path)
         self._init_game()
-        self.moves = {bot_1_path: [], bot_2_path: []}
+        self.moves = []
         self.map = {self.bot_1: bot_1_path, self.bot_2: bot_2_path}
 
     def _init_game(self):
@@ -45,15 +46,13 @@ class BotRunner:
         while not self.game.is_finished():
             current_player = self.game.get_current_player()
             move = current_player.get_move(self.game.state)
-            current_player_file = self.map[current_player]
-            self.moves[current_player_file].append(move)
+            self.moves.append(f"Gracz {current_player.char}: {str(move)}")
             self.game.make_move(move)
 
         winner = self.game.get_winner()
-        return (
-            (self.map[winner], self.moves)
-            if winner is not None
-            else (winner, self.moves)
+        return json.dumps(
+            {"winner": self.map.get(winner), "moves": self.moves},
+            ensure_ascii=False,
         )
 
 
