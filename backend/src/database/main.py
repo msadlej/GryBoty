@@ -157,21 +157,17 @@ class Tournament:
     def add_participant(self, tournament_id: ObjectId, bot_id: ObjectId) -> bool:
         tournament = self.collection.find_one({"_id": tournament_id})
         if len(tournament["participants"]) < tournament["max_participants"]:
-        self.collection.update_one(
-            {"_id": tournament_id}, 
-            {"$push": {"participants": bot_id}}
-        )
-        self.db.bots.update_one(
-            {"_id": bot_id},
-            {"$inc": {"total_tournaments": 1}}
-        )
-        return True
-    return False
+            self.collection.update_one(
+                {"_id": tournament_id}, {"$push": {"participants": bot_id}}
+            )
+            self.db.bots.update_one({"_id": bot_id}, {"$inc": {"total_tournaments": 1}})
+
+            return True
+        return False
 
     def add_match(self, tournament_id: ObjectId, match_id: ObjectId) -> None:
         self.collection.update_one(
-            {"_id": tournament_id}, 
-            {"$push": {"matches": match_id}}
+            {"_id": tournament_id}, {"$push": {"matches": match_id}}
         )
 
     def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
@@ -200,7 +196,7 @@ class Tournament:
 
     def get_tournaments_by_bot_id(self, bot_id: ObjectId) -> List[Dict]:
         return list(self.collection.find({"participants": bot_id}))
-    
+
     def get_all_tournaments(self) -> List[Dict]:
         return list(self.collection.find())
 
