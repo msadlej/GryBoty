@@ -5,7 +5,7 @@ from typing import Any
 
 def get_user_by_username(username: str | None = None) -> UserModel | None:
     """
-    Retrieve a user from the database by their username.
+    Retrieves a user from the database by their username.
     Returns None if the user does not exist.
     """
 
@@ -20,7 +20,9 @@ def get_user_by_username(username: str | None = None) -> UserModel | None:
 
 
 def get_all_users() -> list[UserModel]:
-    """Retrieve all users from the database"""
+    """
+    Retrieves all users from the database
+    """
 
     db = MongoDB()
     all_users: list[dict[str, Any]] = db.get_all_users()

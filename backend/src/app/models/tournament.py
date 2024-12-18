@@ -5,9 +5,26 @@ from bson import ObjectId
 from typing import Any
 
 
+def check_tournament_creator(current_user: UserModel, tournament_id: str) -> bool:
+    """
+    Checks if the user is the creator of the tournament or an admin.
+    """
+
+    tournament: TournamentModel | None = get_tournament_by_id(
+        current_user, tournament_id
+    )
+    if tournament is None:
+        return False
+
+    is_creator: bool = tournament.creator == current_user.id
+    is_admin: bool = current_user.account_type == AccountType.ADMIN
+
+    return is_creator or is_admin
+
+
 def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
     """
-    Retrieve all tournaments that the user has created or is participating in.
+    Retrieves all tournaments that the user has created or is participating in.
     """
 
     db = MongoDB()
@@ -26,7 +43,7 @@ def check_tournament_access(
     current_user: UserModel, tournament: dict[str, Any]
 ) -> bool:
     """
-    Check if the user has access to the tournament.
+    Checks if the user has access to the tournament.
     """
 
     is_admin: bool = current_user.account_type == AccountType.ADMIN
@@ -42,7 +59,7 @@ def get_tournament_by_id(
     current_user: UserModel, tournament_id: str
 ) -> TournamentModel | None:
     """
-    Retrieve a tournament from the database by its ID.
+    Retrieves a tournament from the database by its ID.
     Returns None if the tournament does not exist or the user does not have access to it.
     """
 
@@ -61,7 +78,7 @@ def get_tournament_by_id(
 
 def get_all_tournaments() -> list[TournamentModel]:
     """
-    Retrieve all tournaments from the database.
+    Retrieves all tournaments from the database.
     """
 
     db = MongoDB()

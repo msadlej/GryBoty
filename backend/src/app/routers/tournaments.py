@@ -1,10 +1,16 @@
-from app.models.tournament import get_own_tournaments, get_tournament_by_id
 from app.utils.authentication import get_current_active_user
+from app.models.match import get_bots_by_tournament
 from app.schemas.tournament import TournamentModel
 from fastapi import HTTPException, status
 from fastapi import APIRouter, Depends
 from app.schemas.user import UserModel
+from app.schemas.bot import BotModel
 from typing import Annotated
+from app.models.tournament import (
+    get_own_tournaments,
+    get_tournament_by_id,
+    check_tournament_creator,
+)
 
 
 router = APIRouter(prefix="/tournaments")
@@ -33,3 +39,37 @@ async def read_tournament_by_id(
         )
 
     return tournament
+
+
+@router.get(
+    "/{tournament_id}/bots",
+    response_model=list[BotModel],
+)
+async def read_bots_by_tournament_id(
+    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    tournament_id: str,
+):
+    tournament: TournamentModel | None = get_tournament_by_id(
+        current_user, tournament_id
+    )
+
+    if tournament is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tournament: {tournament_id} not found.",
+        )
+
+    if not check_tournament_creator(current_user, tournament_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User does not have access to view bots in tournament: {tournament_id}.",
+        )
+
+    bots: list[BotModel] | None = get_bots_by_tournament(current_user, tournament)
+    if bots is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No bots found in tournament: {tournament_id}.",
+        )
+
+    return bots

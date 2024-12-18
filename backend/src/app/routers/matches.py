@@ -1,8 +1,10 @@
 from app.models.match import get_matches_by_tournament, get_match_by_id, update_match
 from app.utils.authentication import get_current_active_user
+from app.models.tournament import check_tournament_creator
 from app.utils.run_docker import run_game
 from fastapi import HTTPException, status
 from app.schemas.match import MatchModel
+from app.models.bot import get_bot_by_id
 from fastapi import APIRouter, Depends
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
@@ -68,6 +70,11 @@ async def run_match(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Match: {match_id} not found.",
         )
+    if not check_tournament_creator(current_user, tournament_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User does not have access to run this match.",
+        )
 
     docker_logs: str | None = run_game()
     if docker_logs is None:
@@ -84,3 +91,26 @@ async def run_match(
         )
 
     return result
+
+
+@router.get(
+    "/matches/{match_id}/bots",
+    response_model=dict[str, BotModel | None],
+)
+async def read_bots_by_match_id(
+    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    tournament_id: str,
+    match_id: str,
+):
+    match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
+
+    if match is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Match: {match_id} not found.",
+        )
+
+    bot_1: BotModel | None = get_bot_by_id(match.players["bot1"])
+    bot_2: BotModel | None = get_bot_by_id(match.players["bot2"])
+
+    return {"bot1": bot_1, "bot2": bot_2}
