@@ -1,7 +1,16 @@
+from app.schemas.user import UserModel, AccountType
 from database.main import MongoDB, Bot
 from app.schemas.bot import BotModel
 from bson import ObjectId
 from typing import Any
+
+
+def check_bot_access(current_user: UserModel, bot_id: str) -> bool:
+    """
+    Check if the current user has access to a specific bot.
+    """
+
+    return bot_id in current_user.bots or current_user.account_type == AccountType.ADMIN
 
 
 def get_bot_by_id(bot_id: str) -> BotModel | None:
@@ -14,10 +23,19 @@ def get_bot_by_id(bot_id: str) -> BotModel | None:
     bots = Bot(db)
     bot: dict[str, Any] | None = bots.get_bot_by_id(ObjectId(bot_id))
 
-    if bot is None:
-        return None
+    return BotModel(**bot) if bot is not None else None
 
-    return BotModel(**bot)
+
+def get_own_bots(current_user: UserModel) -> list[BotModel]:
+    """
+    Retrieve all bots from the database that belong to the current user.
+    """
+
+    return [
+        bot
+        for bot_id in current_user.bots
+        if (bot := get_bot_by_id(bot_id)) is not None
+    ]
 
 
 def get_all_bots() -> list[BotModel]:
