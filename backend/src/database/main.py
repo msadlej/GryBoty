@@ -21,6 +21,7 @@ class MongoDB:
 
 class User:
     def __init__(self, db: MongoDB):
+        self.db = db.db
         self.collection = db.db.users
 
     def create_user(
@@ -58,6 +59,7 @@ class User:
 
 class Bot:
     def __init__(self, db: MongoDB):
+        self.db = db.db
         self.collection = db.db.bots
 
     def create_bot(self, name: str, game_type: ObjectId, code: str) -> ObjectId:
@@ -109,6 +111,7 @@ class Bot:
 
 class GameType:
     def __init__(self, db: MongoDB):
+        self.db = db.db
         self.collection = db.db.game_types
 
     def create_game_type(self, name: str, description: str) -> ObjectId:
@@ -128,6 +131,7 @@ class GameType:
 
 class Tournament:
     def __init__(self, db: MongoDB):
+        self.db = db.db
         self.collection = db.db.tournaments
 
     def create_tournament(
@@ -203,6 +207,7 @@ class Tournament:
 
 class Match:
     def __init__(self, db: MongoDB):
+        self.db = db.db
         self.collection = db.db.matches
 
     def create_match(
