@@ -105,11 +105,12 @@ class MorrisMove(Move):
 
         # Placing or moving and removing an opponent's pawn
         if self.remove_pawn is not None:
-            action = "Umieszczenie" if self.take_pawn is None else "Przesunięcie"
-            return (
-                f"{action} pionka z pola {self.take_pawn or 'N/A'} "
-                f"na pole {self.place_pawn}, usunięcie pionka przeciwnika z pola {self.remove_pawn}"
-            )
+            if self.take_pawn is None:
+                message = f"Umieszczenie pionka na polu {self.place_pawn}"
+            else:
+                message = f"Przesunięcie pionka z pola {self.take_pawn} na pole {self.place_pawn}"
+            return message + f", usunięcie pionka przeciwnika z pola {self.remove_pawn}"
+
 
 
 class MorrisState(State):
