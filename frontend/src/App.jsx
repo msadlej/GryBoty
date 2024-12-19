@@ -1,8 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const BackButton = ({ onNavigate, to = 'dashboard' }) => (
+const API_URL = 'http://localhost:8000';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
+const login = async (username, password) => {
+  try {
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+    
+    const response = await api.post('/token', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    const { access_token } = response.data;
+    localStorage.setItem('token', access_token);
+    return response.data;
+  } catch (error) {
+    console.error('Login error:', error.response?.data);
+    throw error;
+  }
+};
+
+const register = async (username, password) => {
+  try {
+    const response = await api.post('/users/register', {
+      username,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Register error:', error.response?.data);
+    throw error;
+  }
+};
+
+export const logout = () => {
+  localStorage.removeItem('token');
+};
+
+const BackButton = ({ onNavigate, to = 'dashboard', ...params }) => (
   <button
-    onClick={() => onNavigate(to)}
+    onClick={() => onNavigate(to, params)}
     className="absolute top-8 left-8 bg-button-bg text-white px-6 py-3 rounded hover:bg-button-hover text-xl font-light"
   >
     ← Powrót
@@ -10,92 +77,209 @@ const BackButton = ({ onNavigate, to = 'dashboard' }) => (
 );
 
 const LoginScreen = ({ onNavigate }) => {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Attempting login with:', {
+        username: formData.username,
+        password: formData.password
+      });
+      
+      await login(formData.username, formData.password);
+      onNavigate('dashboard');
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError('Nieprawidłowy login lub hasło');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <h1 className="text-5xl mb-12 font-light">Zaloguj się</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleSubmit} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Login:</label>
           <input 
-            type="text" 
+            type="text"
+            value={formData.username}
+            onChange={(e) => setFormData({...formData, username: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            disabled={loading}
           />
         </div>
         <div>
           <label className="text-2xl font-light">Hasło:</label>
           <input 
-            type="password" 
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({...formData, password: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            disabled={loading}
           />
         </div>
         <div className="flex justify-between pt-6">
           <button 
+            type="button"
             onClick={() => onNavigate('register')}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+            disabled={loading}
           >
             Zarejestruj się
           </button>
           <button 
-            onClick={() => onNavigate('dashboard')}
+            type="submit"
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+            disabled={loading}
           >
-            Zaloguj się
+            {loading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
 
 const RegisterScreen = ({ onNavigate }) => {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      setError('Hasła nie są identyczne');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      await register(formData.username, formData.password);
+      onNavigate('login');
+    } catch (err) {
+      setError('Nie udało się zarejestrować użytkownika');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="login" />
       <h1 className="text-5xl mb-12 font-light">Zarejestruj się</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleSubmit} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Login:</label>
           <input 
-            type="text" 
+            type="text"
+            value={formData.username}
+            onChange={(e) => setFormData({...formData, username: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            disabled={loading}
           />
         </div>
         <div>
           <label className="text-2xl font-light">Hasło:</label>
           <input 
-            type="password" 
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({...formData, password: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            disabled={loading}
           />
         </div>
         <div>
           <label className="text-2xl font-light">Powtórz:</label>
           <input 
-            type="password" 
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            disabled={loading}
           />
         </div>
         <button 
-          onClick={() => onNavigate('dashboard')}
+          type="submit"
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
+          disabled={loading}
         >
-          Zarejestruj
+          {loading ? 'Rejestracja...' : 'Zarejestruj'}
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
 const SettingsScreen = ({ onNavigate }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('/users/me/');
+        setUsername(response.data.username);
+      } catch (err) {
+        setError('Nie udało się pobrać danych użytkownika: ' + err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = () => {
+    setLoading(true);
+    try {
+      localStorage.removeItem('token');
+      onNavigate('login');
+    } catch (err) {
+      setError('Nie udało się wylogować');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} />
       <h1 className="text-5xl mb-12 font-light">Ustawienia</h1>
-      <div className="w-full max-w-[80%]">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <div className="w-full max-w-[80%] space-y-6">
+        <div className="text-2xl font-light mb-8">
+          Zalogowany jako: {username}
+        </div>
         <button 
           className="w-full bg-button-bg text-white px-12 py-6 rounded hover:bg-button-hover text-2xl font-light"
           onClick={() => onNavigate('change-password')}
         >
           Zmień hasło
+        </button>
+        <button 
+          className="w-full bg-button-bg text-white px-12 py-6 rounded hover:bg-button-hover text-2xl font-light"
+          onClick={handleLogout}
+          disabled={loading}
+        >
+          {loading ? 'Wylogowywanie...' : 'Wyloguj się'}
         </button>
       </div>
     </div>
@@ -103,15 +287,44 @@ const SettingsScreen = ({ onNavigate }) => {
 };
 
 const ChangePasswordScreen = ({ onNavigate }) => {
+  const [formData, setFormData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError('Nowe hasła nie są identyczne');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await userService.changePassword(formData.oldPassword, formData.newPassword);
+      onNavigate('settings');
+    } catch (err) {
+      setError('Nie udało się zmienić hasła');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="settings" />
       <h1 className="text-5xl mb-12 font-light">Zmień hasło</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleSubmit} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Stare hasło:</label>
           <input 
             type="password" 
+            value={formData.oldPassword}
+            onChange={(e) => setFormData({...formData, oldPassword: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -119,6 +332,8 @@ const ChangePasswordScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Nowe hasło:</label>
           <input 
             type="password" 
+            value={formData.newPassword}
+            onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -126,16 +341,20 @@ const ChangePasswordScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Powtórz:</label>
           <input 
             type="password" 
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
         <button 
-          onClick={() => onNavigate('settings')}
-          className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
+          type="submit"
+          disabled={loading}
+          className={`w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light
+            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Zmień
+          {loading ? 'Zmienianie...' : 'Zmień'}
         </button>
-      </div>
+      </form>
     </div>
   );
 };
@@ -175,30 +394,54 @@ const DashboardScreen = ({ onNavigate }) => {
 };
 
 const TournamentsScreen = ({ onNavigate }) => {
-  const tournaments = [
-    { name: "Turniej o Złotą Kredę", startTime: "13.11.2024 14:00", organizer: "Adam" },
-    { name: "testturniej3", startTime: "19.12.2024 21:40", organizer: "Jakub" }
-  ];
+  const [tournaments, setTournaments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const response = await api.get('/tournaments/');
+        console.log('API Response.data:', response.data);
+        setTournaments(response.data);
+      } catch (err) {
+        setError('Nie udało się pobrać turniejów ' + err);
+        setTournaments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTournaments();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center">Ładowanie...</div>;
+  }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} />
       <h1 className="text-5xl mb-12 font-light">Turnieje</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
         <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
           <div>Nazwa</div>
           <div>Rozpoczęcie</div>
           <div>Organizator</div>
         </div>
-        {tournaments.map((tournament, index) => (
+        {tournaments.map((tournament) => (
           <div 
-            key={index} 
+            key={tournament._id}
             className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
-            onClick={() => onNavigate('tournament-tree')}
+            onClick={() => {
+              console.log('Navigating with params:', { tournamentId: tournament._id });
+              onNavigate('tournament-tree', { tournamentId: tournament._id });
+            }}
           >
             <div className="hover:underline">{tournament.name}</div>
-            <div>{tournament.startTime}</div>
-            <div>{tournament.organizer}</div>
+            <div>{new Date(tournament.start_date).toLocaleString()}</div>
+            <div>{tournament.creator}</div>
           </div>
         ))}
         <div className="flex justify-between mt-8">
@@ -221,17 +464,51 @@ const TournamentsScreen = ({ onNavigate }) => {
 };
 
 const CreateTournamentScreen = ({ onNavigate }) => {
-  const games = ["Kółko i krzyżyk", "Czwórki", "Warcaby"];
-  
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    game: '',
+    startTime: '',
+    playerLimit: ''
+  });
+  const [games, setGames] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await api.get('/tournaments/');
+        setGames(response.data);
+      } catch (err) {
+        setError('Nie udało się pobrać listy gier');
+      }
+    };
+
+    fetchGames();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/tournaments', formData);
+      onNavigate('tournaments');
+    } catch (err) {
+      setError('Nie udało się utworzyć turnieju');
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournaments" />
       <h1 className="text-5xl mb-12 font-light">Stwórz turniej</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleSubmit} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Nazwa:</label>
           <input 
             type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -239,14 +516,20 @@ const CreateTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Opis:</label>
           <input 
             type="text"
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
         <div>
           <label className="text-2xl font-light">Gra:</label>
-          <select className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light">
+          <select 
+            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            value={formData.game}
+            onChange={(e) => setFormData({...formData, game: e.target.value})}
+          >
             {games.map(game => (
-              <option key={game} value={game}>{game}</option>
+              <option key={game.id} value={game.id}>{game.name}</option>
             ))}
           </select>
         </div>
@@ -254,6 +537,8 @@ const CreateTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Czas rozpoczęcia:</label>
           <input 
             type="datetime-local"
+            value={formData.startTime}
+            onChange={(e) => setFormData({...formData, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -261,51 +546,76 @@ const CreateTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Limit graczy:</label>
           <input 
             type="number"
+            value={formData.playerLimit}
+            onChange={(e) => setFormData({...formData, playerLimit: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
         <button 
-          onClick={() => onNavigate('tournaments')}
+          type="submit"
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
         >
           Stwórz
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
 const BotsListScreen = ({ onNavigate }) => {
-  const bots = [
-    { name: "testbot1", game: "Czwórki" },
-    { name: "testbot2", game: "Kółko i krzyżyk" },
-    { name: "gigabot", game: "Czwórki" }
-  ];
+  const [bots, setBots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchBots = async () => {
+      try {
+        const response = await api.get('/bots');
+        setBots(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError('Nie udało się pobrać botów');
+        setLoading(false);
+      }
+    };
+
+    fetchBots();
+  }, []);
+
+  const handleDeleteBot = async (botId, e) => {
+    e.stopPropagation();
+    try {
+      await api.delete(`/bots/${botId}`);
+      setBots(bots.filter(bot => bot.id !== botId));
+    } catch (err) {
+      setError('Nie udało się usunąć bota');
+    }
+  };
+
+  if (loading) return <div className="text-center">Ładowanie...</div>;
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} />
       <h1 className="text-5xl mb-12 font-light">Boty</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
         <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
           <div>Nazwa</div>
           <div>Gra</div>
           <div></div>
         </div>
-        {bots.map((bot, index) => (
+        {bots.map((bot) => (
           <div 
-            key={index} 
+            key={bot.id} 
             className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
-            onClick={() => onNavigate('bot-details')}
+            onClick={() => onNavigate('bot-details', { id: bot.id })}
           >
             <div className="hover:underline">{bot.name}</div>
             <div>{bot.game}</div>
             <button 
               className="bg-button-hover text-white px-6 py-2 rounded hover:bg-primary-bg justify-self-end"
-              onClick={(e) => {
-                e.stopPropagation();
-                alert('Usuwanie bota');
-              }}
+              onClick={(e) => handleDeleteBot(bot.id, e)}
             >
               Usuń
             </button>
@@ -323,10 +633,54 @@ const BotsListScreen = ({ onNavigate }) => {
 };
 
 const AddBotScreen = ({ onNavigate }) => {
-  const [isDragging, setIsDragging] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    game: '',
+  });
   const [selectedFile, setSelectedFile] = useState(null);
-  const games = ["Kółko i krzyżyk", "Czwórki", "Warcaby"];
+  const [isDragging, setIsDragging] = useState(false);
+  // const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const fileInputRef = React.useRef(null);
+
+  // useEffect(() => {
+  //   const fetchGames = async () => {
+  //     try {
+  //       const response = await api.get('/games/');
+  //       setGames(response.data);
+  //     } catch (err) {
+  //       setError('Nie udało się pobrać listy gier');
+  //     }
+  //   };
+
+  //   fetchGames();
+  // }, []);
+
+  const games = ["Kółko i krzyżyk", "Czwórki", "Warcaby"];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setError('Proszę wybrać plik');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', selectedFile);
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('game', formData.game);
+
+      await botService.uploadBot(formDataToSend);
+      onNavigate('bots');
+    } catch (err) {
+      setError('Nie udało się dodać bota');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -383,25 +737,31 @@ const AddBotScreen = ({ onNavigate }) => {
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="bots" />
       <h1 className="text-5xl mb-12 font-light">Dodaj bota</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleSubmit} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Nazwa:</label>
           <input 
             type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
             placeholder="Nazwa twojego bota"
           />
         </div>
         <div>
           <label className="text-2xl font-light">Gra:</label>
-          <select className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light">
+          <select 
+            value={formData.game}
+            onChange={(e) => setFormData({...formData, game: e.target.value})}
+            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+          >
             {games.map(game => (
               <option key={game} value={game}>{game}</option>
             ))}
           </select>
         </div>
 
-        {}
         <input
           type="file"
           ref={fileInputRef}
@@ -410,7 +770,6 @@ const AddBotScreen = ({ onNavigate }) => {
           className="hidden"
         />
 
-        {}
         <div
           className={dropzoneStyle}
           onDragEnter={handleDrag}
@@ -437,54 +796,86 @@ const AddBotScreen = ({ onNavigate }) => {
         </div>
 
         <button 
-          onClick={() => onNavigate('bots')}
+          type="submit"
+          disabled={loading || !selectedFile}
           className={`w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light
-            ${!selectedFile ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={!selectedFile}
+            ${(loading || !selectedFile) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Dodaj
+          {loading ? 'Dodawanie...' : 'Dodaj'}
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
 const BotDetailsScreen = ({ onNavigate }) => {
-  const bot = {
-    name: "testbot1",
-    totalGames: 65,
-    wins: 34,
-    tournaments: [
-      { name: "Turniej o Złotą Kredę", date: "13.11.2024 14:00" },
-      { name: "testturniej3", date: "19.12.2024 21:40" }
-    ]
+  const [bot, setBot] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchBotData = async () => {
+      try {
+        const botId = new URLSearchParams(window.location.search).get('id');
+        const [botData, matchesData] = await Promise.all([
+          botService.getBotDetails(botId),
+          botService.getBotMatches(botId)
+        ]);
+        setBot(botData);
+        setMatches(matchesData);
+      } catch (err) {
+        setError('Nie udało się pobrać danych bota');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBotData();
+  }, []);
+
+  const handleDeleteBot = async () => {
+    try {
+      await botService.deleteBot(bot.id);
+      onNavigate('bots');
+    } catch (err) {
+      setError('Nie udało się usunąć bota');
+    }
   };
+
+  if (loading) return <div className="text-center">Ładowanie...</div>;
+  if (!bot) return <div className="text-center">Nie znaleziono bota</div>;
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="bots" />
       <h1 className="text-5xl mb-12 font-light">Bot: {bot.name}</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-8">
         <div className="space-y-4">
           <h2 className="text-3xl font-light mb-6">Statystyki:</h2>
           <div className="text-xl font-light">Liczba gier: {bot.totalGames}</div>
           <div className="text-xl font-light">Liczba wygranych: {bot.wins}</div>
+          <div className="text-xl font-light">Procent wygranych: {((bot.wins / bot.totalGames) * 100).toFixed(1)}%</div>
         </div>
         <div className="space-y-4">
           <h2 className="text-3xl font-light mb-6">Historia turniejów:</h2>
-          {bot.tournaments.map((tournament, index) => (
+          {matches.map((match) => (
             <div 
-              key={index} 
+              key={match.id} 
               className="bg-button-bg p-4 rounded flex justify-between cursor-pointer hover:bg-button-hover transition-colors"
-              onClick={() => onNavigate('tournament-tree')}
+              onClick={() => onNavigate('tournament-match', { 
+                tournamentId: match.tournamentId,
+                matchId: match.id 
+              })}
             >
-              <div className="hover:underline">{tournament.name}</div>
-              <div>{tournament.date}</div>
+              <div className="hover:underline">{match.tournamentName}</div>
+              <div>{new Date(match.date).toLocaleString()}</div>
             </div>
           ))}
         </div>
         <button 
-          onClick={() => onNavigate('bots')}
+          onClick={handleDeleteBot}
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
         >
           Usuń bota
@@ -495,81 +886,216 @@ const BotDetailsScreen = ({ onNavigate }) => {
 };
 
 const JoinTournamentScreen = ({ onNavigate }) => {
+  const [accessCode, setAccessCode] = useState('');
+  const [error, setError] = useState('');
+
+  const handleJoin = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post('/tournaments/join', { accessCode });
+      onNavigate('select-bot', { 
+        tournamentId: response.data.tournamentId,
+        gameType: response.data.gameType 
+      });
+    } catch (err) {
+      setError('Nieprawidłowy kod dostępu');
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournaments" />
       <h1 className="text-5xl mb-12 font-light">Dołącz do turnieju</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleJoin} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Kod dostępu:</label>
           <input 
             type="text" 
+            value={accessCode}
+            onChange={(e) => setAccessCode(e.target.value)}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
         <button 
-          onClick={() => onNavigate('select-bot')}
+          type="submit"
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
         >
-          Zmień
+          Dołącz
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
 const SelectBotScreen = ({ onNavigate }) => {
-  const tournamentInfo = {
-    name: "testturniej1",
-    game: "Kółko i krzyżyk",
+  const [tournamentInfo, setTournamentInfo] = useState(null);
+  const [availableBots, setAvailableBots] = useState([]);
+  const [selectedBotId, setSelectedBotId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const tournamentId = params.get('tournamentId');
+        const gameType = params.get('gameType');
+
+        const tournamentResponse = await api.get(`/tournaments/${tournamentId}`);
+        setTournamentInfo(tournamentResponse.data);
+
+        const botsResponse = await api.get(`/bots`, {
+          params: { gameType }
+        });
+        setAvailableBots(botsResponse.data);
+        
+        if (botsResponse.data.length > 0) {
+          setSelectedBotId(botsResponse.data[0].id);
+        }
+      } catch (err) {
+        setError('Nie udało się pobrać danych');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleJoin = async () => {
+    if (!selectedBotId) {
+      setError('Proszę wybrać bota');
+      return;
+    }
+
+    try {
+      await api.post(`/tournaments/${tournamentInfo.id}/participants`, {
+        botId: selectedBotId
+      });
+      onNavigate('tournaments');
+    } catch (err) {
+      setError('Nie udało się dołączyć do turnieju');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-primary-bg text-white">
+        Ładowanie...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="join-tournament" />
-      <h1 className="text-5xl mb-12 font-light">Dołączasz do turnieju {tournamentInfo.name}</h1>
+      <h1 className="text-5xl mb-12 font-light">
+        Dołączasz do turnieju {tournamentInfo?.name}
+      </h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
-        <div className="text-2xl font-light mb-8">Gra: {tournamentInfo.game}</div>
-        <div>
-          <label className="text-2xl font-light">Wybierz bota:</label>
-          <select className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light">
-            <option value="testbot2">testbot2</option>
-          </select>
+        <div className="text-2xl font-light mb-8">
+          Gra: {tournamentInfo?.game}
         </div>
-        <button 
-          onClick={() => onNavigate('tournaments')}
-          className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
-        >
-          Dołącz
-        </button>
+        
+        {availableBots.length > 0 ? (
+          <>
+            <div>
+              <label className="text-2xl font-light">Wybierz bota:</label>
+              <select 
+                value={selectedBotId}
+                onChange={(e) => setSelectedBotId(e.target.value)}
+                className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+              >
+                {availableBots.map(bot => (
+                  <option key={bot.id} value={bot.id}>
+                    {bot.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button 
+              onClick={handleJoin}
+              className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
+            >
+              Dołącz
+            </button>
+          </>
+        ) : (
+          <div className="text-xl font-light text-center">
+            Nie masz dostępnych botów dla tej gry.
+            <button
+              onClick={() => onNavigate('add-bot')}
+              className="block w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
+            >
+              Dodaj nowego bota
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 const ManageTournamentScreen = ({ onNavigate }) => {
-  const tournamentData = {
-    name: "testturniej1",
-    description: "",
-    startTime: "2024-11-13T14:30",
-    playerLimit: 8,
-    participants: [
-      "Jakub",
-      "Adam",
-      "Michał"
-    ]
+  const [tournament, setTournament] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchTournament = async () => {
+      try {
+        const tournamentId = new URLSearchParams(window.location.search).get('id');
+        const data = await api.get(`/tournaments/${tournamentId}`);
+        setTournament(data.data);
+      } catch (err) {
+        setError('Nie udało się pobrać danych turnieju');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTournament();
+  }, []);
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/tournaments/${tournament.id}`, tournament);
+      onNavigate('tournaments');
+    } catch (err) {
+      setError('Nie udało się zaktualizować turnieju');
+    }
   };
+
+  const handleRemoveParticipant = async (participantId) => {
+    try {
+      await api.delete(`/tournaments/${tournament.id}/participants/${participantId}`);
+      setTournament({
+        ...tournament,
+        participants: tournament.participants.filter(p => p.id !== participantId)
+      });
+    } catch (err) {
+      setError('Nie udało się usunąć uczestnika');
+    }
+  };
+
+  if (loading) return <div className="text-center">Ładowanie...</div>;
+  if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournaments" />
-      <h1 className="text-5xl mb-12 font-light">Zarządzaj: {tournamentData.name}</h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      <h1 className="text-5xl mb-12 font-light">Zarządzaj: {tournament.name}</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleUpdate} className="w-full max-w-[80%] space-y-6">
         <div>
           <label className="text-2xl font-light">Nazwa:</label>
           <input 
             type="text"
-            value={tournamentData.name}
+            value={tournament.name}
+            onChange={(e) => setTournament({...tournament, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -577,7 +1103,8 @@ const ManageTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Opis:</label>
           <input 
             type="text"
-            value={tournamentData.description}
+            value={tournament.description}
+            onChange={(e) => setTournament({...tournament, description: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -585,7 +1112,8 @@ const ManageTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Czas rozpoczęcia:</label>
           <input 
             type="datetime-local"
-            value={tournamentData.startTime}
+            value={tournament.startTime}
+            onChange={(e) => setTournament({...tournament, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
@@ -593,16 +1121,19 @@ const ManageTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Limit graczy:</label>
           <input 
             type="number"
-            value={tournamentData.playerLimit}
+            value={tournament.playerLimit}
+            onChange={(e) => setTournament({...tournament, playerLimit: parseInt(e.target.value)})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
         </div>
         <div className="space-y-4">
           <label className="text-2xl font-light">Uczestnicy:</label>
-          {tournamentData.participants.map((participant, index) => (
-            <div key={index} className="flex justify-between items-center bg-button-bg p-4 rounded">
-              <span className="text-xl font-light">{participant}</span>
+          {tournament.participants.map((participant) => (
+            <div key={participant.id} className="flex justify-between items-center bg-button-bg p-4 rounded">
+              <span className="text-xl font-light">{participant.username}</span>
               <button 
+                type="button"
+                onClick={() => handleRemoveParticipant(participant.id)}
                 className="bg-button-hover px-6 py-2 rounded hover:bg-button-bg"
               >
                 Usuń
@@ -612,86 +1143,210 @@ const ManageTournamentScreen = ({ onNavigate }) => {
         </div>
         <div className="flex justify-between mt-8">
           <button 
-            onClick={() => onNavigate('tournaments')}
+            type="button"
+            onClick={async () => {
+              try {
+                await api.delete(`/tournaments/${tournament.id}`);
+                onNavigate('tournaments');
+              } catch (err) {
+                setError('Nie udało się anulować turnieju');
+              }
+            }}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
           >
             Anuluj turniej
           </button>
           <button 
-            onClick={() => onNavigate('tournament-tree')}
+            type="button"
+            onClick={async () => {
+              try {
+                await api.post(`/tournaments/${tournament.id}/start`);
+                onNavigate('tournament-tree', { tournamentId: tournament.id });
+              } catch (err) {
+                setError('Nie udało się rozpocząć turnieju');
+              }
+            }}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
           >
             Rozpocznij turniej
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
 
-const TournamentMatchScreen = ({ onNavigate }) => {
+const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => {
+  const [match, setMatch] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    const fetchMatch = async () => {
+      try {
+        console.log('Fetching match with params:', { tournamentId, matchId });
+        const response = await api.get(`/tournaments/${tournamentId}/matches/${matchId}`);
+        console.log('Match response:', response);
+        setMatch(response.data);
+      } catch (err) {
+        console.error('Error fetching match:', err);
+        setError('Nie udało się pobrać danych meczu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    console.log("t-id: " + tournamentId + " m-id: " + matchId)
+
+    if (tournamentId && matchId) {
+      fetchMatch();
+    }
+  }, [tournamentId, matchId]);
+
+  const handleRunMatch = async () => {
+    setIsRunning(true);
+    try {
+      await api.put(`/tournaments/${tournamentId}/matches/${matchId}/run`);
+      const response = await api.get(`/tournaments/${tournamentId}/matches/${matchId}`);
+      setMatch(response.data);
+    } catch (err) {
+      console.error('Error running match:', err);
+      setError('Nie udało się uruchomić meczu');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  if (loading) return <div className="text-center">Ładowanie...</div>;
+  if (!match) return <div className="text-center">Nie znaleziono meczu</div>;
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
-      <BackButton onNavigate={onNavigate} to="tournament-tree" />
-      <h1 className="text-5xl mb-12 font-light">Mecz: Adam vs Michał</h1>
+      <BackButton onNavigate={onNavigate} to="tournament-tree" tournamentId={tournamentId} />
+      <h1 className="text-5xl mb-12 font-light">
+        Mecz {match.game_num}: {match.players.bot1} vs {match.players.bot2}
+      </h1>
       <div className="w-full max-w-[80%] space-y-6">
-        <h2 className="text-3xl font-light text-center">Turniej o Złotą Kredę</h2>
-        <div className="text-2xl font-light text-center mb-12">Wygrana:</div>
+        <div className="text-2xl font-light text-center mb-12">
+          Stan: {match.winner ? `Zwycięzca: ${match.winner}` : 'Mecz w toku'}
+        </div>
+        
+        {!match.winner && (
+          <button
+            onClick={handleRunMatch}
+            disabled={isRunning}
+            className="w-full bg-button-bg hover:bg-button-bg/80 disabled:opacity-50 disabled:cursor-not-allowed py-4 px-8 rounded-lg text-xl font-light transition-colors"
+          >
+            {isRunning ? 'Uruchamianie meczu...' : 'Uruchom mecz'}
+          </button>
+        )}
+
+        {error && (
+          <div className="text-red-500 text-center mb-4">
+            {error}
+          </div>
+        )}
+
         <h3 className="text-2xl font-light mb-4">Historia ruchów:</h3>
-        <div className="h-64 bg-button-bg rounded"></div>
+        <div className="h-64 bg-button-bg rounded p-4 overflow-auto">
+          {match.moves && match.moves.length > 0 ? (
+            <pre className="font-mono text-sm">
+              {JSON.stringify(match.moves, null, 2)}
+            </pre>
+          ) : (
+            <div className="text-center">Brak historii ruchów</div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-const TournamentTreeScreen = ({ onNavigate }) => {
-  const TournamentNode = ({ label, players }) => (
+const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
+  console.log('TournamentTreeScreen props:', { onNavigate, tournamentId });
+  const [tournament, setTournament] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchTournamentData = async () => {
+      try {
+        console.log('Tournament id: ' + tournamentId);
+        const tournamentResponse = await api.get(`/tournaments/${tournamentId}`);
+        const tournamentData = tournamentResponse.data;
+        const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches`);
+        const matchesData = matchesResponse.data;
+
+        setTournament(tournamentData);
+        setMatches(matchesData);
+      } catch (err) {
+        console.error('Error fetching tournament:', err);
+        setError('Nie udało się pobrać danych turnieju');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTournamentData();
+  }, [tournamentId]);
+
+  const TournamentNode = ({ match }) => (
     <div 
       className="bg-button-bg px-8 py-2 rounded cursor-pointer hover:bg-button-hover transition-colors"
-      onClick={() => onNavigate('tournament-match')}
+      onClick={() => onNavigate('tournament-match', { tournamentId: tournamentId, matchId: match._id })}
     >
-      {players ? 
-        <div className="text-center hover:underline">{players[0]} vs {players[1]}</div> :
-        <div>{label}</div>
-      }
+      <div className="text-center hover:underline">
+        Mecz {match.game_num}: {match.players.bot1} vs {match.players.bot2}
+        {match.winner && <span className="ml-2">(Zwycięzca: {match.winner})</span>}
+      </div>
     </div>
   );
+
+  if (loading) return <div className="text-center">Ładowanie...</div>;
+  if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournaments" />
-      <h1 className="text-5xl mb-4 font-light">Turniej: testturniej1</h1>
-      <div className="text-2xl font-light mb-2">Rozpoczęcie: 13.11.2024 14:30</div>
-      <div className="text-2xl font-light mb-12">Kod: 7590</div>
+      <h1 className="text-5xl mb-4 font-light">Turniej: {tournament.name}</h1>
+      <div className="text-2xl font-light mb-2">
+        Rozpoczęcie: {new Date(tournament.start_date).toLocaleString()}
+      </div>
+      <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
         <div className="flex flex-col items-center space-y-12">
-          <TournamentNode label="Finał" players={['Adam', 'Jakub']} />
-          <div className="flex justify-around w-full">
-            <TournamentNode label="P-finał" players={['Adam', 'Michał']} />
-            <TournamentNode label="P-finał" players={['Jakub', 'Olek']} />
-          </div>
-          <div className="flex justify-around w-full">
-            <TournamentNode label="Ć-finał" players={['Adam', 'Sebek']} />
-            <TournamentNode label="Ć-finał" players={['Michał', 'Maciej']} />
-            <TournamentNode label="Ć-finał" players={['Jakub', 'Łukasz']} />
-            <TournamentNode label="Ć-finał" players={['Olek', 'Bartek']} />
-          </div>
+          {matches.map((match) => (
+            <TournamentNode key={match._id} match={match} />
+          ))}
         </div>
-        <div className="flex justify-center mt-12">
-          <button 
-            onClick={() => onNavigate('manage-tournament')}
-            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
-          >
-            Zarządzaj
-          </button>
-        </div>
+        {tournament.creator === localStorage.getItem('userId') && (
+          <div className="flex justify-center mt-12">
+            <button 
+              onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
+              className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+            >
+              Zarządzaj
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
+
+
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('login');
+  const [screenParams, setScreenParams] = useState({}); 
+
+  const handleNavigation = (screen, params = {}) => {
+    setCurrentScreen(screen);
+    setScreenParams(params);
+  };
 
   const screens = {
     'login': LoginScreen,
@@ -711,9 +1366,16 @@ const App = () => {
     'tournament-tree': TournamentTreeScreen,
   };
 
-  const CurrentComponent = screens[currentScreen];
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token && !['login', 'register'].includes(currentScreen)) {
+      setCurrentScreen('login');
+      setScreenParams({});
+    }
+  }, [currentScreen]);
 
-  return <CurrentComponent onNavigate={setCurrentScreen} />;
+  const CurrentComponent = screens[currentScreen];
+  return <CurrentComponent onNavigate={handleNavigation} {...screenParams} />;
 };
 
 export default App;
