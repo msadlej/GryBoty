@@ -18,6 +18,9 @@ class MongoDB:
     def get_all_bots(self) -> List[Dict]:
         return list(self.db.bots.find())
 
+    def get_all_game_types(self) -> List[Dict]:
+        return list(self.db.game_types.find())
+
 
 class User:
     def __init__(self, db: MongoDB):
