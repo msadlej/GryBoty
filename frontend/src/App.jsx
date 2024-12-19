@@ -471,21 +471,23 @@ const CreateTournamentScreen = ({ onNavigate }) => {
     startTime: '',
     playerLimit: ''
   });
-  const [games, setGames] = useState([]);
+  // const [games, setGames] = useState([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const response = await api.get('/tournaments/');
-        setGames(response.data);
-      } catch (err) {
-        setError('Nie udało się pobrać listy gier');
-      }
-    };
+  // useEffect(() => {
+  //   const fetchGames = async () => {
+  //     try {
+  //       const response = await api.get('/tournaments/');
+  //       setGames(response.data);
+  //     } catch (err) {
+  //       setError('Nie udało się pobrać listy gier');
+  //     }
+  //   };
 
-    fetchGames();
-  }, []);
+  //   fetchGames();
+  // }, []);
+
+  const games = ["Kółko i krzyżyk", "Czwórki", "Warcaby"];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -529,7 +531,8 @@ const CreateTournamentScreen = ({ onNavigate }) => {
             onChange={(e) => setFormData({...formData, game: e.target.value})}
           >
             {games.map(game => (
-              <option key={game.id} value={game.id}>{game.name}</option>
+              // <option key={game.id} value={game.id}>{game.name}</option>
+              <option key={game}>{game}</option>
             ))}
           </select>
         </div>
