@@ -1,11 +1,10 @@
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.utils.authentication import get_current_active_user
 from app.models.tournament import get_all_tournaments
-from app.schemas.user import UserModel, AccountType
+from app.schemas.user import AccountType, UserModel
 from app.schemas.tournament import TournamentModel
-from fastapi import HTTPException, status
 from app.models.user import get_all_users
 from app.models.bot import get_all_bots
-from fastapi import APIRouter, Depends
 from app.schemas.bot import BotModel
 
 
