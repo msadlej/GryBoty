@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from pyobjectID import MongoObjectId
+from app.schemas.bot import BotModel
 
 
 class MatchModel(BaseModel):
@@ -7,6 +8,6 @@ class MatchModel(BaseModel):
 
     id: MongoObjectId = Field(alias="_id")
     game_num: int
-    players: dict[str, MongoObjectId]
-    moves: list[str]
-    winner: MongoObjectId | None
+    players: dict[str, BotModel] | None = None
+    moves: list[str] | None = None
+    winner: BotModel | None = None

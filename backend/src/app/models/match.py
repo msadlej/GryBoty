@@ -1,118 +1,99 @@
-from app.models.tournament import get_tournament_by_id
-from app.schemas.tournament import TournamentModel
-from database.main import MongoDB, Match, Bot
-from app.models.bot import get_bot_by_id
+from app.models.bot import get_bot_by_id, convert_bot
+from database.main import MongoDB, Bot, Match
 from app.schemas.match import MatchModel
-from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
 from bson import ObjectId
 from typing import Any
 
 
-def get_match_by_id(
-    current_user: UserModel, tournament_id: str, match_id: str
-) -> MatchModel | None:
+def get_match_by_id(match_id: str) -> dict[str, Any] | None:
     """
     Retrieves a match from the database by its ID.
-    Returns None if the match does not exist or the user does not have access to it.
+    Returns None if the match does not exist.
     """
 
     db = MongoDB()
-    matches = Match(db)
-    match: dict[str, Any] | None = matches.get_match_by_id(ObjectId(match_id))
-    tournament: TournamentModel | None = get_tournament_by_id(
-        current_user, tournament_id
+    matches_collection = Match(db)
+    match: dict[str, Any] | None = matches_collection.get_match_by_id(
+        ObjectId(match_id)
     )
 
-    return MatchModel(**match) if match is not None and tournament is not None else None
+    return match
 
 
-def get_matches_by_tournament(
-    current_user: UserModel, tournament_id: str
-) -> list[MatchModel] | None:
+def convert_match(match_dict: dict[str, Any]) -> MatchModel:
     """
-    Retrieves all matches from the database that belong to a specific tournament.
-    Returns None if the tournament does not exist or the user does not have access to it.
+    Converts a dictionary to a MatchModel object.
     """
 
-    tournament: TournamentModel | None = get_tournament_by_id(
-        current_user, tournament_id
-    )
+    for key, value in match_dict["players"].items():
+        if value is not None:
+            bot: dict[str, Any] | None = get_bot_by_id(value)
+            bot.pop("game_type")
+            match_dict["players"][key] = bot
 
-    return (
-        [
-            match
-            for match_id in tournament.matches
-            if (match := get_match_by_id(current_user, tournament_id, match_id))
-            is not None
-        ]
-        if tournament is not None
-        else None
-    )
+    if match_dict["winner"] is not None:
+        winner: dict[str, Any] | None = get_bot_by_id(match_dict["winner"])
+        winner.pop("game_type")
+        match_dict["winner"] = winner
+
+    return MatchModel(**match_dict)
 
 
-def get_bots_by_tournament(
-    current_user: UserModel, tournament: TournamentModel
-) -> list[BotModel] | None:
+def get_bots_by_match(match_id: str) -> dict[str, BotModel | None] | None:
     """
-    Retrieves all bots that are participating in a specific tournament.
-    Returns None if the tournament does not exist or the user does not have access to it.
+    Retrieves all bots from the database that participate in a specific match.
+    Returns None if the match does not exist.
     """
 
-    matches: list[MatchModel] | None = get_matches_by_tournament(
-        current_user, tournament.id
-    )
-    if matches is None:
+    match: dict[str, Any] | None = get_match_by_id(match_id)
+    if match is None:
         return None
 
-    return [
-        bot
-        for match in matches
-        for bot_id in match.players.values()
-        if (bot := get_bot_by_id(bot_id)) is not None
-    ]
+    result: dict[str, BotModel] = {}
+    for key, value in match["players"].items():
+        if value is not None:
+            bot: dict[str, Any] | None = get_bot_by_id(value)
+
+            if bot is None:
+                result[key] = None
+            else:
+                bot.pop("game_type")
+                result[key] = BotModel(**bot)
+
+    return result
 
 
 def update_match(
-    current_user: UserModel,
-    tournament_id: str,
-    match_id: str,
+    match: MatchModel,
     docker_logs: dict[str, Any],
 ) -> dict[str, BotModel] | None:
     """
     Runs a match and updates the database with the results.
     """
 
-    match: MatchModel | None = get_match_by_id(current_user, tournament_id, match_id)
-    if match is None:
-        return None
-
-    winner_code: str = docker_logs["winner"]
     moves: list[str] = docker_logs["moves"]
+    winner_code: str = docker_logs["winner"]
+    if winner_code == None:
+        return None  # TODO: Update stats after a draw
 
-    bot_1: BotModel | None = get_bot_by_id(match.players["bot1"])
-    bot_2: BotModel | None = get_bot_by_id(match.players["bot2"])
+    bot_1: dict[str, Any] | None = get_bot_by_id(match.players["bot1"].id)
+    bot_2: dict[str, Any] | None = get_bot_by_id(match.players["bot2"].id)
     if bot_1 is None or bot_2 is None:
         return None
 
-    winner_id, loser_id = (
-        (bot_1.id, bot_2.id) if winner_code == bot_1.code else (bot_2.id, bot_1.id)
-    )
+    winner, loser = (bot_1, bot_2) if winner_code == bot_1["code"] else (bot_2, bot_1)
+    winner: BotModel = convert_bot(winner)
+    loser: BotModel = convert_bot(loser)
 
     db = MongoDB()
-    matches = Match(db)
-    matches.set_winner(ObjectId(match_id), ObjectId(winner_id))
+    matches_collection = Match(db)
+    matches_collection.set_winner(ObjectId(match.id), ObjectId(winner.id))
     for move in moves:
-        matches.add_move(ObjectId(match_id), move)
+        matches_collection.add_move(ObjectId(match.id), move)
 
-    bots = Bot(db)
-    bots.update_stats(ObjectId(winner_id), won=True)
-    bots.update_stats(ObjectId(loser_id), won=False)
+    bots_collection = Bot(db)
+    bots_collection.update_stats(ObjectId(winner.id), won=True)
+    bots_collection.update_stats(ObjectId(loser.id), won=False)
 
-    winner: BotModel | None = get_bot_by_id(winner_id)
-    loser: BotModel | None = get_bot_by_id(loser_id)
-    return (
-        {"winner": winner, "loser": loser}
-        if winner is not None and loser is not None
-        else None
-    )
+    return get_bots_by_match(match.id)
