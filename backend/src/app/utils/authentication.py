@@ -40,11 +40,13 @@ def authenticate_user(username: str, password: str) -> UserModel | None:
     Returns None if the user is not found or the password is incorrect.
     """
 
-    user: UserModel | None = get_user_by_username(username)
+    user: dict[str, Any] | None = get_user_by_username(username)
 
-    if user is None or not verify_password(password, user.password_hash):
+    if user is None or not verify_password(password, user["password_hash"]):
         return None
-    return user
+
+    user.pop("bots")
+    return UserModel(**user)
 
 
 def create_access_token(
@@ -90,11 +92,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     except InvalidTokenError:
         raise credentials_exception
 
-    user: UserModel | None = get_user_by_username(token_data.username)
+    user: dict[str, Any] | None = get_user_by_username(token_data.username)
     if user is None:
         raise credentials_exception
 
-    return user
+    user.pop("bots")
+    return UserModel(**user)
 
 
 async def get_current_active_user(

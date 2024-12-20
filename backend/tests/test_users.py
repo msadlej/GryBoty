@@ -25,21 +25,11 @@ def test_account_type():
         AccountType("invalid")
 
 
-@pytest.mark.filterwarnings("ignore:`__get_validators__` is deprecated")
-def test_user():
-    user_dict = {
-        "_id": ObjectId(),
-        "username": "username",
-        "password_hash": "password_hash",
-        "account_type": "standard",
-        "bots": [ObjectId()],
-        "is_banned": True,
-    }
-
+def test_user(user_dict):
     user = UserModel(**user_dict)
 
+    assert ObjectId(user.id) == user_dict["_id"]
     assert user.username == "username"
-    assert user.password_hash == "password_hash"
     assert user.account_type == AccountType.STANDARD
-    assert user.bots
+    assert user.bots == user_dict["bots"]
     assert user.is_banned

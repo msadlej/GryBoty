@@ -1,23 +1,59 @@
 from app.utils.authentication import get_password_hash
-from app.schemas.user import UserModel, AccountType
+from app.schemas.game import GameModel
+from app.schemas.bot import BotModel
+from app.schemas.user import UserModel
 from bson import ObjectId
 import pytest
+
+
+@pytest.fixture
+def game_dict():
+    return {
+        "_id": ObjectId(),
+        "name": "Test Game",
+        "description": "Test Description",
+    }
+
+
+@pytest.fixture
+def bot_dict(game_dict):
+    return {
+        "_id": ObjectId(),
+        "name": "Test Bot",
+        "is_validated": True,
+        "games_played": 4,
+        "wins": 3,
+        "losses": 2,
+        "total_tournaments": 1,
+        "tournaments_won": 0,
+        "game_type": GameModel(**game_dict),
+        "code": "path/to/bot.py",
+    }
+
+
+@pytest.fixture
+def user_dict(bot_dict):
+    return {
+        "_id": ObjectId(),
+        "username": "username",
+        "account_type": "standard",
+        "bots": [BotModel(**bot_dict)],
+        "is_banned": True,
+    }
 
 
 @pytest.fixture
 def patch_get_user_by_username(monkeypatch):
     def mock_get(username: str | None) -> UserModel | None:
         return (
-            UserModel(
-                **{
-                    "_id": ObjectId(),
-                    "username": "username",
-                    "password_hash": get_password_hash("password"),
-                    "account_type": AccountType.ADMIN,
-                    "bots": [],
-                    "is_banned": False,
-                }
-            )
+            {
+                "_id": ObjectId(),
+                "username": "username",
+                "password_hash": get_password_hash("password"),
+                "account_type": "standard",
+                "bots": [],
+                "is_banned": True,
+            }
             if username == "username"
             else None
         )
