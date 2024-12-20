@@ -1,3 +1,4 @@
+from app.schemas.game import GameModel
 from pydantic import BaseModel, Field
 from pyobjectID import MongoObjectId
 
@@ -7,8 +8,7 @@ class BotModel(BaseModel):
 
     id: MongoObjectId = Field(alias="_id")
     name: str
-    game_type: MongoObjectId
-    code: str
+    game_type: GameModel | None = None
     is_validated: bool
     games_played: int
     wins: int
