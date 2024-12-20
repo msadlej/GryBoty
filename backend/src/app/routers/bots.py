@@ -29,4 +29,4 @@ async def read_bot_by_id(
             detail=f"Bot: {bot_id} not found.",
         )
 
-    return convert_bot(bot)
+    return convert_bot(bot, detail=True)

@@ -1,7 +1,6 @@
 from app.schemas.user import AccountType, UserModel
 from app.models.game import get_game_type_by_id
 from database.main import MongoDB, User, Bot
-from app.schemas.game import GameModel
 from app.schemas.bot import BotModel
 from bson import ObjectId
 from typing import Any
@@ -30,15 +29,17 @@ def get_bot_by_id(bot_id: str) -> dict[str, Any] | None:
     return bots_collection.get_bot_by_id(ObjectId(bot_id))
 
 
-def convert_bot(bot_dict: dict[str, Any]) -> BotModel:
+def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
     """
     Converts a dictionary to a BotModel object.
     """
 
-    game_type: GameModel | None = get_game_type_by_id(bot_dict["game_type"])
-    bot_dict.pop("game_type")
+    game_type: str = bot_dict.pop("game_type")
+    if not detail:
+        return BotModel(**bot_dict)
 
-    return BotModel(**bot_dict, game_type=game_type)
+    bot_dict["game_type"] = get_game_type_by_id(game_type)
+    return BotModel(**bot_dict)
 
 
 def get_own_bots(current_user: UserModel) -> list[BotModel]:
@@ -58,12 +59,7 @@ def get_own_bots(current_user: UserModel) -> list[BotModel]:
         bot for bot_id in user["bots"] if (bot := get_bot_by_id(bot_id)) is not None
     ]
 
-    result: list[BotModel] = []
-    for bot in bots:
-        bot.pop("game_type")
-        result.append(BotModel(**bot))
-
-    return result
+    return [convert_bot(bot) for bot in bots]
 
 
 def get_all_bots() -> list[BotModel]:
@@ -74,9 +70,4 @@ def get_all_bots() -> list[BotModel]:
     db = MongoDB()
     bots: list[dict[str, Any]] = db.get_all_bots()
 
-    result: list[BotModel] = []
-    for bot in bots:
-        bot.pop("game_type")
-        result.append(BotModel(**bot))
-
-    return result
+    return [convert_bot(bot) for bot in bots]
