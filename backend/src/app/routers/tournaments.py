@@ -36,7 +36,7 @@ async def read_tournament_by_id(
             detail=f"Tournament: {tournament_id} not found.",
         )
 
-    return convert_tournament(tournament)
+    return convert_tournament(tournament, detail=True)
 
 
 @router.get(

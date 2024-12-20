@@ -1,10 +1,10 @@
-from app.models.bot import get_bot_by_id, get_own_bots
+from app.models.bot import get_bot_by_id, convert_bot, get_own_bots
+from app.models.match import get_match_by_id, convert_match
+from app.models.user import get_user_by_id, convert_user
 from app.schemas.user import AccountType, UserModel
 from app.schemas.tournament import TournamentModel
 from app.models.game import get_game_type_by_id
 from database.main import MongoDB, Tournament
-from app.models.match import get_match_by_id
-from app.models.user import get_user_by_id
 from app.schemas.match import MatchModel
 from app.schemas.bot import BotModel
 from bson import ObjectId
@@ -58,31 +58,40 @@ def get_tournament_by_id(tournament_id: str) -> dict[str, Any] | None:
     return tournaments_collection.get_tournament_by_id(ObjectId(tournament_id))
 
 
-def convert_tournament(tournament_dict: dict[str, Any]) -> TournamentModel:
+def convert_tournament(
+    tournament_dict: dict[str, Any], detail: bool = False
+) -> TournamentModel:
     """
     Converts a tournament dictionary to a TournamentModel.
     """
 
-    tournament_dict["game_type"] = get_game_type_by_id(tournament_dict["game_type"])
+    game_type: str = tournament_dict.pop("game_type")
+    creator: str = tournament_dict.pop("creator")
+    participant_ids: list[str] = tournament_dict.pop("participants")
+    match_ids: list[str] = tournament_dict.pop("matches")
+    if not detail:
+        return TournamentModel(**tournament_dict)
 
-    user: dict[str, Any] = get_user_by_id(tournament_dict["creator"])
-    user.pop("bots")
-    tournament_dict["creator"] = user
+    tournament_dict["game_type"] = get_game_type_by_id(game_type)
 
-    participants: list[dict[str, Any]] = []
-    for bot_id in tournament_dict["participants"]:
+    user: dict[str, Any] | None = get_user_by_id(creator)
+    if user is not None:
+        tournament_dict["creator"] = convert_user(user)
+
+    participants: list[BotModel] = []
+    for bot_id in participant_ids:
         bot: dict[str, Any] | None = get_bot_by_id(bot_id)
-        bot.pop("game_type")
-        participants.append(bot)
+
+        if bot is not None:
+            participants.append(convert_bot(bot))
     tournament_dict["participants"] = participants
 
-    matches: list[dict[str, Any]] = []
-    for match_id in tournament_dict["matches"]:
+    matches: list[MatchModel] = []
+    for match_id in match_ids:
         match: dict[str, Any] | None = get_match_by_id(match_id)
-        match.pop("players")
-        match.pop("moves")
-        match.pop("winner")
-        matches.append(match)
+
+        if match is not None:
+            matches.append(convert_match(match))
     tournament_dict["matches"] = matches
 
     return TournamentModel(**tournament_dict)
@@ -98,14 +107,13 @@ def get_bots_by_tournament(tournament_id: str) -> list[BotModel] | None:
     if tournament is None:
         return None
 
-    result: list[BotModel] = []
-    for bot_id in tournament["participants"]:
-        bot: dict[str, Any] | None = get_bot_by_id(bot_id)
-        if bot is not None:
-            bot.pop("game_type")
-            result.append(BotModel(**bot))
+    bots: list[dict[str, Any]] = [
+        bot
+        for bot_id in tournament["participants"]
+        if (bot := get_bot_by_id(bot_id)) is not None
+    ]
 
-    return result
+    return [convert_bot(bot) for bot in bots]
 
 
 def get_matches_by_tournament(tournament_id: str) -> list[MatchModel] | None:
@@ -124,12 +132,7 @@ def get_matches_by_tournament(tournament_id: str) -> list[MatchModel] | None:
         if (match := get_match_by_id(match_id)) is not None
     ]
 
-    for match in matches:
-        match.pop("players")
-        match.pop("moves")
-        match.pop("winner")
-
-    return [MatchModel(**match) for match in matches]
+    return [convert_match(match) for match in matches]
 
 
 def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
@@ -150,15 +153,7 @@ def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
             tournaments_collection.get_tournaments_by_bot_id(ObjectId(bot.id))
         )
 
-    result: list[TournamentModel] = []
-    for tournament in tournaments:
-        tournament.pop("game_type")
-        tournament.pop("creator")
-        tournament.pop("participants")
-        tournament.pop("matches")
-        result.append(TournamentModel(**tournament))
-
-    return result
+    return [convert_tournament(tournament) for tournament in tournaments]
 
 
 def get_all_tournaments() -> list[TournamentModel]:
@@ -170,12 +165,4 @@ def get_all_tournaments() -> list[TournamentModel]:
     tournaments_collection = Tournament(db)
     tournaments: list[dict[str, Any]] = tournaments_collection.get_all_tournaments()
 
-    result: list[TournamentModel] = []
-    for tournament in tournaments:
-        tournament.pop("game_type")
-        tournament.pop("creator")
-        tournament.pop("participants")
-        tournament.pop("matches")
-        result.append(TournamentModel(**tournament))
-
-    return result
+    return [convert_tournament(tournament) for tournament in tournaments]
