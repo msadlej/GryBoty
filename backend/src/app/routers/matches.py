@@ -57,7 +57,7 @@ async def read_match_by_id(
             detail=f"Match: {match_id} not found.",
         )
 
-    return convert_match(match)
+    return convert_match(match, detail=True)
 
 
 @router.get(
@@ -69,7 +69,7 @@ async def read_bots_by_match_id(
     tournament_id: str,
     match_id: str,
 ):
-    bots: dict[str, BotModel | None] | None = get_bots_by_match(match_id)
+    bots: dict[str, BotModel] | None = get_bots_by_match(match_id)
 
     if bots is None or not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
@@ -95,8 +95,8 @@ async def run_match(
             detail="User does not have access to run this match.",
         )
 
-    match: dict[str, Any] | None = get_match_by_id(match_id)
-    if match is None:
+    match_dict: dict[str, Any] | None = get_match_by_id(match_id)
+    if match_dict is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Match: {match_id} not found.",
@@ -106,7 +106,7 @@ async def run_match(
     if docker_logs is None:
         raise HTTPException(status_code=500, detail="Error running Docker commands")
 
-    match: MatchModel = convert_match(match)
+    match: MatchModel = convert_match(match_dict, detail=True)
     result: dict[str, BotModel] | None = update_match(match, docker_logs)
 
     if result is None:
