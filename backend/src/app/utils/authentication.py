@@ -1,7 +1,7 @@
+from app.models.user import get_user_by_username, convert_user
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from app.models.user import get_user_by_username
 from app.schemas.user import TokenData, UserModel
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
@@ -45,8 +45,7 @@ def authenticate_user(username: str, password: str) -> UserModel | None:
     if user is None or not verify_password(password, user["password_hash"]):
         return None
 
-    user.pop("bots")
-    return UserModel(**user)
+    return convert_user(user)
 
 
 def create_access_token(
@@ -96,8 +95,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     if user is None:
         raise credentials_exception
 
-    user.pop("bots")
-    return UserModel(**user)
+    return convert_user(user)
 
 
 async def get_current_active_user(

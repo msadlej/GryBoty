@@ -1,5 +1,7 @@
+from app.models.bot import get_bot_by_id, convert_bot
 from database.main import MongoDB, User
 from app.schemas.user import UserModel
+from bson import ObjectId
 from typing import Any
 
 
@@ -14,7 +16,7 @@ def get_user_by_id(user_id: str | None = None) -> dict[str, Any] | None:
 
     db = MongoDB()
     users_collection = User(db)
-    return users_collection.get_user_by_id(user_id)
+    return users_collection.get_user_by_id(ObjectId(user_id))
 
 
 def get_user_by_username(username: str | None = None) -> dict[str, Any] | None:
@@ -31,6 +33,24 @@ def get_user_by_username(username: str | None = None) -> dict[str, Any] | None:
     return users_collection.get_user_by_username(username)
 
 
+def convert_user(user_dict: dict[str, Any], detail: bool = False) -> UserModel:
+    """
+    Converts a dictionary to a UserModel object.
+    """
+
+    bots: list[str] = user_dict.pop("bots")
+    if not detail:
+        return UserModel(**user_dict)
+
+    user_dict["bots"] = [
+        convert_bot(bot)
+        for bot_id in bots
+        if (bot := get_bot_by_id(bot_id)) is not None
+    ]
+
+    return UserModel(**user_dict)
+
+
 def get_all_users() -> list[UserModel]:
     """
     Retrieves all users from the database
@@ -39,9 +59,4 @@ def get_all_users() -> list[UserModel]:
     db = MongoDB()
     users: list[dict[str, Any]] = db.get_all_users()
 
-    result: list[UserModel] = []
-    for user in users:
-        user.pop("bots")
-        result.append(UserModel(**user))
-
-    return result
+    return [convert_user(user) for user in users]
