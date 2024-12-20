@@ -1,4 +1,5 @@
 from app.schemas.user import Token, TokenData, AccountType, UserModel
+from app.models.user import convert_user
 from bson import ObjectId
 import pytest
 
@@ -33,3 +34,9 @@ def test_user(user_dict):
     assert user.account_type == AccountType.STANDARD
     assert user.bots == user_dict["bots"]
     assert user.is_banned
+
+
+def test_convert_user(user_dict):
+    user = convert_user(user_dict, detail=False)
+
+    assert user.bots is None

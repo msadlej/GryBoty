@@ -1,4 +1,4 @@
-from app.routers import users, tournaments, matches, bots, admin, games
+from app.routers import admin, tournaments, matches, users, bots, games
 from fastapi import FastAPI, Response
 import uvicorn
 
