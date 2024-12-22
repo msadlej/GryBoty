@@ -14,7 +14,7 @@ def check_bot_access(current_user: UserModel, bot_id: str) -> bool:
     if current_user.bots is None:
         current_user.bots = get_own_bots(current_user)
 
-    is_admin: bool = current_user.account_type == AccountType.ADMIN
+    is_admin: bool = current_user.account_type is AccountType.ADMIN
     return any(bot.id == bot_id for bot in current_user.bots) or is_admin
 
 

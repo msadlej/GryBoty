@@ -18,9 +18,9 @@ def test_account_type():
     premium_account = AccountType("premium")
     admin_account = AccountType("admin")
 
-    assert standard_account == AccountType.STANDARD
-    assert premium_account == AccountType.PREMIUM
-    assert admin_account == AccountType.ADMIN
+    assert standard_account is AccountType.STANDARD
+    assert premium_account is AccountType.PREMIUM
+    assert admin_account is AccountType.ADMIN
 
     with pytest.raises(ValueError):
         AccountType("invalid")
@@ -31,7 +31,7 @@ def test_user(user_dict):
 
     assert ObjectId(user.id) == user_dict["_id"]
     assert user.username == "username"
-    assert user.account_type == AccountType.STANDARD
+    assert user.account_type is AccountType.STANDARD
     assert user.bots == user_dict["bots"]
     assert user.is_banned
 
