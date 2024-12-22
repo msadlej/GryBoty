@@ -1,5 +1,5 @@
 [build-system]
-requires = ["fastapi[standard]", "passlib[bcrypt]", "pyjwt", "pymongo", "pyobjectid", "setuptools", "wheel", "pytest", "pytest-cov", "mypy", "flake8"]
+requires = ["fastapi[standard]", "passlib[bcrypt]", "pydantic-settings", "pyjwt", "pymongo", "pyobjectid", "setuptools", "wheel", "pytest", "pytest-cov", "mypy", "flake8"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
