@@ -33,3 +33,10 @@ class UserModel(BaseModel):
     account_type: AccountType
     bots: list[BotModel] | None = None
     is_banned: bool
+
+
+class UserCreate(BaseModel):
+    """Represents a user creation model"""
+
+    username: str
+    password: str

@@ -60,3 +60,16 @@ def get_all_users() -> list[UserModel]:
     users: list[dict[str, Any]] = db.get_all_users()
 
     return [convert_user(user) for user in users]
+
+
+def insert_user(username, password) -> dict[str, Any] | None:
+    """
+    Inserts a new user into the database.
+    """
+
+    db = MongoDB()
+    users_collection = User(db)
+    user_id: ObjectId = users_collection.create_user(username, password, "standard")
+    new_user: dict[str, Any] | None = get_user_by_id(str(user_id))
+
+    return new_user

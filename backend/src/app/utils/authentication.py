@@ -1,6 +1,6 @@
-from app.models.user import get_user_by_username, convert_user
+from app.models.user import get_user_by_username, convert_user, insert_user
 from datetime import datetime, timedelta, timezone
-from app.schemas.user import UserModel
+from app.schemas.user import UserModel, UserCreate
 from typing import Any
 from app.config import settings
 import jwt
@@ -62,3 +62,14 @@ def create_access_token(
     )
 
     return encoded_jwt
+
+
+def create_user(user_data: UserCreate) -> UserModel | None:
+    """
+    Create a new user.
+    """
+
+    hashed_password = get_password_hash(user_data.password)
+    user: dict[str, Any] | None = insert_user(user_data.username, hashed_password)
+
+    return convert_user(user) if user is not None else None
