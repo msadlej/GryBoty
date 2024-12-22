@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.utils.authentication import get_current_active_user
+from app.dependencies import get_current_active_user
+from app.models.bot import get_bot_by_id
 from app.schemas.match import MatchModel
 from app.schemas.user import UserModel
 from app.utils.docker import run_game
@@ -10,6 +11,7 @@ from app.models.match import (
     convert_match,
     get_bots_by_match,
     update_match,
+    process_logs,
 )
 from app.models.tournament import (
     check_tournament_creator,
@@ -102,17 +104,40 @@ async def run_match(
             detail=f"Match: {match_id} not found.",
         )
 
-    docker_logs: dict[str, Any] | None = run_game()
-    if docker_logs is None:
-        raise HTTPException(status_code=500, detail="Error running Docker commands")
-
     match: MatchModel = convert_match(match_dict, detail=True)
-    result: dict[str, BotModel] | None = update_match(match, docker_logs)
+    if match.players is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bots not found.",
+        )
 
-    if result is None:
+    bot_1: dict[str, Any] | None = get_bot_by_id(match.players["bot1"].id)
+    bot_2: dict[str, Any] | None = get_bot_by_id(match.players["bot2"].id)
+    if bot_1 is None or bot_2 is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bots not found.",
+        )
+
+    docker_logs: dict[str, Any] | None = run_game(bot_1["code"], bot_2["code"])
+    if docker_logs is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error running Docker commands",
+        )
+
+    moves, winner, loser = process_logs(match, docker_logs, bot_1, bot_2)
+    if winner is None or loser is None:
         raise HTTPException(
             status_code=status.HTTP_200_OK,
             detail=f"Match: {match_id} ended in a draw.",
+        )
+
+    result: dict[str, BotModel] | None = update_match(match, winner, loser, moves)
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bots not found.",
         )
 
     return result

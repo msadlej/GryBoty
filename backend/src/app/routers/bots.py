@@ -1,6 +1,6 @@
 from app.models.bot import check_bot_access, get_bot_by_id, convert_bot, get_own_bots
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.utils.authentication import get_current_active_user
+from app.dependencies import get_current_active_user
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
 from typing import Annotated, Any

@@ -1,11 +1,8 @@
+from app.utils.authentication import authenticate_user, create_access_token
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from app.dependencies import get_current_active_user
 from app.schemas.user import Token, UserModel
-from app.utils.authentication import (
-    authenticate_user,
-    create_access_token,
-    get_current_active_user,
-)
 
 
 router = APIRouter()

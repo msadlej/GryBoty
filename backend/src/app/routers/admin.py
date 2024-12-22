@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.utils.authentication import get_current_active_user
+from app.dependencies import get_current_active_user
 from app.models.tournament import get_all_tournaments
 from app.schemas.user import AccountType, UserModel
 from app.schemas.tournament import TournamentModel

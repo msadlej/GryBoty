@@ -64,33 +64,15 @@ def get_bots_by_match(match_id: str) -> dict[str, BotModel] | None:
 
 def update_match(
     match: MatchModel,
-    docker_logs: dict[str, Any],
+    winner: BotModel,
+    loser: BotModel,
+    moves: list[str],
 ) -> dict[str, BotModel] | None:
     """
-    Runs a match and updates the database with the results.
+    Updates the database with the results of a match.
+    Returns the winner and loser bots with updated stats.
+    Returns None if the bots do not exist.
     """
-
-    moves: list[str] = docker_logs["moves"]
-    winner_code: str | None = docker_logs["winner"]
-    if winner_code is None:
-        return None  # TODO: Update stats after a draw
-
-    if match.players is None:
-        return None
-
-    bot_1: dict[str, Any] | None = get_bot_by_id(match.players["bot1"].id)
-    bot_2: dict[str, Any] | None = get_bot_by_id(match.players["bot2"].id)
-    if bot_1 is None or bot_2 is None:
-        return None
-
-    if winner_code == bot_1["code"]:
-        winner: BotModel = convert_bot(bot_1)
-        loser: BotModel = convert_bot(bot_2)
-    elif winner_code == bot_2["code"]:
-        winner = convert_bot(bot_2)
-        loser = convert_bot(bot_1)
-    else:
-        return None
 
     db = MongoDB()
     matches_collection = Match(db)
@@ -111,3 +93,34 @@ def update_match(
         "winner": convert_bot(winner_dict),
         "loser": convert_bot(loser_dict),
     }
+
+
+def process_logs(
+    match: MatchModel,
+    docker_logs: dict[str, Any],
+    bot_1: dict[str, Any],
+    bot_2: dict[str, Any],
+) -> tuple[list[str], BotModel | None, BotModel | None]:
+    """
+    Processes the logs from a match and returns the moves, the winner and loser bots.
+    Returns None if the match ended in a draw.
+    """
+
+    moves: list[str] = docker_logs["moves"]
+    winner_code: str | None = docker_logs["winner"]
+    if winner_code is None:
+        return moves, None, None  # TODO: Update stats after a draw
+
+    if match.players is None:
+        match.players = get_bots_by_match(match.id)
+
+    if winner_code == bot_1["code"]:
+        winner: BotModel = convert_bot(bot_1)
+        loser: BotModel = convert_bot(bot_2)
+    elif winner_code == bot_2["code"]:
+        winner = convert_bot(bot_2)
+        loser = convert_bot(bot_1)
+    else:
+        return moves, None, None
+
+    return moves, winner, loser
