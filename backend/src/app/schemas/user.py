@@ -20,9 +20,9 @@ class TokenData(BaseModel):
 class AccountType(Enum):
     """Represents the type of an account"""
 
-    STANDARD: str = "standard"
-    PREMIUM: str = "premium"
-    ADMIN: str = "admin"
+    STANDARD = "standard"
+    PREMIUM = "premium"
+    ADMIN = "admin"
 
 
 class UserModel(BaseModel):
