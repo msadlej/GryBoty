@@ -1,16 +1,16 @@
 from app.routers import admin, tournaments, matches, users, bots, games
-from app.config import settings
-from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Response
+from app.config import settings
 import uvicorn
 
 
 app = FastAPI()
 app.include_router(admin.router)
 app.include_router(users.router)
+app.include_router(bots.router)
 app.include_router(tournaments.router)
 app.include_router(matches.router)
-app.include_router(bots.router)
 app.include_router(games.router)
 app.add_middleware(
     CORSMiddleware,

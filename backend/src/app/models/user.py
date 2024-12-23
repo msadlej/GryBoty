@@ -65,10 +65,15 @@ def get_all_users() -> list[UserModel]:
 def insert_user(username, password) -> dict[str, Any] | None:
     """
     Inserts a new user into the database.
+    Returns the new user if successful.
+    Returns None if the user already exists.
     """
 
     db = MongoDB()
     users_collection = User(db)
+    if get_user_by_username(username) is None:
+        return None
+
     user_id: ObjectId = users_collection.create_user(username, password, "standard")
     new_user: dict[str, Any] | None = get_user_by_id(str(user_id))
 
