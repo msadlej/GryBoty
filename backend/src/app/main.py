@@ -6,12 +6,12 @@ import uvicorn
 
 
 app = FastAPI()
-app.include_router(admin.router)
-app.include_router(users.router)
-app.include_router(bots.router)
-app.include_router(tournaments.router)
-app.include_router(matches.router)
-app.include_router(games.router)
+app.include_router(admin.router, tags=["admin"])
+app.include_router(users.router, tags=["users"])
+app.include_router(bots.router, tags=["bots"])
+app.include_router(tournaments.router, tags=["tournaments"])
+app.include_router(matches.router, tags=["matches"])
+app.include_router(games.router, tags=["games"])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
