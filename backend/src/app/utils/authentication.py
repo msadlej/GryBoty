@@ -64,12 +64,13 @@ def create_access_token(
     return encoded_jwt
 
 
-def create_user(user_data: UserCreate) -> UserModel | None:
+def create_user(user_data: UserCreate) -> UserModel:
     """
     Create a new user.
+    Returns the new user.
     """
 
     hashed_password = get_password_hash(user_data.password)
-    user: dict[str, Any] | None = insert_user(user_data.username, hashed_password)
+    user: dict[str, Any] = insert_user(user_data.username, hashed_password)
 
-    return convert_user(user) if user is not None else None
+    return convert_user(user)

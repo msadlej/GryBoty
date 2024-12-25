@@ -20,23 +20,14 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         )
 
     access_token: str = create_access_token(data={"sub": user.username})
+    return Token(access_token=access_token, token_type="bearer")
 
-    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/register", response_model=UserModel)
+async def register_user(user_data: UserCreate):
+    return create_user(user_data)
 
 
 @router.get("/users/me/", response_model=UserModel)
 async def read_users_me(current_user: UserModel = Depends(get_current_active_user)):
     return current_user
-
-
-@router.post("/register", response_model=UserModel)
-async def register_user(user_data: UserCreate):
-    user: UserModel | None = create_user(user_data)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User {user_data.username} already exists",
-        )
-
-    return user
