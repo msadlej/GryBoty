@@ -1,8 +1,9 @@
-from app.models.user import get_user_by_username, convert_user, insert_user
+from app.models.user import get_user_by_username, convert_user, insert_user, update_user
+from app.schemas.user import UserModel, UserCreate, UserUpdate
 from datetime import datetime, timedelta, timezone
-from app.schemas.user import UserModel, UserCreate
-from typing import Any
+from fastapi import HTTPException, status
 from app.config import settings
+from typing import Any
 import jwt
 
 
@@ -72,5 +73,24 @@ def create_user(user_data: UserCreate) -> UserModel:
 
     hashed_password = get_password_hash(user_data.password)
     user: dict[str, Any] = insert_user(user_data.username, hashed_password)
+
+    return convert_user(user)
+
+
+def update_user_password(current_user: UserModel, user_data: UserUpdate) -> UserModel:
+    """
+    Updates a user's password.
+    Returns the updated user.
+    """
+
+    if authenticate_user(current_user.username, user_data.old_password) is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    hashed_password = get_password_hash(user_data.new_password)
+    user: dict[str, Any] = update_user(current_user.id, hashed_password)
 
     return convert_user(user)

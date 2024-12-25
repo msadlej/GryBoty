@@ -40,3 +40,10 @@ class UserCreate(BaseModel):
 
     username: str
     password: str
+
+
+class UserUpdate(BaseModel):
+    """Represents a user update model"""
+
+    old_password: str
+    new_password: str

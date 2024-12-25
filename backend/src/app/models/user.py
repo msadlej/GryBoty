@@ -114,3 +114,15 @@ def ban_user_by_id(user_id: str) -> UserModel:
     users_collection.ban_user(ObjectId(user_id))
 
     return convert_user(get_user_by_id(user_id))
+
+
+def update_user(user_id: str, hashed_password: str) -> dict[str, Any]:
+    """
+    Updates a user's password in the database.
+    """
+
+    # db = MongoDB()
+    # users_collection = User(db)
+    # users_collection.update_user_password(ObjectId(user_id), hashed_password)  TODO: Implement in db
+
+    return get_user_by_id(user_id)
