@@ -10,6 +10,7 @@ from app.models.user import (
     convert_user,
     get_all_users,
     update_user_type,
+    ban_user_by_id,
 )
 
 
@@ -50,6 +51,19 @@ async def change_user_account_type(
         )
 
     return update_user_type(user_id, account_type)
+
+
+@router.put("/users/{user_id}/ban", response_model=UserModel)
+async def ban_user(
+    user_id: str,
+    current_user: UserModel = Depends(get_current_active_user),
+):
+    if current_user.account_type is not AccountType.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Admins only."
+        )
+
+    return ban_user_by_id(user_id)
 
 
 @router.get("/tournaments/", response_model=list[TournamentModel])

@@ -102,3 +102,15 @@ def update_user_type(user_id: str, account_type: AccountType) -> UserModel:
     # users_collection.update_user_type(user_id, account_type)  TODO: Implement in db
 
     return convert_user(get_user_by_id(user_id))
+
+
+def ban_user_by_id(user_id: str) -> UserModel:
+    """
+    Bans a user.
+    """
+
+    db = MongoDB()
+    users_collection = User(db)
+    users_collection.ban_user(ObjectId(user_id))
+
+    return convert_user(get_user_by_id(user_id))
