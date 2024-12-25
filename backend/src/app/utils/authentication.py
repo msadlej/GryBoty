@@ -1,10 +1,15 @@
-from app.models.user import get_user_by_username, convert_user, insert_user, update_user
 from app.schemas.user import UserModel, UserCreate, UserUpdate
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from app.config import settings
 from typing import Any
 import jwt
+from app.models.user import (
+    get_user_by_username,
+    convert_user,
+    insert_user,
+    update_user_password,
+)
 
 
 pwd_context = settings.pwd_context
@@ -77,7 +82,7 @@ def create_user(user_data: UserCreate) -> UserModel:
     return convert_user(user)
 
 
-def update_user_password(current_user: UserModel, user_data: UserUpdate) -> UserModel:
+def change_user_password(current_user: UserModel, user_data: UserUpdate) -> UserModel:
     """
     Updates a user's password.
     Returns the updated user.
@@ -91,6 +96,6 @@ def update_user_password(current_user: UserModel, user_data: UserUpdate) -> User
         )
 
     hashed_password = get_password_hash(user_data.new_password)
-    user: dict[str, Any] = update_user(current_user.id, hashed_password)
+    user: dict[str, Any] = update_user_password(current_user.id, hashed_password)
 
     return convert_user(user)

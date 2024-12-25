@@ -116,7 +116,7 @@ def ban_user_by_id(user_id: str) -> UserModel:
     return convert_user(get_user_by_id(user_id))
 
 
-def update_user(user_id: str, hashed_password: str) -> dict[str, Any]:
+def update_user_password(user_id: str, hashed_password: str) -> dict[str, Any]:
     """
     Updates a user's password in the database.
     """
