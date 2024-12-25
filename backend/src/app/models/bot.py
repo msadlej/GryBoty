@@ -1,6 +1,7 @@
 from app.schemas.user import AccountType, UserModel
 from app.models.game import get_game_type_by_id
 from database.main import MongoDB, User, Bot
+from fastapi import HTTPException, status
 from app.schemas.bot import BotModel
 from bson import ObjectId
 from typing import Any
@@ -18,15 +19,23 @@ def check_bot_access(current_user: UserModel, bot_id: str) -> bool:
     return any(bot.id == bot_id for bot in current_user.bots) or is_admin
 
 
-def get_bot_by_id(bot_id: str) -> dict[str, Any] | None:
+def get_bot_by_id(bot_id: str) -> dict[str, Any]:
     """
     Retrieves a bot from the database by its ID.
-    Returns None if the bot does not exist.
+    Raises an error if the bot does not exist.
     """
 
     db = MongoDB()
     bots_collection = Bot(db)
-    return bots_collection.get_bot_by_id(ObjectId(bot_id))
+    bot: dict[str, Any] | None = bots_collection.get_bot_by_id(ObjectId(bot_id))
+
+    if bot is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bot: {bot_id} not found.",
+        )
+
+    return bot
 
 
 def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
@@ -39,6 +48,7 @@ def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
         return BotModel(**bot_dict)
 
     bot_dict["game_type"] = get_game_type_by_id(game_type)
+
     return BotModel(**bot_dict)
 
 
@@ -55,11 +65,7 @@ def get_own_bots(current_user: UserModel) -> list[BotModel]:
     if user is None:
         return []
 
-    bots: list[dict[str, Any]] = [
-        bot for bot_id in user["bots"] if (bot := get_bot_by_id(bot_id)) is not None
-    ]
-
-    return [convert_bot(bot) for bot in bots]
+    return [convert_bot(get_bot_by_id(bot_id)) for bot_id in user["bots"]]
 
 
 def get_all_bots() -> list[BotModel]:

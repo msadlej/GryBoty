@@ -5,6 +5,7 @@ from app.schemas.user import AccountType, UserModel
 from app.schemas.tournament import TournamentModel
 from app.models.game import get_game_type_by_id
 from database.main import MongoDB, Tournament
+from fastapi import HTTPException, status
 from app.schemas.match import MatchModel
 from app.schemas.bot import BotModel
 from bson import ObjectId
@@ -47,15 +48,25 @@ def check_tournament_access(current_user: UserModel, tournament_id: str) -> bool
     return any((is_admin, is_creator, is_participant))
 
 
-def get_tournament_by_id(tournament_id: str) -> dict[str, Any] | None:
+def get_tournament_by_id(tournament_id: str) -> dict[str, Any]:
     """
     Retrieves a tournament from the database by its ID.
-    Returns None if the tournament does not exist.
+    Raises an error if the tournament does not exist.
     """
 
     db = MongoDB()
     tournaments_collection = Tournament(db)
-    return tournaments_collection.get_tournament_by_id(ObjectId(tournament_id))
+    tournament: dict[str, Any] | None = tournaments_collection.get_tournament_by_id(
+        ObjectId(tournament_id)
+    )
+
+    if tournament is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tournament: {tournament_id} not found.",
+        )
+
+    return tournament
 
 
 def convert_tournament(
@@ -72,67 +83,42 @@ def convert_tournament(
     if not detail:
         return TournamentModel(**tournament_dict)
 
-    tournament_dict["game_type"] = get_game_type_by_id(game_type)
-
-    user: dict[str, Any] | None = get_user_by_id(creator)
-    if user is not None:
-        tournament_dict["creator"] = convert_user(user)
-
     participants: list[BotModel] = []
     for bot_id in participant_ids:
-        bot: dict[str, Any] | None = get_bot_by_id(bot_id)
-
-        if bot is not None:
-            participants.append(convert_bot(bot))
-    tournament_dict["participants"] = participants
+        participants.append(convert_bot(get_bot_by_id(bot_id)))
 
     matches: list[MatchModel] = []
     for match_id in match_ids:
-        match: dict[str, Any] | None = get_match_by_id(match_id)
+        matches.append(convert_match(get_match_by_id(match_id)))
 
-        if match is not None:
-            matches.append(convert_match(match))
+    tournament_dict["game_type"] = get_game_type_by_id(game_type)
+    tournament_dict["creator"] = convert_user(get_user_by_id(creator))
+    tournament_dict["participants"] = participants
     tournament_dict["matches"] = matches
 
     return TournamentModel(**tournament_dict)
 
 
-def get_bots_by_tournament(tournament_id: str) -> list[BotModel] | None:
+def get_bots_by_tournament(tournament_id: str) -> list[BotModel]:
     """
     Retrieves all bots from the database that participate in a specific tournament.
-    Returns None if the tournament does not exist.
     """
 
-    tournament: dict[str, Any] | None = get_tournament_by_id(tournament_id)
-    if tournament is None:
-        return None
+    tournament: dict[str, Any] = get_tournament_by_id(tournament_id)
 
-    bots: list[dict[str, Any]] = [
-        bot
-        for bot_id in tournament["participants"]
-        if (bot := get_bot_by_id(bot_id)) is not None
-    ]
-
-    return [convert_bot(bot) for bot in bots]
+    return [convert_bot(get_bot_by_id(bot_id)) for bot_id in tournament["participants"]]
 
 
-def get_matches_by_tournament(tournament_id: str) -> list[MatchModel] | None:
+def get_matches_by_tournament(tournament_id: str) -> list[MatchModel]:
     """
     Retrieves all matches from the database that belong to a specific tournament.
-    Returns None if the tournament does not exist.
     """
 
-    tournament: dict[str, Any] | None = get_tournament_by_id(tournament_id)
-    if tournament is None:
-        return None
+    tournament: dict[str, Any] = get_tournament_by_id(tournament_id)
 
-    matches: list[dict[str, Any]] = [
-        match
-        for match_id in tournament["matches"]
-        if (match := get_match_by_id(match_id)) is not None
+    return [
+        convert_match(get_match_by_id(match_id)) for match_id in tournament["matches"]
     ]
-
-    return [convert_match(match) for match in matches]
 
 
 def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:

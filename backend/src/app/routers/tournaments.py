@@ -3,7 +3,7 @@ from app.dependencies import get_current_active_user
 from app.schemas.tournament import TournamentModel
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
-from typing import Annotated, Any
+from typing import Annotated
 from app.models.tournament import (
     check_tournament_access,
     get_tournament_by_id,
@@ -28,15 +28,13 @@ async def read_tournament_by_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     tournament_id: str,
 ):
-    tournament: dict[str, Any] | None = get_tournament_by_id(tournament_id)
-
-    if tournament is None or not check_tournament_access(current_user, tournament_id):
+    if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Tournament: {tournament_id} not found.",
         )
 
-    return convert_tournament(tournament, detail=True)
+    return convert_tournament(get_tournament_by_id(tournament_id), detail=True)
 
 
 @router.get(
@@ -47,12 +45,10 @@ async def read_bots_by_tournament_id(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     tournament_id: str,
 ):
-    bots: list[BotModel] | None = get_bots_by_tournament(tournament_id)
-
-    if bots is None or not check_tournament_access(current_user, tournament_id):
+    if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Tournament: {tournament_id} not found.",
         )
 
-    return bots
+    return get_bots_by_tournament(tournament_id)
