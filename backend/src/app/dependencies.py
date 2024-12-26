@@ -1,8 +1,8 @@
 from app.models.user import get_user_by_username, convert_user
 from app.schemas.user import TokenData, AccountType, UserModel
 from fastapi import Depends, HTTPException, status
-from typing import AsyncGenerator, Annotated, Any
 from jwt.exceptions import InvalidTokenError
+from typing import Annotated, Generator, Any
 from contextlib import contextmanager
 from database.main import MongoDB
 from app.config import settings
@@ -12,9 +12,7 @@ import jwt
 oauth2_scheme = settings.oauth2_scheme
 
 
-async def get_current_user(
-    db: MongoDB, token: Annotated[str, Depends(oauth2_scheme)]
-) -> UserModel:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
     """
     Get the current user from the token.
     """
@@ -38,11 +36,11 @@ async def get_current_user(
     except InvalidTokenError:
         raise credentials_exception
 
-    user: dict[str, Any] | None = get_user_by_username(db, token_data.username)
+    user: dict[str, Any] | None = get_user_by_username(token_data.username)
     if user is None:
         raise credentials_exception
 
-    return convert_user(db, user)
+    return convert_user(user)
 
 
 async def get_current_active_user(
@@ -76,10 +74,10 @@ async def get_current_admin(
 
 
 @contextmanager
-async def get_db_connection(
+def get_db_connection(
     connection_string: str = "mongodb://localhost:27017/",
-) -> AsyncGenerator[MongoDB, None]:
-    db = await MongoDB(connection_string)
+) -> Generator[MongoDB, None, None]:
+    db = MongoDB(connection_string)
     try:
         yield db
     finally:
