@@ -1,6 +1,6 @@
 from app.models.user import get_user_by_username, convert_user
+from app.schemas.user import TokenData, AccountType, UserModel
 from fastapi import Depends, HTTPException, status
-from app.schemas.user import TokenData, UserModel
 from jwt.exceptions import InvalidTokenError
 from typing import Annotated, Any
 from app.config import settings
@@ -56,14 +56,14 @@ async def get_current_active_user(
 
 
 async def get_current_admin(
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_active_user),
 ) -> UserModel:
     """
     Get the current admin.
     Raises an exception if the user is not an admin.
     """
 
-    if not current_user.is_admin:
+    if current_user.account_type is not AccountType.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Admins only."
         )
