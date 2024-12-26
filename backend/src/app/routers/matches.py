@@ -1,22 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.dependencies import get_current_active_user
+from fastapi import APIRouter, HTTPException, status
+from app.dependencies import UserDependency
 from app.models.bot import get_bot_by_id
 from app.schemas.match import MatchModel
-from app.schemas.user import UserModel
 from app.utils.docker import run_game
 from app.schemas.bot import BotModel
-from typing import Annotated, Any
+from typing import Any
+from app.models.tournament import (
+    check_tournament_creator,
+    check_tournament_access,
+    get_matches_by_tournament,
+)
 from app.models.match import (
     get_match_by_id,
     convert_match,
     get_bots_by_match,
     update_match,
     process_logs,
-)
-from app.models.tournament import (
-    check_tournament_creator,
-    check_tournament_access,
-    get_matches_by_tournament,
 )
 
 
@@ -28,7 +27,7 @@ router = APIRouter(prefix="/tournaments/{tournament_id}/matches")
     response_model=list[MatchModel],
 )
 async def read_matches_by_tournament_id(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
     tournament_id: str,
 ):
     if not check_tournament_access(current_user, tournament_id):
@@ -45,7 +44,7 @@ async def read_matches_by_tournament_id(
     response_model=MatchModel,
 )
 async def read_match_by_id(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
     tournament_id: str,
     match_id: str,
 ):
@@ -63,7 +62,7 @@ async def read_match_by_id(
     response_model=dict[str, BotModel],
 )
 async def read_bots_by_match_id(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
     tournament_id: str,
     match_id: str,
 ):
@@ -81,7 +80,7 @@ async def read_bots_by_match_id(
     response_model=dict[str, BotModel],
 )
 async def run_match(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
     tournament_id: str,
     match_id: str,
 ):

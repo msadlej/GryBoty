@@ -53,3 +53,23 @@ async def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
 
     return current_user
+
+
+async def get_current_admin(
+    current_user: UserModel = Depends(get_current_user),
+) -> UserModel:
+    """
+    Get the current admin.
+    Raises an exception if the user is not an admin.
+    """
+
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Admins only."
+        )
+
+    return current_user
+
+
+UserDependency = Annotated[UserModel, Depends(get_current_active_user)]
+AdminDependency = Annotated[UserModel, Depends(get_current_admin)]

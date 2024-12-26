@@ -1,9 +1,7 @@
 from app.models.bot import check_bot_access, get_bot_by_id, convert_bot, get_own_bots
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.dependencies import get_current_active_user
-from app.schemas.user import UserModel
+from fastapi import APIRouter, HTTPException, status
+from app.dependencies import UserDependency
 from app.schemas.bot import BotModel
-from typing import Annotated
 
 
 router = APIRouter(prefix="/bots")
@@ -11,14 +9,14 @@ router = APIRouter(prefix="/bots")
 
 @router.get("/", response_model=list[BotModel])
 async def read_own_bots(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
 ):
     return get_own_bots(current_user)
 
 
 @router.get("/{bot_id}", response_model=BotModel)
 async def read_bot_by_id(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
     bot_id: str,
 ):
     if not check_bot_access(current_user, bot_id):

@@ -1,9 +1,8 @@
 from app.schemas.user import Token, UserModel, UserCreate, UserUpdate
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.dependencies import get_current_active_user
+from app.dependencies import UserDependency
 import app.utils.authentication as auth
-from typing import Annotated
 
 
 router = APIRouter()
@@ -32,15 +31,13 @@ async def register_user(user_data: UserCreate):
 
 
 @router.get("/users/me/", response_model=UserModel)
-async def read_users_me(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)]
-):
+async def read_users_me(current_user: UserDependency):
     return current_user
 
 
 @router.put("/users/change_password/", response_model=UserModel)
 async def change_password(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
     user_data: UserUpdate,
 ):
     return auth.change_user_password(current_user, user_data)

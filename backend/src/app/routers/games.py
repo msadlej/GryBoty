@@ -1,13 +1,12 @@
-from app.dependencies import get_current_active_user
 from app.models.game import get_all_game_types
-from fastapi import APIRouter, Depends
+from app.dependencies import UserDependency
 from app.schemas.game import GameModel
-from app.schemas.user import UserModel
+from fastapi import APIRouter
 
 
 router = APIRouter(prefix="/games")
 
 
 @router.get("/", response_model=list[GameModel])
-def read_all_game_types(current_user: UserModel = Depends(get_current_active_user)):
+def read_all_game_types(current_user: UserDependency):
     return get_all_game_types()
