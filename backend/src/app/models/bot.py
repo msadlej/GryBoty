@@ -1,8 +1,9 @@
 from app.schemas.user import AccountType, UserModel
+from app.utils.database import get_db_connection
 from app.models.game import get_game_type_by_id
-from database.main import MongoDB, User, Bot
 from fastapi import HTTPException, status
 from app.schemas.bot import BotModel
+from database.main import User, Bot
 from bson import ObjectId
 from typing import Any
 
@@ -25,9 +26,9 @@ def get_bot_by_id(bot_id: str) -> dict[str, Any]:
     Raises an error if the bot does not exist.
     """
 
-    db = MongoDB()
-    bots_collection = Bot(db)
-    bot: dict[str, Any] | None = bots_collection.get_bot_by_id(ObjectId(bot_id))
+    with get_db_connection() as db:
+        bots_collection = Bot(db)
+        bot = bots_collection.get_bot_by_id(ObjectId(bot_id))
 
     if bot is None:
         raise HTTPException(
@@ -43,7 +44,7 @@ def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
     Converts a dictionary to a BotModel object.
     """
 
-    game_type: str = bot_dict.pop("game_type")
+    game_type = bot_dict.pop("game_type")
     if not detail:
         return BotModel(**bot_dict)
 
@@ -57,15 +58,18 @@ def get_own_bots(current_user: UserModel) -> list[BotModel]:
     Retrieves all bots from the database that belong to the current user.
     """
 
-    db = MongoDB()
-    users_collection = User(db)
-    user: dict[str, Any] | None = users_collection.get_user_by_id(
-        ObjectId(current_user.id)
-    )
+    with get_db_connection() as db:
+        users_collection = User(db)
+        user = users_collection.get_user_by_id(ObjectId(current_user.id))
+
     if user is None:
         return []
 
-    return [convert_bot(get_bot_by_id(bot_id)) for bot_id in user["bots"]]
+    return [
+        convert_bot(bot_dict)
+        for bot_id in user["bots"]
+        if (bot_dict := get_bot_by_id(bot_id))
+    ]
 
 
 def get_all_bots() -> list[BotModel]:
@@ -73,7 +77,7 @@ def get_all_bots() -> list[BotModel]:
     Retrieves all bots from the database.
     """
 
-    db = MongoDB()
-    bots: list[dict[str, Any]] = db.get_all_bots()
+    with get_db_connection() as db:
+        bots = db.get_all_bots()
 
     return [convert_bot(bot) for bot in bots]

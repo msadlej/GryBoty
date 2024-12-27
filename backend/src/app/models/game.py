@@ -1,8 +1,8 @@
-from database.main import MongoDB, GameType
+from app.utils.database import get_db_connection
 from fastapi import HTTPException, status
 from app.schemas.game import GameModel
+from database.main import GameType
 from bson import ObjectId
-from typing import Any
 
 
 def get_game_type_by_id(game_id: str) -> GameModel:
@@ -11,9 +11,9 @@ def get_game_type_by_id(game_id: str) -> GameModel:
     Raises an error if the game type does not exist.
     """
 
-    db = MongoDB()
-    game_collection = GameType(db)
-    game: dict[str, Any] | None = game_collection.get_game_type_by_id(ObjectId(game_id))
+    with get_db_connection() as db:
+        game_collection = GameType(db)
+        game = game_collection.get_game_type_by_id(ObjectId(game_id))
 
     if game is None:
         raise HTTPException(
@@ -29,7 +29,7 @@ def get_all_game_types() -> list[GameModel]:
     Retrieves all game types from the database.
     """
 
-    db = MongoDB()
-    game_types: list[dict[str, Any]] = db.get_all_game_types()
+    with get_db_connection() as db:
+        game_types = db.get_all_game_types()
 
     return [GameModel(**game) for game in game_types]

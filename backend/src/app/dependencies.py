@@ -2,9 +2,7 @@ from app.models.user import get_user_by_username, convert_user
 from app.schemas.user import TokenData, AccountType, UserModel
 from fastapi import Depends, HTTPException, status
 from jwt.exceptions import InvalidTokenError
-from typing import Annotated, Generator, Any
-from contextlib import contextmanager
-from database.main import MongoDB
+from typing import Annotated, Any
 from app.config import settings
 import jwt
 
@@ -73,17 +71,5 @@ async def get_current_admin(
     return current_user
 
 
-@contextmanager
-def get_db_connection(
-    connection_string: str = "mongodb://localhost:27017/",
-) -> Generator[MongoDB, None, None]:
-    db = MongoDB(connection_string)
-    try:
-        yield db
-    finally:
-        db.client.close()
-
-
 UserDependency = Annotated[UserModel, Depends(get_current_active_user)]
 AdminDependency = Annotated[UserModel, Depends(get_current_admin)]
-DatabaseDependency = Annotated[MongoDB, Depends(get_db_connection)]
