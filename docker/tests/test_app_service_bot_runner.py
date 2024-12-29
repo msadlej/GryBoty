@@ -14,13 +14,12 @@ class TestSixMensMorrisBotRun(unittest.TestCase):
         [
             "docker/app/services/bot_runner.py",
             "docker/src/two_player_games/games/morris.py",
-            "SixMensMorris",
             "docker/src/bots/example_bots/SixMensMorris/bot_1.py",
             "docker/src/bots/example_bots/SixMensMorris/bot_2.py",
         ],
     )
     def test_run(self):
-        from src.app.services.bot_runner import main
+        from src.app.services.run_game.bot_runner import main
 
         result = main()
         self.assertIsInstance(result, str)
@@ -28,7 +27,7 @@ class TestSixMensMorrisBotRun(unittest.TestCase):
         self.assertEqual(len(result_dict.keys()), 2)
         self.assertIn("winner", result_dict)
         self.assertIn("moves", result_dict)
-        self.assertIn(result_dict["winner"], [sys.argv[3], sys.argv[4], None])
+        self.assertIn(result_dict["winner"], [sys.argv[2], sys.argv[3], None])
         self.assertIsInstance(result_dict["moves"], list)
         self.assertGreaterEqual(len(result_dict["moves"]), 0)
 
