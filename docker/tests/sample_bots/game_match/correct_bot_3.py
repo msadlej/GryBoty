@@ -4,8 +4,6 @@ from src.two_player_games.state import State
 import random
 
 
-class Bot_1(Bot):
-    def git_move(self, state: State) -> Move:
-        moves = state.get_moves()
-        move = random.choice(moves)
-        return move
+class ValidBot2(Bot):
+    def get_move(self, state: State) -> Move:
+        return random.choice(list(state.get_moves()))

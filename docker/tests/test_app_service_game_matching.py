@@ -11,6 +11,45 @@ class TestGameMatchingValidator(unittest.TestCase):
 
         # Initialize Validator
         validator = GameMatchingValidator(bot_path, game_path)
+        
+
+        # Perform Validation
+        result = validator.validate()
+        # Assertions
+        self.assertEqual(result, True)
+
+    def test_validate_successful_not_affect(self):
+        bot_path = "docker/tests/sample_bots/game_match/valid_bot_not_affecting.py"
+        game_path = "docker/src/two_player_games/games/morris.py"
+
+        # Initialize Validator
+        validator = GameMatchingValidator(bot_path, game_path)
+
+        # Perform Validation
+        result = validator.validate()
+
+        # Assertions
+        self.assertEqual(result, True)
+
+    def test_validate_successful_2(self):
+        bot_path = "docker/tests/sample_bots/game_match/correct_bot_2.py"
+        game_path = "docker/src/two_player_games/games/morris.py"
+
+        # Initialize Validator
+        validator = GameMatchingValidator(bot_path, game_path)
+
+        # Perform Validation
+        result = validator.validate()
+
+        # Assertions
+        self.assertEqual(result, True)
+
+    def test_validate_successful_3(self):
+        bot_path = "docker/tests/sample_bots/game_match/correct_bot_3.py"
+        game_path = "docker/src/two_player_games/games/morris.py"
+
+        # Initialize Validator
+        validator = GameMatchingValidator(bot_path, game_path)
 
         # Perform Validation
         result = validator.validate()
