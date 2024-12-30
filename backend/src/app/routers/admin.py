@@ -1,8 +1,8 @@
-from app.models.tournament import get_all_tournaments
+from app.models.tournament import get_all_tournaments, get_tournaments_by_user_id
+from app.models.bot import get_all_bots, get_bots_by_user_id
 from app.schemas.user import AccountType, UserModel
 from app.schemas.tournament import TournamentModel
 from app.dependencies import AdminDependency
-from app.models.bot import get_all_bots
 from app.schemas.bot import BotModel
 from fastapi import APIRouter
 from app.models.user import (
@@ -34,6 +34,22 @@ async def change_user_account_type(
     account_type: AccountType,
 ):
     return update_user_type(user_id, account_type)
+
+
+@router.get("/users/{user_id}/bots/", response_model=list[BotModel])
+async def read_users_bots(
+    current_admin: AdminDependency,
+    user_id: str,
+):
+    return get_bots_by_user_id(user_id)
+
+
+@router.get("/users/{user_id}/tournaments/", response_model=list[TournamentModel])
+async def read_users_tournaments(
+    current_admin: AdminDependency,
+    user_id: str,
+):
+    return get_tournaments_by_user_id(user_id)
 
 
 @router.put("/users/{user_id}/ban", response_model=UserModel)

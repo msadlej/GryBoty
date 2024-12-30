@@ -53,14 +53,14 @@ def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
     return BotModel(**bot_dict)
 
 
-def get_own_bots(current_user: UserModel) -> list[BotModel]:
+def get_bots_by_user_id(user_id: str) -> list[BotModel]:
     """
-    Retrieves all bots from the database that belong to the current user.
+    Retrieves all bots from the database that belong to a specific user.
     """
 
     with get_db_connection() as db:
         users_collection = User(db)
-        user = users_collection.get_user_by_id(ObjectId(current_user.id))
+        user = users_collection.get_user_by_id(ObjectId(user_id))
 
     if user is None:
         return []
@@ -70,6 +70,14 @@ def get_own_bots(current_user: UserModel) -> list[BotModel]:
         for bot_id in user["bots"]
         if (bot_dict := get_bot_by_id(bot_id))
     ]
+
+
+def get_own_bots(current_user: UserModel) -> list[BotModel]:
+    """
+    Retrieves all bots from the database that belong to the current user.
+    """
+
+    return get_bots_by_user_id(current_user.id)
 
 
 def get_all_bots() -> list[BotModel]:

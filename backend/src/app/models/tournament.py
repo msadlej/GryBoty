@@ -1,4 +1,4 @@
-from app.models.bot import get_bot_by_id, convert_bot, get_own_bots
+from app.models.bot import get_bot_by_id, convert_bot, get_own_bots, get_bots_by_user_id
 from app.models.match import get_match_by_id, convert_match
 from app.models.user import get_user_by_id, convert_user
 from app.schemas.user import AccountType, UserModel
@@ -128,25 +128,32 @@ def get_matches_by_tournament(tournament_id: str) -> list[MatchModel]:
     ]
 
 
-def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
+def get_tournaments_by_user_id(user_id: str) -> list[TournamentModel]:
     """
-    Retrieves all tournaments that the user has created or is participating in.
+    Retrieves all tournaments from the database that belong to a specific user.
     """
 
     with get_db_connection() as db:
         tournaments_collection = Tournament(db)
         tournaments = tournaments_collection.get_tournaments_by_creator(
-            ObjectId(current_user.id)
+            ObjectId(user_id)
         )
 
-    if current_user.bots is None:
-        current_user.bots = get_own_bots(current_user)
-    for bot in current_user.bots:
-        tournaments.extend(
-            tournaments_collection.get_tournaments_by_bot_id(ObjectId(bot.id))
-        )
+        bots = get_bots_by_user_id(user_id)
+        for bot in bots:
+            tournaments.extend(
+                tournaments_collection.get_tournaments_by_bot_id(ObjectId(bot.id))
+            )
 
     return [convert_tournament(tournament) for tournament in tournaments]
+
+
+def get_own_tournaments(current_user: UserModel) -> list[TournamentModel]:
+    """
+    Retrieves all tournaments that the user has created or is participating in.
+    """
+
+    return get_tournaments_by_user_id(current_user.id)
 
 
 def get_all_tournaments() -> list[TournamentModel]:
