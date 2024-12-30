@@ -24,8 +24,8 @@ class Dog(Mammal):
     pass
 """
         target_bases = "Animal"
-        result = InheritanceAnalyzer.get_last_children(source_code, target_bases)
-
+        analyzer = InheritanceAnalyzer(source_code, target_bases)
+        result = analyzer.get_last_children()
         self.assertEqual(result, ["Dog", "Bird"])
 
     def test_multiple_inheritance(self):
@@ -42,8 +42,8 @@ class Combined(Base1, Base2):
     pass
 """
         target_bases = "Base1"
-        result = InheritanceAnalyzer.get_last_children(source_code, target_bases)
-
+        analyzer = InheritanceAnalyzer(source_code, target_bases)
+        result = analyzer.get_last_children()
         self.assertEqual(result, ["Combined"])
 
     def test_deep_hierarchy(self):
@@ -63,7 +63,8 @@ class Level3(Level2):
     pass
 """
         target_bases = "Root"
-        result = InheritanceAnalyzer.get_last_children(source_code, target_bases)
+        analyzer = InheritanceAnalyzer(source_code, target_bases)
+        result = analyzer.get_last_children()
 
         self.assertEqual(result, ["Level3"])
 
@@ -75,7 +76,8 @@ class Independent:
     pass
 """
         target_bases = "Base"
-        result = InheritanceAnalyzer.get_last_children(source_code, target_bases)
+        analyzer = InheritanceAnalyzer(source_code, target_bases)
+        result = analyzer.get_last_children()
 
         self.assertEqual(result, [])
 
@@ -99,8 +101,8 @@ class E(D):
     pass
 """
         target_bases = "A"
-        result = InheritanceAnalyzer.get_last_children(source_code, target_bases)
-
+        analyzer = InheritanceAnalyzer(source_code, target_bases)
+        result = analyzer.get_last_children()
         self.assertEqual(result, ["E"])
 
     def test_multiple_base_classes(self):
@@ -120,8 +122,8 @@ class Final(Derived):
     pass
 """
         target_bases = "BaseA"
-        result = InheritanceAnalyzer.get_last_children(source_code, target_bases)
-
+        analyzer = InheritanceAnalyzer(source_code, target_bases)
+        result = analyzer.get_last_children()
         self.assertEqual(result, ["Final"])
 
 
