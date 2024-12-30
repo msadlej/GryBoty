@@ -2,13 +2,14 @@ import sys
 import json
 from src.app.services.file_loader.file_loader import FileLoader
 from src.app.utils.class_retriever import ClassRetriever
+from copy import deepcopy
 
 
 class BotRunner:
 
     def __init__(self, game_path, bot_1_path, bot_2_path):
         self.game_class = ClassRetriever(game_path).get_game()
-        self.game = FileLoader.get_class(game_path, self.game_class)     
+        self.game = FileLoader.get_class(game_path, self.game_class)
         self.bot_1 = FileLoader.get_class(bot_1_path)
         self.bot_2 = FileLoader.get_class(bot_2_path)
         self._init_game()
@@ -23,7 +24,8 @@ class BotRunner:
     def run_game(self):
         while not self.game.is_finished():
             current_player = self.game.get_current_player()
-            move = current_player.get_move(self.game.state)
+            state_copy = deepcopy(self.game.state)
+            move = current_player.get_move(state_copy)
             self.moves.append(f"Player {current_player.char}: {str(move)}")
             self.game.make_move(move)
 

@@ -2,10 +2,12 @@ from src.app.services.validation.validator_base_class import Validator
 from src.app.utils.class_retriever import ClassRetriever
 from src.app.services.file_loader.file_loader import FileLoader
 from src.two_player_games.player import Player
+from copy import deepcopy
 
 
 class GameMatchingValidator(Validator):
     def __init__(self, bot_path, game_path):
+        # TODO tez usun nadmiar tutaj
         self.game_class = ClassRetriever(game_path).get_game()
         self.game = FileLoader.get_class(game_path, self.game_class)
         self.bot_path = bot_path
@@ -47,7 +49,8 @@ class GameMatchingValidator(Validator):
         self.game = self.game(first_player=bot_player, second_player=mock_player)
 
         # Test the bot's move
-        move = bot_player.get_move(self.game.state)
+        state_copy = deepcopy(self.game.state)
+        move = bot_player.get_move(state_copy)
         if not (
             type(move).__name__ == self.move.__name__
             and type(move).__module__ == self.move.__module__
