@@ -19,11 +19,11 @@ class BotValidationManager:
     def validate(self):
         """Run all validators and aggregate results."""
         validators = [
+            SafetyValidator(self.bot_source_code),
             GameMatchingValidator(
                 self.bot_path,
                 self.game_path,
             ),
-            SafetyValidator(self.bot_source_code),
             RuntimeValidator(self.bot_class, self.game_class),
         ]
 

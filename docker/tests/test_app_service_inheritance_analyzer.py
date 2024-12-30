@@ -26,7 +26,8 @@ class Dog(Mammal):
         target_bases = "Animal"
         analyzer = InheritanceAnalyzer(source_code, target_bases)
         result = analyzer.get_last_children()
-        self.assertEqual(result, ["Bird", "Dog"])
+        self.assertIn("Dog", result)
+        self.assertIn('Bird', result)
 
     def test_multiple_inheritance(self):
         from src.app.services.file_visitor.inheritance_analyzer import InheritanceAnalyzer

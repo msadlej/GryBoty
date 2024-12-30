@@ -32,8 +32,35 @@ class TestGameMatchingValidator(unittest.TestCase):
         # Assertions
         self.assertEqual(str(context.exception), "No class inheriting from Bot found.")
 
+    def test_no_bot_class_syntax_error(self):
+        bot_path = "docker/tests/sample_bots/game_match/syntax_error.py"
+        game_path = "docker/src/two_player_games/games/connect_four.py"
+
+        # Initialize Validator
+        validator = GameMatchingValidator(bot_path, game_path)
+
+        # Perform Validation
+        with self.assertRaises(SyntaxError) as context:
+            validator.validate()
+
+        # Assertions
+
     def test_no_bot_class_found_only_method(self):
         bot_path = "docker/tests/sample_bots/game_match/no_class.py"
+        game_path = "docker/src/two_player_games/games/connect_four.py"
+
+        # Initialize Validator
+        validator = GameMatchingValidator(bot_path, game_path)
+
+        # Perform Validation
+        with self.assertRaises(ValueError) as context:
+            validator.validate()
+
+        # Assertions
+        self.assertEqual(str(context.exception), "No class inheriting from Bot found.")
+
+    def test_no_bot_class_found_empty(self):
+        bot_path = "docker/tests/sample_bots/game_match/empty.py"
         game_path = "docker/src/two_player_games/games/connect_four.py"
 
         # Initialize Validator
