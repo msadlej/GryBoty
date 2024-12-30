@@ -8,6 +8,7 @@ from src.app.utils.class_retriever import ClassRetriever
 class BotValidationManager:
     def __init__(self, bot_path, game_path):
         # TODO: usun nadmiar tych rzeczy tutaj
+        # rozgrywka z przykladowym botem ktory jest szybki
         self.bot_class = FileLoader.get_class(bot_path)
         self.game_class = ClassRetriever(game_path).get_game()
         self.game = FileLoader.get_class(game_path, self.game_class)
@@ -34,3 +35,5 @@ class BotValidationManager:
 
 
 ## TODO uruchom jako docker
+## Pomysł każdą rozgrywkę uruchamiaj w dockerze z restricted python
+## ale generalnie do sprawdzenia uruchom rozgrywke, za kazdym razem sprawdzaj co zwraca
