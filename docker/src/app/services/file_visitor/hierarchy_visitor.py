@@ -66,7 +66,6 @@ class Tree:
         return [node.data for node in leaves if node.data != self.root.data]
 
     def _collect_leaves(self, node: Node, leaves: list):
-        print(node.data)
         if not node.children:  # No children = leaf
             leaves.add(node)
         for child in node.children:
