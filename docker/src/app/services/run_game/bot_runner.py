@@ -1,34 +1,14 @@
 import sys
 import json
 from src.app.services.file_loader.file_loader import FileLoader
-from src.app.services.file_visitor.inheritance_analyzer import (
-    InheritanceAnalyzer,
-)
+from src.app.utils.class_retriever import ClassRetriever
 
 
 class BotRunner:
-    """
-    Initializes and manages a game instance with two competing bots.
-
-    This class dynamically loads the game and bot classes from their respective file paths.
-    The game class is selected from the list of derived classes of "Game" (using the first 
-    class in the list, assuming it is the intended one). It sets up the game, initializes 
-    the bots, and maintains a record of moves and a mapping of bots to their file paths.
-
-    Attributes:
-        game_class (list): List of classes derived from "Game" found in the game file.
-        game (object): Instance of the selected game class (first in the list).
-        bot_1 (object): Instance of the first bot class.
-        bot_2 (object): Instance of the second bot class.
-        moves (list): List of moves made during the game.
-        map (dict): Mapping of bot instances to their file paths.
-    """
 
     def __init__(self, game_path, bot_1_path, bot_2_path):
-        self.game_class = InheritanceAnalyzer.get_last_children(
-            FileLoader.load_file_as_string(game_path), "Game"
-        )
-        self.game = FileLoader.get_class(game_path, self.game_class[0])
+        self.game_class = ClassRetriever(game_path).get_game()
+        self.game = FileLoader.get_class(game_path, self.game_class)     
         self.bot_1 = FileLoader.get_class(bot_1_path)
         self.bot_2 = FileLoader.get_class(bot_2_path)
         self._init_game()
