@@ -3,6 +3,11 @@ from src.app.services.file_visitor.hierarchy_visitor import ClassHierarchyVisito
 
 
 class InheritanceAnalyzer:
+    def __init__(self, source_code, target_bases):
+        self.tree = ast.parse(source_code)
+        self.visitor = ClassHierarchyVisitor(target_bases)
+        self.visitor_result = self.visitor.visit(self.tree)
+
     """
     A utility class for analyzing inheritance hierarchies in Python source code.
 
@@ -26,9 +31,5 @@ class InheritanceAnalyzer:
         print(result)  # Output: ["C"]
     """
 
-    @staticmethod
-    def get_last_children(source_code, target_bases):
-        tree = ast.parse(source_code)
-        visitor = ClassHierarchyVisitor(target_bases)
-        visitor.visit(tree)
-        return visitor.tree.get_leaves()
+    def get_last_children(self):
+        return self.visitor.tree.get_leaves()
