@@ -1,8 +1,8 @@
 from typing import Dict, Iterable, List, Optional, Tuple
-from two_player_games.game import Game
-from two_player_games.move import Move
-from two_player_games.player import Player
-from two_player_games.state import State
+from src.two_player_games.game import Game
+from src.two_player_games.move import Move
+from src.two_player_games.player import Player
+from src.two_player_games.state import State
 
 
 class Nim(Game):
