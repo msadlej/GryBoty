@@ -119,12 +119,8 @@ def process_logs(
         match.players = get_bots_by_match(match.id)
 
     if winner_code == bot_1.code:
-        winner = convert_bot(bot_1)
-        loser = convert_bot(bot_2)
+        return moves, bot_1, bot_2
     elif winner_code == bot_2.code:
-        winner = convert_bot(bot_2)
-        loser = convert_bot(bot_1)
-    else:
-        return moves, None, None
+        return moves, bot_2, bot_1
 
-    return moves, winner, loser
+    return moves, None, None

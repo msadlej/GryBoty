@@ -83,15 +83,15 @@ def get_all_bots() -> list[BotModel]:
     return [convert_bot(bot) for bot in bots]
 
 
-def insert_bot(current_user: UserModel, bot: BotModel) -> BotModel:
+def insert_bot(current_user: UserModel, name: str, game_type: str) -> BotModel:
     """
     Inserts a bot into the database.
     """
 
     with get_db_connection() as db:
         bots_collection = Bot(db)
-        bot_id = bots_collection.insert_bot(
-            bot.name, ObjectId(bot.game_type), f"{current_user.id}/"
+        bot_id = bots_collection.create_bot(
+            name, ObjectId(game_type), f"{current_user.id}/"
         )
 
         # code = f"{current_user.id}/{bot_id}"  TODO: Implement in db
@@ -99,5 +99,20 @@ def insert_bot(current_user: UserModel, bot: BotModel) -> BotModel:
         users_collection = User(db)
         users_collection.add_bot(ObjectId(current_user.id), bot_id)
 
+    # TODO: Save the file in docker
+
     bot_dict = get_bot_by_id(str(bot_id))
     return convert_bot(bot_dict, detail=True)
+
+
+def update_bot_name(bot_id: str, name: str) -> BotModel:
+    """
+    Updates the name of a bot in the database.
+    """
+
+    with get_db_connection() as db:
+        _ = Bot(db)
+        # bots_collection.update_bot_name(ObjectId(bot_id), name)  TODO: Implement in db
+
+    bot_dict = get_bot_by_id(bot_id)
+    return convert_bot(bot_dict)

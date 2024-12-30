@@ -16,10 +16,3 @@ class BotModel(BaseModel):
     losses: int
     total_tournaments: int
     tournaments_won: int
-
-
-class BotCreate(BaseModel):
-    """Represents a bot creation model"""
-
-    name: str
-    game_type: MongoObjectId

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
 from app.dependencies import UserDependency
-from app.models.bot import get_bot_by_id
 from app.schemas.match import MatchModel
 from app.utils.docker import run_game
 from app.schemas.bot import BotModel
