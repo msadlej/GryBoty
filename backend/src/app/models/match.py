@@ -102,8 +102,8 @@ def update_match(
 def process_logs(
     match: MatchModel,
     docker_logs: dict[str, Any],
-    bot_1: dict[str, Any],
-    bot_2: dict[str, Any],
+    bot_1: BotModel,
+    bot_2: BotModel,
 ) -> tuple[list[str], BotModel, BotModel] | tuple[list[str], None, None]:
     """
     Processes the logs from a match and returns the moves, the winner and loser bots.
@@ -118,10 +118,10 @@ def process_logs(
     if match.players is None:
         match.players = get_bots_by_match(match.id)
 
-    if winner_code == bot_1["code"]:
+    if winner_code == bot_1.code:
         winner = convert_bot(bot_1)
         loser = convert_bot(bot_2)
-    elif winner_code == bot_2["code"]:
+    elif winner_code == bot_2.code:
         winner = convert_bot(bot_2)
         loser = convert_bot(bot_1)
     else:

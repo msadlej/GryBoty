@@ -97,9 +97,8 @@ async def run_match(
             detail=f"No bots not found for match: {match_id}.",
         )
 
-    bot_1: dict[str, Any] = get_bot_by_id(match.players["bot1"].id)
-    bot_2: dict[str, Any] = get_bot_by_id(match.players["bot2"].id)
-    docker_logs: dict[str, Any] | None = run_game(bot_1["code"], bot_2["code"])
+    bot_1, bot_2 = match.players.values()
+    docker_logs: dict[str, Any] | None = run_game(bot_1.code, bot_2.code)
     if docker_logs is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

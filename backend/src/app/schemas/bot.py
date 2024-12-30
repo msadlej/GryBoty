@@ -9,9 +9,17 @@ class BotModel(BaseModel):
     id: MongoObjectId = Field(alias="_id")
     name: str
     game_type: GameModel | None = None
+    code: str
     is_validated: bool
     games_played: int
     wins: int
     losses: int
     total_tournaments: int
     tournaments_won: int
+
+
+class BotCreate(BaseModel):
+    """Represents a bot creation model"""
+
+    name: str
+    game_type: MongoObjectId

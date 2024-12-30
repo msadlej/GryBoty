@@ -1,7 +1,8 @@
 from app.models.bot import check_bot_access, get_bot_by_id, convert_bot, get_own_bots
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, UploadFile
+from app.schemas.bot import BotModel, BotCreate
 from app.dependencies import UserDependency
-from app.schemas.bot import BotModel
+from app.models.bot import insert_bot
 
 
 router = APIRouter(prefix="/bots")
@@ -12,6 +13,13 @@ async def read_own_bots(
     current_user: UserDependency,
 ):
     return get_own_bots(current_user)
+
+
+@router.post("/", response_model=BotModel)
+async def create_bot(current_user: UserDependency, bot: BotCreate, code: UploadFile):
+    bot = insert_bot(current_user, bot)
+    # TODO: Save the file in docker
+    return bot
 
 
 @router.get("/{bot_id}", response_model=BotModel)

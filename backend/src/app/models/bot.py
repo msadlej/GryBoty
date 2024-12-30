@@ -81,3 +81,23 @@ def get_all_bots() -> list[BotModel]:
         bots = db.get_all_bots()
 
     return [convert_bot(bot) for bot in bots]
+
+
+def insert_bot(current_user: UserModel, bot: BotModel) -> BotModel:
+    """
+    Inserts a bot into the database.
+    """
+
+    with get_db_connection() as db:
+        bots_collection = Bot(db)
+        bot_id = bots_collection.insert_bot(
+            bot.name, ObjectId(bot.game_type), f"{current_user.id}/"
+        )
+
+        # code = f"{current_user.id}/{bot_id}"  TODO: Implement in db
+
+        users_collection = User(db)
+        users_collection.add_bot(ObjectId(current_user.id), bot_id)
+
+    bot_dict = get_bot_by_id(str(bot_id))
+    return convert_bot(bot_dict, detail=True)
