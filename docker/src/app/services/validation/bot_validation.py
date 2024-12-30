@@ -7,6 +7,7 @@ from src.app.utils.class_retriever import ClassRetriever
 
 class BotValidationManager:
     def __init__(self, bot_path, game_path):
+        # TODO: usun nadmiar tych rzeczy tutaj
         self.bot_class = FileLoader.get_class(bot_path)
         self.game_class = ClassRetriever(game_path).get_game()
         self.game = FileLoader.get_class(game_path, self.game_class)
@@ -21,8 +22,6 @@ class BotValidationManager:
             GameMatchingValidator(
                 self.bot_path,
                 self.game_path,
-                self.bot_class,
-                self.game_class,
             ),
             SafetyValidator(self.bot_source_code),
             RuntimeValidator(self.bot_class, self.game_class),
@@ -30,8 +29,8 @@ class BotValidationManager:
 
         results = {}
         for validator in validators:
-            results.update(validator.validate())
+            validator.validate()
         return results
 
 
-## uruchom jako docker
+## TODO uruchom jako docker

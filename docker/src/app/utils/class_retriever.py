@@ -19,7 +19,7 @@ class ClassRetriever:
         child_classes = self.analyzer.get_last_children()
 
         if not child_classes:
-            raise ValueError(f"No child classes found for base class {class_name}")
+            raise ValueError(f"No class inheriting from {class_name} found.")
 
         return child_classes
 
@@ -32,7 +32,7 @@ class ClassRetriever:
     def get_bot(self):
         return self._get_class("Bot")
 
-    def has_method(self, bot_class, method_name):
+    def get_method(self, bot_class, method_name):
         for node in self.analyzer.tree.body:
             if isinstance(node, ast.ClassDef) and node.name == bot_class:
                 for body_item in node.body:
@@ -40,5 +40,5 @@ class ClassRetriever:
                         isinstance(body_item, ast.FunctionDef)
                         and body_item.name == method_name
                     ):  # It's a method
-                        return True
-        return False
+                        return body_item
+        return None
