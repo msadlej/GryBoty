@@ -55,6 +55,23 @@ async def get_current_active_user(
     return current_user
 
 
+async def get_current_premium_user(
+    current_user: Annotated[UserModel, Depends(get_current_user)]
+) -> UserModel:
+    """
+    Get the current active premium user.
+    Raises an exception if the user is not a premium user.
+    """
+
+    if current_user.account_type is not AccountType.PREMIUM:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Premium users only.",
+        )
+
+    return current_user
+
+
 async def get_current_admin(
     current_user: UserModel = Depends(get_current_active_user),
 ) -> UserModel:
@@ -73,3 +90,4 @@ async def get_current_admin(
 
 UserDependency = Annotated[UserModel, Depends(get_current_active_user)]
 AdminDependency = Annotated[UserModel, Depends(get_current_admin)]
+PremiumDependency = Annotated[UserModel, Depends(get_current_premium_user)]
