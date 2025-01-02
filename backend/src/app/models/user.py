@@ -89,10 +89,21 @@ def insert_user(username, password) -> dict[str, Any]:
     return new_user
 
 
-def update_user_type(user_id: ObjectId, account_type: AccountType) -> UserModel:
+def update_user_password(user_id: ObjectId, hashed_password: str) -> dict[str, Any]:
+    """
+    Updates a user's password in the database.
+    """
+
+    # with get_db_connection() as db:
+    # users_collection = User(db)
+    # users_collection.update_user_password(user_id, hashed_password)  TODO: Implement in db
+
+    return get_user_by_id(user_id)
+
+
+def update_user_account_type(user_id: ObjectId, account_type: AccountType) -> None:
     """
     Updates a user's account type.
-    Returns the updated user.
     Raises an error if the given account type is invalid.
     """
 
@@ -106,30 +117,16 @@ def update_user_type(user_id: ObjectId, account_type: AccountType) -> UserModel:
     # users_collection = User(db)
     # users_collection.update_user_type(user_id, account_type)  TODO: Implement in db
 
-    user_dict = get_user_by_id(user_id)
-    return convert_user(user_dict)
 
-
-def ban_user_by_id(user_id: ObjectId) -> UserModel:
+def update_user_banned_status(user_id: ObjectId, is_banned: bool) -> None:
     """
-    Bans a user.
+    Updates a user's banned status.
     """
 
     with get_db_connection() as db:
         users_collection = User(db)
-        users_collection.ban_user(user_id)
-
-    user_dict = get_user_by_id(user_id)
-    return convert_user(user_dict)
-
-
-def update_user_password(user_id: ObjectId, hashed_password: str) -> dict[str, Any]:
-    """
-    Updates a user's password in the database.
-    """
-
-    # with get_db_connection() as db:
-    # users_collection = User(db)
-    # users_collection.update_user_password(user_id, hashed_password)  TODO: Implement in db
-
-    return get_user_by_id(user_id)
+        if is_banned:
+            users_collection.ban_user(user_id)
+        else:
+            ...
+            # TODO: Implement unban in db

@@ -48,5 +48,12 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     """Represents a user update model"""
 
+    account_type: AccountType | None = None
+    is_banned: bool | None = None
+
+
+class PasswordUpdate(BaseModel):
+    """Represents a password update model"""
+
     old_password: str
     new_password: str

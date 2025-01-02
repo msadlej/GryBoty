@@ -1,6 +1,6 @@
 from app.models.tournament import get_all_tournaments, get_tournaments_by_user_id
 from app.models.bot import get_all_bots, get_bots_by_user_id
-from app.schemas.user import AccountType, UserModel
+from app.schemas.user import UserModel, UserUpdate
 from app.schemas.tournament import TournamentModel
 from app.dependencies import AdminDependency
 from app.schemas.bot import BotModel
@@ -10,8 +10,8 @@ from app.models.user import (
     get_user_by_id,
     convert_user,
     get_all_users,
-    update_user_type,
-    ban_user_by_id,
+    update_user_account_type,
+    update_user_banned_status,
 )
 
 
@@ -30,12 +30,19 @@ async def read_user_by_id(current_admin: AdminDependency, user_id: PyObjectId):
 
 
 @router.put("/users/{user_id}/", response_model=UserModel)
-async def change_user_account_type(
+async def update_user_by_id(
     current_admin: AdminDependency,
     user_id: PyObjectId,
-    account_type: AccountType = Form(...),
+    user_data: UserUpdate = Form(...),
 ):
-    return update_user_type(user_id, account_type)
+    if user_data.account_type is not None:
+        update_user_account_type(user_id, user_data.account_type)
+
+    if user_data.is_banned is not None:
+        update_user_banned_status(user_id, user_data.is_banned)
+
+    user_dict = get_user_by_id(user_id)
+    return convert_user(user_dict)
 
 
 @router.get("/users/{user_id}/bots/", response_model=list[BotModel])
@@ -52,14 +59,6 @@ async def read_users_tournaments(
     user_id: PyObjectId,
 ):
     return get_tournaments_by_user_id(user_id)
-
-
-@router.put("/users/{user_id}/ban", response_model=UserModel)
-async def ban_user(
-    current_admin: AdminDependency,
-    user_id: PyObjectId,
-):
-    return ban_user_by_id(user_id)
 
 
 @router.get("/tournaments/", response_model=list[TournamentModel])

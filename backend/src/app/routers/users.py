@@ -1,4 +1,4 @@
-from app.schemas.user import Token, UserModel, UserCreate, UserUpdate
+from app.schemas.user import Token, UserModel, UserCreate, PasswordUpdate
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from app.dependencies import UserDependency
@@ -38,6 +38,6 @@ async def read_users_me(current_user: UserDependency):
 @router.put("/users/change_password/", response_model=UserModel)
 async def change_password(
     current_user: UserDependency,
-    user_data: UserUpdate = Form(...),
+    user_data: PasswordUpdate = Form(...),
 ):
     return auth.change_user_password(current_user, user_data)
