@@ -1,8 +1,8 @@
+from pyobjectID import MongoObjectId, PyObjectId
 from app.schemas.match import MatchModel
 from app.schemas.game import GameModel
 from app.schemas.user import UserModel
 from pydantic import BaseModel, Field
-from pyobjectID import MongoObjectId
 from app.schemas.bot import BotModel
 from datetime import datetime
 
@@ -20,3 +20,22 @@ class TournamentModel(BaseModel):
     max_participants: int
     participants: list[BotModel] | None = None
     matches: list[MatchModel] | None = None
+
+
+class TournamentCreate(BaseModel):
+    """Represents a tournament creation model"""
+
+    name: str
+    description: str
+    game_type: PyObjectId
+    start_date: datetime
+    max_participants: int
+
+
+class TournamentUpdate(BaseModel):
+    """Represents a tournament update model"""
+
+    name: str | None = None
+    description: str | None = None
+    start_date: datetime | None = None
+    max_participants: int | None = None

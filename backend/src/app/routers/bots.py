@@ -28,7 +28,7 @@ async def create_bot(
 
 
 @router.put("/{bot_id}", response_model=BotModel)
-async def change_bot_name(
+async def edit_bot_by_id(
     current_user: UserDependency,
     bot_id: str,
     name: str = Form(...),

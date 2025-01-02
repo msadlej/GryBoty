@@ -4,7 +4,7 @@ from app.schemas.user import AccountType, UserModel
 from app.schemas.tournament import TournamentModel
 from app.dependencies import AdminDependency
 from app.schemas.bot import BotModel
-from fastapi import APIRouter
+from fastapi import APIRouter, Form
 from app.models.user import (
     get_user_by_id,
     convert_user,
@@ -31,7 +31,7 @@ async def read_user_by_id(current_admin: AdminDependency, user_id: str):
 async def change_user_account_type(
     current_admin: AdminDependency,
     user_id: str,
-    account_type: AccountType,
+    account_type: AccountType = Form(...),
 ):
     return update_user_type(user_id, account_type)
 

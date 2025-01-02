@@ -1,8 +1,8 @@
 from app.models.bot import get_bot_by_id, convert_bot, get_own_bots, get_bots_by_user_id
+from app.schemas.tournament import TournamentModel, TournamentCreate, TournamentUpdate
 from app.models.match import get_match_by_id, convert_match
 from app.models.user import get_user_by_id, convert_user
 from app.schemas.user import AccountType, UserModel
-from app.schemas.tournament import TournamentModel
 from app.utils.database import get_db_connection
 from app.models.game import get_game_type_by_id
 from fastapi import HTTPException, status
@@ -11,6 +11,17 @@ from app.schemas.bot import BotModel
 from database.main import Tournament
 from bson import ObjectId
 from typing import Any
+import random
+import string
+
+
+def generate_access_code(length: int = 6) -> str:
+    """
+    Generates a random access code with digits and capital letters.
+    """
+
+    characters = string.ascii_uppercase + string.digits
+    return "".join(random.choice(characters) for _ in range(length))
 
 
 def check_tournament_creator(current_user: UserModel, tournament_id: str) -> bool:
@@ -166,3 +177,42 @@ def get_all_tournaments() -> list[TournamentModel]:
         tournaments = tournaments_collection.get_all_tournaments()
 
     return [convert_tournament(tournament) for tournament in tournaments]
+
+
+def insert_tournament(
+    current_premium_user: UserModel, tournament: TournamentCreate
+) -> TournamentModel:
+    """
+    Inserts a new tournament into the database.
+    """
+
+    access_code = generate_access_code()
+
+    with get_db_connection() as db:
+        tournaments_collection = Tournament(db)
+        # if get_tournament_by_access_code(access_code)  TODO: Implement in db
+
+        tournament_id = tournaments_collection.create_tournament(
+            tournament.name,
+            tournament.description,
+            ObjectId(tournament.game_type),
+            ObjectId(current_premium_user.id),
+            tournament.start_date,
+            access_code,
+            tournament.max_participants,
+        )
+
+    tournament_dict = get_tournament_by_id(str(tournament_id))
+    return convert_tournament(tournament_dict, detail=True)
+
+
+def update_tournament(tournament_id: str, update: TournamentUpdate) -> TournamentModel:
+    """
+    Updates an existing tournament in the database.
+    """
+
+    # with get_db_connection() as db:
+    #     tournaments_collection = Tournament(db)  TODO: Implement in db
+
+    tournament_dict = get_tournament_by_id(tournament_id)
+    return convert_tournament(tournament_dict, detail=True)
