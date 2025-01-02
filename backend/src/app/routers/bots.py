@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from app.models.bot import insert_bot, update_bot_name
 from app.dependencies import UserDependency
 from app.schemas.bot import BotModel
+from pyobjectID import PyObjectId
 
 
 router = APIRouter(prefix="/bots")
@@ -19,7 +20,7 @@ async def read_own_bots(
 async def create_bot(
     current_user: UserDependency,
     name: str = Form(...),
-    game_type: str = Form(...),
+    game_type: PyObjectId = Form(...),
     code: UploadFile = File(...),
 ):
     new_bot = insert_bot(current_user, name, game_type)
@@ -30,7 +31,7 @@ async def create_bot(
 @router.put("/{bot_id}", response_model=BotModel)
 async def edit_bot_by_id(
     current_user: UserDependency,
-    bot_id: str,
+    bot_id: PyObjectId,
     name: str = Form(...),
 ):
     if not check_bot_access(current_user, bot_id):
@@ -47,7 +48,7 @@ async def edit_bot_by_id(
 @router.get("/{bot_id}", response_model=BotModel)
 async def read_bot_by_id(
     current_user: UserDependency,
-    bot_id: str,
+    bot_id: PyObjectId,
 ):
     if not check_bot_access(current_user, bot_id):
         raise HTTPException(

@@ -1,6 +1,5 @@
 from app.schemas.user import Token, TokenData, AccountType, UserModel
 from app.models.user import convert_user
-from bson import ObjectId
 import pytest
 
 
@@ -29,7 +28,7 @@ def test_account_type():
 def test_user(user_dict):
     user = UserModel(**user_dict)
 
-    assert ObjectId(user.id) == user_dict["_id"]
+    assert user.id == user_dict["_id"]
     assert user.username == "username"
     assert user.account_type is AccountType.STANDARD
     assert user.bots == user_dict["bots"]

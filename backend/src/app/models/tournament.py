@@ -24,7 +24,7 @@ def generate_access_code(length: int = 6) -> str:
     return "".join(random.choice(characters) for _ in range(length))
 
 
-def check_tournament_creator(current_user: UserModel, tournament_id: str) -> bool:
+def check_tournament_creator(current_user: UserModel, tournament_id: ObjectId) -> bool:
     """
     Checks if the user is the creator of the tournament or an admin.
     """
@@ -32,12 +32,12 @@ def check_tournament_creator(current_user: UserModel, tournament_id: str) -> boo
     tournament = get_tournament_by_id(tournament_id)
 
     is_admin: bool = current_user.account_type is AccountType.ADMIN
-    is_creator: bool = ObjectId(current_user.id) == tournament["creator"]
+    is_creator: bool = current_user.id == tournament["creator"]
 
     return is_creator or is_admin
 
 
-def check_tournament_access(current_user: UserModel, tournament_id: str) -> bool:
+def check_tournament_access(current_user: UserModel, tournament_id: ObjectId) -> bool:
     """
     Checks if the user has access to the tournament.
     """
@@ -48,15 +48,15 @@ def check_tournament_access(current_user: UserModel, tournament_id: str) -> bool
         current_user.bots = get_own_bots(current_user)
 
     is_admin: bool = current_user.account_type is AccountType.ADMIN
-    is_creator: bool = ObjectId(current_user.id) == tournament["creator"]
+    is_creator: bool = current_user.id == tournament["creator"]
     is_participant: bool = any(
-        ObjectId(bot.id) in tournament["participants"] for bot in current_user.bots
+        bot.id in tournament["participants"] for bot in current_user.bots
     )
 
     return any((is_admin, is_creator, is_participant))
 
 
-def get_tournament_by_id(tournament_id: str) -> dict[str, Any]:
+def get_tournament_by_id(tournament_id: ObjectId) -> dict[str, Any]:
     """
     Retrieves a tournament from the database by its ID.
     Raises an error if the tournament does not exist.
@@ -64,9 +64,7 @@ def get_tournament_by_id(tournament_id: str) -> dict[str, Any]:
 
     with get_db_connection() as db:
         tournaments_collection = Tournament(db)
-        tournament: dict[str, Any] | None = tournaments_collection.get_tournament_by_id(
-            ObjectId(tournament_id)
-        )
+        tournament = tournaments_collection.get_tournament_by_id(tournament_id)
 
     if tournament is None:
         raise HTTPException(
@@ -111,7 +109,7 @@ def convert_tournament(
     return TournamentModel(**tournament_dict)
 
 
-def get_bots_by_tournament(tournament_id: str) -> list[BotModel]:
+def get_bots_by_tournament(tournament_id: ObjectId) -> list[BotModel]:
     """
     Retrieves all bots from the database that participate in a specific tournament.
     """
@@ -125,7 +123,7 @@ def get_bots_by_tournament(tournament_id: str) -> list[BotModel]:
     ]
 
 
-def get_matches_by_tournament(tournament_id: str) -> list[MatchModel]:
+def get_matches_by_tournament(tournament_id: ObjectId) -> list[MatchModel]:
     """
     Retrieves all matches from the database that belong to a specific tournament.
     """
@@ -139,22 +137,18 @@ def get_matches_by_tournament(tournament_id: str) -> list[MatchModel]:
     ]
 
 
-def get_tournaments_by_user_id(user_id: str) -> list[TournamentModel]:
+def get_tournaments_by_user_id(user_id: ObjectId) -> list[TournamentModel]:
     """
     Retrieves all tournaments from the database that belong to a specific user.
     """
 
     with get_db_connection() as db:
         tournaments_collection = Tournament(db)
-        tournaments = tournaments_collection.get_tournaments_by_creator(
-            ObjectId(user_id)
-        )
+        tournaments = tournaments_collection.get_tournaments_by_creator(user_id)
 
         bots = get_bots_by_user_id(user_id)
         for bot in bots:
-            tournaments.extend(
-                tournaments_collection.get_tournaments_by_bot_id(ObjectId(bot.id))
-            )
+            tournaments.extend(tournaments_collection.get_tournaments_by_bot_id(bot.id))
 
     return [convert_tournament(tournament) for tournament in tournaments]
 
@@ -186,6 +180,12 @@ def insert_tournament(
     Inserts a new tournament into the database.
     """
 
+    if get_game_type_by_id(tournament.game_type) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Game type: {tournament.game_type} not found.",
+        )
+
     access_code = generate_access_code()
 
     with get_db_connection() as db:
@@ -195,18 +195,20 @@ def insert_tournament(
         tournament_id = tournaments_collection.create_tournament(
             tournament.name,
             tournament.description,
-            ObjectId(tournament.game_type),
-            ObjectId(current_premium_user.id),
+            tournament.game_type,
+            current_premium_user.id,
             tournament.start_date,
             access_code,
             tournament.max_participants,
         )
 
-    tournament_dict = get_tournament_by_id(str(tournament_id))
+    tournament_dict = get_tournament_by_id(tournament_id)
     return convert_tournament(tournament_dict, detail=True)
 
 
-def update_tournament(tournament_id: str, update: TournamentUpdate) -> TournamentModel:
+def update_tournament(
+    tournament_id: ObjectId, update: TournamentUpdate
+) -> TournamentModel:
     """
     Updates an existing tournament in the database.
     """

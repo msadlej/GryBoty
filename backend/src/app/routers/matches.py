@@ -3,7 +3,7 @@ from app.dependencies import UserDependency
 from app.schemas.match import MatchModel
 from app.utils.docker import run_game
 from app.schemas.bot import BotModel
-from typing import Any
+from pyobjectID import PyObjectId
 from app.models.tournament import (
     check_tournament_creator,
     check_tournament_access,
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/tournaments/{tournament_id}/matches")
 )
 async def read_matches_by_tournament_id(
     current_user: UserDependency,
-    tournament_id: str,
+    tournament_id: PyObjectId,
 ):
     if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
@@ -44,8 +44,8 @@ async def read_matches_by_tournament_id(
 )
 async def read_match_by_id(
     current_user: UserDependency,
-    tournament_id: str,
-    match_id: str,
+    tournament_id: PyObjectId,
+    match_id: PyObjectId,
 ):
     if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
@@ -62,8 +62,8 @@ async def read_match_by_id(
 )
 async def read_bots_by_match_id(
     current_user: UserDependency,
-    tournament_id: str,
-    match_id: str,
+    tournament_id: PyObjectId,
+    match_id: PyObjectId,
 ):
     if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
@@ -80,8 +80,8 @@ async def read_bots_by_match_id(
 )
 async def run_match(
     current_user: UserDependency,
-    tournament_id: str,
-    match_id: str,
+    tournament_id: PyObjectId,
+    match_id: PyObjectId,
 ):
     if not check_tournament_creator(current_user, tournament_id):
         raise HTTPException(
@@ -89,7 +89,8 @@ async def run_match(
             detail="User does not have access to run this match.",
         )
 
-    match: MatchModel = convert_match(get_match_by_id(match_id), detail=True)
+    match_dict = get_match_by_id(match_id)
+    match = convert_match(match_dict, detail=True)
     if match.players is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -97,7 +98,7 @@ async def run_match(
         )
 
     bot_1, bot_2 = match.players.values()
-    docker_logs: dict[str, Any] | None = run_game(bot_1.code, bot_2.code)
+    docker_logs = run_game(bot_1.code, bot_2.code)
     if docker_logs is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

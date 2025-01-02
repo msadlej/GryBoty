@@ -8,7 +8,7 @@ from bson import ObjectId
 from typing import Any
 
 
-def check_bot_access(current_user: UserModel, bot_id: str) -> bool:
+def check_bot_access(current_user: UserModel, bot_id: ObjectId) -> bool:
     """
     Checks if the current user has access to a specific bot.
     """
@@ -20,7 +20,7 @@ def check_bot_access(current_user: UserModel, bot_id: str) -> bool:
     return any(bot.id == bot_id for bot in current_user.bots) or is_admin
 
 
-def get_bot_by_id(bot_id: str) -> dict[str, Any]:
+def get_bot_by_id(bot_id: ObjectId) -> dict[str, Any]:
     """
     Retrieves a bot from the database by its ID.
     Raises an error if the bot does not exist.
@@ -28,7 +28,7 @@ def get_bot_by_id(bot_id: str) -> dict[str, Any]:
 
     with get_db_connection() as db:
         bots_collection = Bot(db)
-        bot = bots_collection.get_bot_by_id(ObjectId(bot_id))
+        bot = bots_collection.get_bot_by_id(bot_id)
 
     if bot is None:
         raise HTTPException(
@@ -53,14 +53,14 @@ def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
     return BotModel(**bot_dict)
 
 
-def get_bots_by_user_id(user_id: str) -> list[BotModel]:
+def get_bots_by_user_id(user_id: ObjectId) -> list[BotModel]:
     """
     Retrieves all bots from the database that belong to a specific user.
     """
 
     with get_db_connection() as db:
         users_collection = User(db)
-        user = users_collection.get_user_by_id(ObjectId(user_id))
+        user = users_collection.get_user_by_id(user_id)
 
     if user is None:
         return []
@@ -91,36 +91,34 @@ def get_all_bots() -> list[BotModel]:
     return [convert_bot(bot) for bot in bots]
 
 
-def insert_bot(current_user: UserModel, name: str, game_type: str) -> BotModel:
+def insert_bot(current_user: UserModel, name: str, game_type: ObjectId) -> BotModel:
     """
     Inserts a bot into the database.
     """
 
     with get_db_connection() as db:
         bots_collection = Bot(db)
-        bot_id = bots_collection.create_bot(
-            name, ObjectId(game_type), f"{current_user.id}/"
-        )
+        bot_id = bots_collection.create_bot(name, game_type, f"{current_user.id}/")
 
         # code = f"{current_user.id}/{bot_id}"  TODO: Implement in db
 
         users_collection = User(db)
-        users_collection.add_bot(ObjectId(current_user.id), bot_id)
+        users_collection.add_bot(current_user.id, bot_id)
 
     # TODO: Save the file in docker
 
-    bot_dict = get_bot_by_id(str(bot_id))
+    bot_dict = get_bot_by_id(bot_id)
     return convert_bot(bot_dict, detail=True)
 
 
-def update_bot_name(bot_id: str, name: str) -> BotModel:
+def update_bot_name(bot_id: ObjectId, name: str) -> BotModel:
     """
     Updates the name of a bot in the database.
     """
 
     # with get_db_connection() as db:
     #     bots_collection = Bot(db)
-    #     bots_collection.update_bot_name(ObjectId(bot_id), name)  TODO: Implement in db
+    #     bots_collection.update_bot_name(bot_id, name)  TODO: Implement in db
 
     bot_dict = get_bot_by_id(bot_id)
     return convert_bot(bot_dict)

@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field
-from pyobjectID import MongoObjectId
 from app.schemas.bot import BotModel
+from pyobjectID import PyObjectId
 from enum import Enum
+
+
+BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
 
 
 class Token(BaseModel):
@@ -28,7 +31,7 @@ class AccountType(str, Enum):
 class UserModel(BaseModel):
     """Represents a user"""
 
-    id: MongoObjectId = Field(alias="_id")
+    id: PyObjectId = Field(alias="_id")
     username: str
     account_type: AccountType
     bots: list[BotModel] | None = None

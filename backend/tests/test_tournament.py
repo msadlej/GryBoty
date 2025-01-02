@@ -1,12 +1,11 @@
-from app.schemas.tournament import TournamentModel
 from app.models.tournament import convert_tournament
-from bson import ObjectId
+from app.schemas.tournament import TournamentModel
 
 
 def test_tournament_model(tournament_dict):
     tournament = TournamentModel(**tournament_dict)
 
-    assert ObjectId(tournament.id) == tournament_dict["_id"]
+    assert tournament.id == tournament_dict["_id"]
     assert tournament.name == tournament_dict["name"]
     assert tournament.description == tournament_dict["description"]
     assert tournament.game_type == tournament_dict["game_type"]

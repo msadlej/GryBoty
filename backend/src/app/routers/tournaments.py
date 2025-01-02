@@ -2,6 +2,7 @@ from app.schemas.tournament import TournamentModel, TournamentCreate, Tournament
 from app.dependencies import UserDependency, PremiumDependency
 from fastapi import APIRouter, HTTPException, status, Form
 from app.schemas.bot import BotModel
+from pyobjectID import PyObjectId
 from app.models.tournament import (
     check_tournament_access,
     check_tournament_creator,
@@ -35,7 +36,7 @@ async def create_tournament(
 @router.get("/{tournament_id}", response_model=TournamentModel)
 async def read_tournament_by_id(
     current_user: UserDependency,
-    tournament_id: str,
+    tournament_id: PyObjectId,
 ):
     if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(
@@ -43,13 +44,14 @@ async def read_tournament_by_id(
             detail=f"Tournament: {tournament_id} not found.",
         )
 
-    return convert_tournament(get_tournament_by_id(tournament_id), detail=True)
+    tournament_dict = get_tournament_by_id(tournament_id)
+    return convert_tournament(tournament_dict, detail=True)
 
 
 @router.put("/{tournament_id}", response_model=TournamentModel)
 async def edit_tournament_by_id(
     current_premium_user: PremiumDependency,
-    tournament_id: str,
+    tournament_id: PyObjectId,
     update: TournamentUpdate = Form(...),
 ):
     if not check_tournament_creator(current_premium_user, tournament_id):
@@ -67,7 +69,7 @@ async def edit_tournament_by_id(
 )
 async def read_bots_by_tournament_id(
     current_user: UserDependency,
-    tournament_id: str,
+    tournament_id: PyObjectId,
 ):
     if not check_tournament_access(current_user, tournament_id):
         raise HTTPException(

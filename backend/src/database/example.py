@@ -44,9 +44,7 @@ if __name__ == "__main__":
     users.ban_user(marcin_id)
 
     # Add a game to the database
-    morris_id = game_types.create_game_type(
-        "Morris", "Classical chess game with standard rules"
-    )
+    morris_id = game_types.create_game_type("SixMensMorris", "Six Men's Morris game")
 
     # Add bots to the database
     adam_bot_id = bots.create_bot(

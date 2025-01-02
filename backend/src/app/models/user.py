@@ -7,7 +7,7 @@ from bson import ObjectId
 from typing import Any
 
 
-def get_user_by_id(user_id: str) -> dict[str, Any]:
+def get_user_by_id(user_id: ObjectId) -> dict[str, Any]:
     """
     Retrieves a user from the database by their ID.
     Raises an error if the user does not exist.
@@ -15,7 +15,7 @@ def get_user_by_id(user_id: str) -> dict[str, Any]:
 
     with get_db_connection() as db:
         users_collection = User(db)
-        user = users_collection.get_user_by_id(ObjectId(user_id))
+        user = users_collection.get_user_by_id(user_id)
 
     if user is None:
         raise HTTPException(
@@ -83,13 +83,13 @@ def insert_user(username, password) -> dict[str, Any]:
 
     with get_db_connection() as db:
         users_collection = User(db)
-        user_id: ObjectId = users_collection.create_user(username, password, "standard")
+        user_id = users_collection.create_user(username, password, "standard")
 
-    new_user = get_user_by_id(str(user_id))
+    new_user = get_user_by_id(user_id)
     return new_user
 
 
-def update_user_type(user_id: str, account_type: AccountType) -> UserModel:
+def update_user_type(user_id: ObjectId, account_type: AccountType) -> UserModel:
     """
     Updates a user's account type.
     Returns the updated user.
@@ -110,26 +110,26 @@ def update_user_type(user_id: str, account_type: AccountType) -> UserModel:
     return convert_user(user_dict)
 
 
-def ban_user_by_id(user_id: str) -> UserModel:
+def ban_user_by_id(user_id: ObjectId) -> UserModel:
     """
     Bans a user.
     """
 
     with get_db_connection() as db:
         users_collection = User(db)
-        users_collection.ban_user(ObjectId(user_id))
+        users_collection.ban_user(user_id)
 
     user_dict = get_user_by_id(user_id)
     return convert_user(user_dict)
 
 
-def update_user_password(user_id: str, hashed_password: str) -> dict[str, Any]:
+def update_user_password(user_id: ObjectId, hashed_password: str) -> dict[str, Any]:
     """
     Updates a user's password in the database.
     """
 
     # with get_db_connection() as db:
     # users_collection = User(db)
-    # users_collection.update_user_password(ObjectId(user_id), hashed_password)  TODO: Implement in db
+    # users_collection.update_user_password(user_id, hashed_password)  TODO: Implement in db
 
     return get_user_by_id(user_id)

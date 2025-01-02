@@ -8,7 +8,7 @@ from bson import ObjectId
 from typing import Any
 
 
-def get_match_by_id(match_id: str) -> dict[str, Any]:
+def get_match_by_id(match_id: ObjectId) -> dict[str, Any]:
     """
     Retrieves a match from the database by its ID.
     Raises an error if the match does not exist.
@@ -16,9 +16,7 @@ def get_match_by_id(match_id: str) -> dict[str, Any]:
 
     with get_db_connection() as db:
         matches_collection = Match(db)
-        match: dict[str, Any] | None = matches_collection.get_match_by_id(
-            ObjectId(match_id)
-        )
+        match = matches_collection.get_match_by_id(match_id)
 
     if match is None:
         raise HTTPException(
@@ -52,13 +50,13 @@ def convert_match(match_dict: dict[str, Any], detail: bool = False) -> MatchMode
     return MatchModel(**match_dict)
 
 
-def get_bots_by_match(match_id: str) -> dict[str, BotModel]:
+def get_bots_by_match(match_id: ObjectId) -> dict[str, BotModel]:
     """
     Retrieves all bots from the database that participate in a specific match.
     """
 
     match_dict = get_match_by_id(match_id)
-    match: MatchModel = convert_match(match_dict, detail=True)
+    match = convert_match(match_dict, detail=True)
 
     if match.players is None:
         raise HTTPException(

@@ -1,10 +1,13 @@
 from pydantic import BaseModel, Field
-from pyobjectID import MongoObjectId
+from pyobjectID import PyObjectId
+
+
+BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
 
 
 class GameModel(BaseModel):
     """Represents a game type"""
 
-    id: MongoObjectId = Field(alias="_id")
+    id: PyObjectId = Field(alias="_id")
     name: str
     description: str

@@ -5,7 +5,7 @@ from database.main import GameType
 from bson import ObjectId
 
 
-def get_game_type_by_id(game_id: str) -> GameModel:
+def get_game_type_by_id(game_id: ObjectId) -> GameModel:
     """
     Retrieves a game type from the database by its ID.
     Raises an error if the game type does not exist.
@@ -13,7 +13,7 @@ def get_game_type_by_id(game_id: str) -> GameModel:
 
     with get_db_connection() as db:
         game_collection = GameType(db)
-        game = game_collection.get_game_type_by_id(ObjectId(game_id))
+        game = game_collection.get_game_type_by_id(game_id)
 
     if game is None:
         raise HTTPException(
