@@ -17,7 +17,7 @@ class TokenData(BaseModel):
     username: str | None = None
 
 
-class AccountType(Enum):
+class AccountType(str, Enum):
     """Represents the type of an account"""
 
     STANDARD = "standard"

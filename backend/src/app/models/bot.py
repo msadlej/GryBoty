@@ -118,9 +118,9 @@ def update_bot_name(bot_id: str, name: str) -> BotModel:
     Updates the name of a bot in the database.
     """
 
-    with get_db_connection() as db:
-        _ = Bot(db)
-        # bots_collection.update_bot_name(ObjectId(bot_id), name)  TODO: Implement in db
+    # with get_db_connection() as db:
+    #     bots_collection = Bot(db)
+    #     bots_collection.update_bot_name(ObjectId(bot_id), name)  TODO: Implement in db
 
     bot_dict = get_bot_by_id(bot_id)
     return convert_bot(bot_dict)
