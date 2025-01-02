@@ -14,7 +14,7 @@ def check_bot_access(current_user: UserModel, bot_id: ObjectId) -> bool:
     """
 
     if current_user.bots is None:
-        current_user.bots = get_own_bots(current_user)
+        current_user.bots = get_bots_by_user_id(current_user.id)
 
     is_admin: bool = current_user.account_type is AccountType.ADMIN
     return any(bot.id == bot_id for bot in current_user.bots) or is_admin
@@ -70,14 +70,6 @@ def get_bots_by_user_id(user_id: ObjectId) -> list[BotModel]:
         for bot_id in user["bots"]
         if (bot_dict := get_bot_by_id(bot_id))
     ]
-
-
-def get_own_bots(current_user: UserModel) -> list[BotModel]:
-    """
-    Retrieves all bots from the database that belong to the current user.
-    """
-
-    return get_bots_by_user_id(current_user.id)
 
 
 def get_all_bots() -> list[BotModel]:

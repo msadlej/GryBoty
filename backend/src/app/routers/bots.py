@@ -1,9 +1,14 @@
-from app.models.bot import check_bot_access, get_bot_by_id, convert_bot, get_own_bots
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from app.models.bot import insert_bot, update_bot_name
 from app.dependencies import UserDependency
 from app.schemas.bot import BotModel
 from pyobjectID import PyObjectId
+from app.models.bot import (
+    check_bot_access,
+    get_bot_by_id,
+    convert_bot,
+    get_bots_by_user_id,
+)
 
 
 router = APIRouter(prefix="/bots")
@@ -13,7 +18,7 @@ router = APIRouter(prefix="/bots")
 async def read_own_bots(
     current_user: UserDependency,
 ):
-    return get_own_bots(current_user)
+    return get_bots_by_user_id(current_user.id)
 
 
 @router.post("/", response_model=BotModel)

@@ -9,7 +9,7 @@ from app.models.tournament import (
     get_tournament_by_id,
     convert_tournament,
     get_bots_by_tournament,
-    get_own_tournaments,
+    get_tournaments_by_user_id,
     insert_tournament,
     update_tournament,
 )
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/tournaments")
 async def read_own_tournaments(
     current_user: UserDependency,
 ):
-    return get_own_tournaments(current_user)
+    return get_tournaments_by_user_id(current_user.id)
 
 
 @router.post("/", response_model=TournamentModel)
