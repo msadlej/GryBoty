@@ -34,11 +34,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     except InvalidTokenError:
         raise credentials_exception
 
-    user: dict[str, Any] | None = get_user_by_username(token_data.username)
-    if user is None:
+    user_dict = get_user_by_username(token_data.username)
+    if user_dict is None:
         raise credentials_exception
 
-    return convert_user(user)
+    return convert_user(user_dict)
 
 
 async def get_current_active_user(

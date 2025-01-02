@@ -39,8 +39,7 @@ def authenticate_user(username: str, password: str) -> UserModel | None:
     Returns None if the user is not found or the password is incorrect.
     """
 
-    user: dict[str, Any] | None = get_user_by_username(username)
-
+    user = get_user_by_username(username)
     if user is None or not verify_password(password, user["password_hash"]):
         return None
 
@@ -54,8 +53,8 @@ def create_access_token(
     Create the access token.
     """
 
-    to_encode: dict[str, Any] = data.copy()
-    expire: datetime = datetime.now(timezone.utc)
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc)
 
     if expires_delta is not None:
         expire += expires_delta
@@ -63,11 +62,8 @@ def create_access_token(
         expire += timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(
-        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
 
-    return encoded_jwt
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def create_user(user_data: UserCreate) -> UserModel:
@@ -77,9 +73,9 @@ def create_user(user_data: UserCreate) -> UserModel:
     """
 
     hashed_password = get_password_hash(user_data.password)
-    user: dict[str, Any] = insert_user(user_data.username, hashed_password)
+    user_dict = insert_user(user_data.username, hashed_password)
 
-    return convert_user(user)
+    return convert_user(user_dict)
 
 
 def change_user_password(current_user: UserModel, user_data: UserUpdate) -> UserModel:
@@ -96,6 +92,6 @@ def change_user_password(current_user: UserModel, user_data: UserUpdate) -> User
         )
 
     hashed_password = get_password_hash(user_data.new_password)
-    user: dict[str, Any] = update_user_password(current_user.id, hashed_password)
+    user_dict = update_user_password(current_user.id, hashed_password)
 
-    return convert_user(user)
+    return convert_user(user_dict)
