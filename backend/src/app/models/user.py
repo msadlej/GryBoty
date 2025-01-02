@@ -1,5 +1,5 @@
+from app.schemas.user import AccountType, UserModel, UserUpdate
 from app.models.bot import get_bot_by_id, convert_bot
-from app.schemas.user import AccountType, UserModel
 from app.utils.database import get_db_connection
 from fastapi import HTTPException, status
 from database.main import User
@@ -101,32 +101,27 @@ def update_user_password(user_id: ObjectId, hashed_password: str) -> dict[str, A
     return get_user_by_id(user_id)
 
 
-def update_user_account_type(user_id: ObjectId, account_type: AccountType) -> None:
+def update_user(user_id: ObjectId, user_data: UserUpdate) -> UserModel:
     """
-    Updates a user's account type.
+    Updates a user.
+    Returns the updated user.
     Raises an error if the given account type is invalid.
     """
 
-    if account_type is AccountType.ADMIN:
+    if user_data.account_type is AccountType.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot update user to admin.",
         )
 
-    # with get_db_connection() as db:
-    # users_collection = User(db)
-    # users_collection.update_user_type(user_id, account_type)  TODO: Implement in db
-
-
-def update_user_banned_status(user_id: ObjectId, is_banned: bool) -> None:
-    """
-    Updates a user's banned status.
-    """
-
     with get_db_connection() as db:
         users_collection = User(db)
-        if is_banned:
-            users_collection.ban_user(user_id)
-        else:
+        if user_data.account_type is not None:
             ...
-            # TODO: Implement unban in db
+            # users_collection.update_user_type(user_id, account_type)  TODO: Implement in db
+
+        if user_data.is_banned is not None:
+            users_collection.ban_user(user_id)  # TODO: Implement unban in db
+
+    user_dict = get_user_by_id(user_id)
+    return convert_user(user_dict)

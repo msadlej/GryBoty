@@ -52,7 +52,7 @@ async def read_tournament_by_id(
 async def edit_tournament_by_id(
     current_premium_user: PremiumDependency,
     tournament_id: PyObjectId,
-    update: TournamentUpdate = Form(...),
+    tournament_data: TournamentUpdate = Form(...),
 ):
     if not check_tournament_creator(current_premium_user, tournament_id):
         raise HTTPException(
@@ -60,7 +60,7 @@ async def edit_tournament_by_id(
             detail=f"Tournament: {tournament_id} not found.",
         )
 
-    return update_tournament(tournament_id, update)
+    return update_tournament(tournament_id, tournament_data)
 
 
 @router.get(

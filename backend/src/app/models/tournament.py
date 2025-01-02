@@ -207,14 +207,25 @@ def insert_tournament(
 
 
 def update_tournament(
-    tournament_id: ObjectId, update: TournamentUpdate
+    tournament_id: ObjectId, tournament_data: TournamentUpdate
 ) -> TournamentModel:
     """
     Updates an existing tournament in the database.
     """
 
-    # with get_db_connection() as db:
-    #     tournaments_collection = Tournament(db)  TODO: Implement in db
+    with get_db_connection() as db:
+        tournaments_collection = Tournament(db)
+        if tournament_data.name is not None:
+            ...  # TODO: Implement in db
+
+        if tournament_data.description is not None:
+            ...  # TODO: Implement in db
+
+        if tournament_data.start_date is not None:
+            ...  # TODO: Implement in db
+
+        if tournament_data.max_participants is not None:
+            ...  # TODO: Implement in db
 
     tournament_dict = get_tournament_by_id(tournament_id)
     return convert_tournament(tournament_dict, detail=True)

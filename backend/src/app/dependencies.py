@@ -63,7 +63,7 @@ async def get_current_premium_user(
     Raises an exception if the user is not a premium user.
     """
 
-    if current_user.account_type is not AccountType.PREMIUM:
+    if current_user.account_type not in (AccountType.PREMIUM, AccountType.ADMIN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: Premium users only.",
