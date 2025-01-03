@@ -213,6 +213,16 @@ class Tournament:
             {"$set": {"start_date": new_start_date}}
         )
 
+    def update_max_participants(self, tournament_id: ObjectId, new_max: int) -> bool:
+        tournament = self.get_tournament_by_id(tournament_id)
+        if len(tournament["participants"]) <= new_max:
+            self.collection.update_one(
+                {"_id": tournament_id},
+                {"$set": {"max_participants": new_max}}
+            )
+            return True
+        return False
+
     def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
         return tournament.get("matches", []) if tournament else []
