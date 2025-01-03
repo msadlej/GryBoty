@@ -19,3 +19,9 @@ class BotModel(BaseModel):
     losses: int
     total_tournaments: int
     tournaments_won: int
+
+
+class BotUpdate(BaseModel):
+    """Represents a bot update"""
+
+    name: str | None = Field(min_length=3, max_length=16, default=None)

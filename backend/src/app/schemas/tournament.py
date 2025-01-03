@@ -28,17 +28,17 @@ class TournamentModel(BaseModel):
 class TournamentCreate(BaseModel):
     """Represents a tournament creation model"""
 
-    name: str
-    description: str
+    name: str = Field(min_length=3, max_length=16)
+    description: str = Field(max_length=64)
     game_type: PyObjectId
     start_date: datetime
-    max_participants: int
+    max_participants: int = Field(ge=2)
 
 
 class TournamentUpdate(BaseModel):
     """Represents a tournament update model"""
 
-    name: str | None = None
-    description: str | None = None
+    name: str | None = Field(min_length=3, max_length=16, default=None)
+    description: str | None = Field(max_length=64, default=None)
     start_date: datetime | None = None
-    max_participants: int | None = None
+    max_participants: int | None = Field(ge=2, default=None)

@@ -1,8 +1,8 @@
 from app.schemas.user import AccountType, UserModel
 from app.utils.database import get_db_connection
 from app.models.game import get_game_type_by_id
+from app.schemas.bot import BotModel, BotUpdate
 from fastapi import HTTPException, status
-from app.schemas.bot import BotModel
 from database.main import User, Bot
 from bson import ObjectId
 from typing import Any
@@ -103,7 +103,7 @@ def insert_bot(current_user: UserModel, name: str, game_type: ObjectId) -> BotMo
     return convert_bot(bot_dict, detail=True)
 
 
-def update_bot_name(bot_id: ObjectId, name: str) -> BotModel:
+def update_bot(bot_id: ObjectId, bot_data: BotUpdate) -> BotModel:
     """
     Updates the name of a bot in the database.
     """

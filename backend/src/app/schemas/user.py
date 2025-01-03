@@ -41,8 +41,8 @@ class UserModel(BaseModel):
 class UserCreate(BaseModel):
     """Represents a user creation model"""
 
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=16)
+    password: str = Field(min_length=5, max_length=32)
 
 
 class UserUpdate(BaseModel):
@@ -56,4 +56,4 @@ class PasswordUpdate(BaseModel):
     """Represents a password update model"""
 
     old_password: str
-    new_password: str
+    new_password: str = Field(min_length=5, max_length=32)

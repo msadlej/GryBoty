@@ -8,7 +8,13 @@ import app.utils.authentication as auth
 router = APIRouter()
 
 
-@router.post("/token", response_model=Token)
+@router.post(
+    "/token",
+    response_model=Token,
+    name="login",
+    description="Login for access token",
+    summary="User login",
+)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user: UserModel | None = auth.authenticate_user(
         form_data.username, form_data.password
