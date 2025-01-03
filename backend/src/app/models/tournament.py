@@ -75,6 +75,19 @@ def get_tournament_by_id(tournament_id: ObjectId) -> dict[str, Any]:
     return tournament
 
 
+def get_tournament_id_by_access_code(access_code: str) -> ObjectId | None:
+    """
+    Retrieves a tournament ID from the database by its access code.
+    Returns None if the access code does not exist.
+    """
+
+    with get_db_connection() as db:
+        tournaments_collection = Tournament(db)
+        tournament = tournaments_collection.get_tournament_by_access_code(access_code)
+
+    return tournament["_id"] if tournament else None
+
+
 def convert_tournament(
     tournament_dict: dict[str, Any], detail: bool = False
 ) -> TournamentModel:
@@ -183,10 +196,7 @@ def insert_tournament(
 
     with get_db_connection() as db:
         tournaments_collection = Tournament(db)
-        if (
-            tournaments_collection.get_tournament_by_access_code(access_code)
-            is not None
-        ):
+        if get_tournament_id_by_access_code(access_code) is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Access code: {access_code} already exists.",
@@ -234,6 +244,22 @@ def update_tournament(
             tournaments_collection.update_max_participants(
                 tournament_id, tournament_data.max_participants
             )
+
+    tournament_dict = get_tournament_by_id(tournament_id)
+    return convert_tournament(tournament_dict, detail=True)
+
+
+def add_tournament_participant(
+    tournament_id: ObjectId, bot_id: ObjectId
+) -> TournamentModel:
+    """
+    Adds a bot to a tournament.
+    Returns the updated tournament.
+    """
+
+    with get_db_connection() as db:
+        tournaments_collection = Tournament(db)
+        tournaments_collection.add_participant(tournament_id, bot_id)
 
     tournament_dict = get_tournament_by_id(tournament_id)
     return convert_tournament(tournament_dict, detail=True)

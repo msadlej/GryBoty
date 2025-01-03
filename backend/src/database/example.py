@@ -41,18 +41,14 @@ if __name__ == "__main__":
         "$2b$12$rMRrhTnpEb6kDJZ9nHeWSOVf72WcySUQACT4JHNPI69odwwruHxDa",
         "standard",
     )
-    users.ban_user(marcin_id)
+    users.update_ban(marcin_id, True)
 
     # Add a game to the database
     morris_id = game_types.create_game_type("SixMensMorris", "Six Men's Morris game")
 
     # Add bots to the database
-    adam_bot_id = bots.create_bot(
-        "Morris_Bot_1", morris_id
-    )
-    jakub_bot_id = bots.create_bot(
-        "Morris_Bot_2", morris_id
-    )
+    adam_bot_id = bots.create_bot("Morris_Bot_1", morris_id)
+    jakub_bot_id = bots.create_bot("Morris_Bot_2", morris_id)
     bots.add_code_path(adam_bot_id, "src/bots/example_bots/SixMensMorris/bot_1.py")
     bots.add_code_path(jakub_bot_id, "src/bots/example_bots/SixMensMorris/bot_2.py")
     users.add_bot(adam_id, adam_bot_id)

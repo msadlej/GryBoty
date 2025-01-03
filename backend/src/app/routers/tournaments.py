@@ -10,8 +10,10 @@ from app.models.tournament import (
     convert_tournament,
     get_bots_by_tournament,
     get_tournaments_by_user_id,
+    get_tournament_id_by_access_code,
     insert_tournament,
     update_tournament,
+    add_tournament_participant,
 )
 
 
@@ -31,6 +33,23 @@ async def create_tournament(
     tournament: TournamentCreate = Form(...),
 ):
     return insert_tournament(current_premium_user, tournament)
+
+
+@router.put("/", response_model=TournamentModel)
+async def join_tournament(
+    current_user: UserDependency,
+    access_code: str = Form(...),
+    bot_id: PyObjectId = Form(...),
+):
+    tournament_id = get_tournament_id_by_access_code(access_code)
+
+    if tournament_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Access code: {access_code} not found.",
+        )
+
+    return add_tournament_participant(tournament_id, bot_id)
 
 
 @router.get("/{tournament_id}", response_model=TournamentModel)

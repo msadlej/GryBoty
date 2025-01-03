@@ -121,10 +121,7 @@ def update_user(user_id: ObjectId, user_data: UserUpdate) -> UserModel:
             users_collection.update_account_type(user_id, user_data.account_type)
 
         if user_data.is_banned is not None:
-            if user_data.is_banned:
-                users_collection.ban_user(user_id)
-            else:
-                users_collection.unban_user(user_id)
+            users_collection.update_ban(user_id, user_data.is_banned)
 
     user_dict = get_user_by_id(user_id)
     return convert_user(user_dict)

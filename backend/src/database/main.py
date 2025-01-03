@@ -43,22 +43,17 @@ class User:
     def add_bot(self, user_id: ObjectId, bot_id: ObjectId) -> None:
         self.collection.update_one({"_id": user_id}, {"$push": {"bots": bot_id}})
 
-    def ban_user(self, user_id: ObjectId) -> None:
-        self.collection.update_one({"_id": user_id}, {"$set": {"is_banned": True}})
-
-    def unban_user(self, user_id: ObjectId) -> None:
-        self.collection.update_one({"_id": user_id}, {"$set": {"is_banned": False}})
+    def update_ban(self, user_id: ObjectId, is_banned: bool) -> None:
+        self.collection.update_one({"_id": user_id}, {"$set": {"is_banned": is_banned}})
 
     def update_account_type(self, user_id: ObjectId, new_account_type: str) -> None:
         self.collection.update_one(
-            {"_id": user_id},
-            {"$set": {"account_type": new_account_type}}
+            {"_id": user_id}, {"$set": {"account_type": new_account_type}}
         )
 
     def update_password(self, user_id: ObjectId, new_password_hash: str) -> None:
         self.collection.update_one(
-            {"_id": user_id},
-            {"$set": {"password_hash": new_password_hash}}
+            {"_id": user_id}, {"$set": {"password_hash": new_password_hash}}
         )
 
     def get_user_by_id(self, user_id: ObjectId) -> Optional[Dict]:
@@ -96,20 +91,14 @@ class Bot:
         return result.inserted_id
 
     def add_code_path(self, bot_id: ObjectId, code_path: str) -> None:
-        self.collection.update_one(
-            {"_id": bot_id},
-            {"$set": {"code_path": code_path}}
-        )
+        self.collection.update_one({"_id": bot_id}, {"$set": {"code_path": code_path}})
 
     def update_stats(self, bot_id: ObjectId, won: bool) -> None:
         update = {"$inc": {"games_played": 1, "wins" if won else "losses": 1}}
         self.collection.update_one({"_id": bot_id}, update)
 
     def update_name(self, bot_id: ObjectId, new_name: str) -> None:
-        self.collection.update_one(
-            {"_id": bot_id},
-            {"$set": {"name": new_name}}
-        )
+        self.collection.update_one({"_id": bot_id}, {"$set": {"name": new_name}})
 
     def validate_bot(self, bot_id: ObjectId) -> None:
         self.collection.update_one({"_id": bot_id}, {"$set": {"is_validated": True}})
@@ -205,29 +194,25 @@ class Tournament:
         )
 
     def update_name(self, tournament_id: ObjectId, new_name: str) -> None:
-        self.collection.update_one(
-            {"_id": tournament_id},
-            {"$set": {"name": new_name}}
-        )
+        self.collection.update_one({"_id": tournament_id}, {"$set": {"name": new_name}})
 
     def update_description(self, tournament_id: ObjectId, new_description: str) -> None:
         self.collection.update_one(
-            {"_id": tournament_id},
-            {"$set": {"description": new_description}}
+            {"_id": tournament_id}, {"$set": {"description": new_description}}
         )
 
-    def update_start_date(self, tournament_id: ObjectId, new_start_date: datetime) -> None:
+    def update_start_date(
+        self, tournament_id: ObjectId, new_start_date: datetime
+    ) -> None:
         self.collection.update_one(
-            {"_id": tournament_id},
-            {"$set": {"start_date": new_start_date}}
+            {"_id": tournament_id}, {"$set": {"start_date": new_start_date}}
         )
 
     def update_max_participants(self, tournament_id: ObjectId, new_max: int) -> bool:
         tournament = self.get_tournament_by_id(tournament_id)
         if len(tournament["participants"]) <= new_max:
             self.collection.update_one(
-                {"_id": tournament_id},
-                {"$set": {"max_participants": new_max}}
+                {"_id": tournament_id}, {"$set": {"max_participants": new_max}}
             )
             return True
         return False
