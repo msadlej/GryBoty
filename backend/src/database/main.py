@@ -52,6 +52,12 @@ class User:
             {"$set": {"account_type": new_account_type}}
         )
 
+    def update_password(self, user_id: ObjectId, new_password_hash: str) -> None:
+        self.collection.update_one(
+            {"_id": user_id}, 
+            {"$set": {"password_hash": new_password_hash}}
+        )
+
     def get_user_by_id(self, user_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"_id": user_id})
 
