@@ -3,7 +3,9 @@ from app.models.tournament import get_all_tournaments, get_tournaments_by_user_i
 from app.models.bot import get_all_bots, get_bots_by_user_id
 from app.schemas.user import UserModel, UserUpdate
 from app.schemas.tournament import TournamentModel
+from app.schemas.game import GameModel, GameCreate
 from app.dependencies import AdminDependency
+from app.models.game import insert_game_type
 from app.schemas.bot import BotModel
 from fastapi import APIRouter, Form
 from pyobjectID import PyObjectId
@@ -56,3 +58,8 @@ async def read_all_tournaments(current_admin: AdminDependency):
 @router.get("/bots/", response_model=list[BotModel])
 async def read_all_bots(current_admin: AdminDependency):
     return get_all_bots()
+
+
+@router.post("/games/", response_model=GameModel)
+def create_game_type(current_admin: AdminDependency, game_data: GameCreate = Form(...)):
+    return insert_game_type(game_data)

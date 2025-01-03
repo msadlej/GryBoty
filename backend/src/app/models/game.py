@@ -1,6 +1,6 @@
+from app.schemas.game import GameModel, GameCreate
 from app.utils.database import get_db_connection
 from fastapi import HTTPException, status
-from app.schemas.game import GameModel
 from database.main import GameType
 from bson import ObjectId
 
@@ -33,3 +33,16 @@ def get_all_game_types() -> list[GameModel]:
         game_types = db.get_all_game_types()
 
     return [GameModel(**game) for game in game_types]
+
+
+def insert_game_type(game: GameCreate) -> GameModel:
+    """
+    Inserts a game type into the database.
+    Returns the created game type.
+    """
+
+    with get_db_connection() as db:
+        game_collection = GameType(db)
+        game_id = game_collection.create_game_type(game.name, game.description)
+
+    return get_game_type_by_id(game_id)

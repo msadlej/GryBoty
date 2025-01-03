@@ -11,3 +11,10 @@ class GameModel(BaseModel):
     id: PyObjectId = Field(alias="_id")
     name: str
     description: str
+
+
+class GameCreate(BaseModel):
+    """Represents a game type crration request"""
+
+    name: str = Field(min_length=5, max_length=32)
+    description: str = Field(max_length=128)
