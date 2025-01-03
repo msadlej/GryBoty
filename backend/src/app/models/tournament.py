@@ -257,6 +257,13 @@ def add_tournament_participant(
     Returns the updated tournament.
     """
 
+    tournament_dict = get_tournament_by_id(tournament_id)
+    if len(tournament_dict["participants"]) >= tournament_dict["max_participants"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Tournament is already full.",
+        )
+
     with get_db_connection() as db:
         tournaments_collection = Tournament(db)
         tournaments_collection.add_participant(tournament_id, bot_id)
