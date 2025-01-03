@@ -51,13 +51,13 @@ class User:
 
     def update_account_type(self, user_id: ObjectId, new_account_type: str) -> None:
         self.collection.update_one(
-            {"_id": user_id}, 
+            {"_id": user_id},
             {"$set": {"account_type": new_account_type}}
         )
 
     def update_password(self, user_id: ObjectId, new_password_hash: str) -> None:
         self.collection.update_one(
-            {"_id": user_id}, 
+            {"_id": user_id},
             {"$set": {"password_hash": new_password_hash}}
         )
 
@@ -97,17 +97,17 @@ class Bot:
 
     def add_code_path(self, bot_id: ObjectId, code_path: str) -> None:
         self.collection.update_one(
-            {"_id": bot_id}, 
+            {"_id": bot_id},
             {"$set": {"code_path": code_path}}
         )
 
     def update_stats(self, bot_id: ObjectId, won: bool) -> None:
         update = {"$inc": {"games_played": 1, "wins" if won else "losses": 1}}
         self.collection.update_one({"_id": bot_id}, update)
-    
+
     def update_name(self, bot_id: ObjectId, new_name: str) -> None:
         self.collection.update_one(
-            {"_id": bot_id}, 
+            {"_id": bot_id},
             {"$set": {"name": new_name}}
         )
 
@@ -215,7 +215,7 @@ class Tournament:
             {"_id": tournament_id},
             {"$set": {"description": new_description}}
         )
-        
+
     def update_start_date(self, tournament_id: ObjectId, new_start_date: datetime) -> None:
         self.collection.update_one(
             {"_id": tournament_id},
