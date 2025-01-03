@@ -248,6 +248,9 @@ class Tournament:
     def get_tournament_by_match(self, match_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"matches": match_id})
 
+    def get_tournament_by_access_code(self, access_code: str) -> Optional[Dict]:
+        return self.collection.find_one({"access_code": access_code})
+
     def get_upcoming_tournaments(self) -> List[Dict]:
         current_date = datetime.now()
         return list(self.collection.find({"start_date": {"$gt": current_date}}))
