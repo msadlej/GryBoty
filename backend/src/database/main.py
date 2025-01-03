@@ -195,6 +195,18 @@ class Tournament:
             {"_id": tournament_id}, {"$push": {"matches": match_id}}
         )
 
+    def update_name(self, tournament_id: ObjectId, new_name: str) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id},
+            {"$set": {"name": new_name}}
+        )
+
+    def update_description(self, tournament_id: ObjectId, new_description: str) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id},
+            {"$set": {"description": new_description}}
+        )
+
     def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
         return tournament.get("matches", []) if tournament else []
