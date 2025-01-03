@@ -98,7 +98,7 @@ async def run_match(
         )
 
     bot_1, bot_2 = match.players.values()
-    docker_logs = run_game(bot_1.code, bot_2.code)
+    docker_logs = run_game(bot_1.code_path, bot_2.code_path)
     if docker_logs is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -110,6 +110,6 @@ async def run_match(
         raise HTTPException(
             status_code=status.HTTP_200_OK,
             detail=f"Match: {match_id} ended in a draw.",
-        )  # TODO: Update stats after a draw
+        )  # TODO: Replay match after a draw
 
     return update_match(match, winner, loser, moves)

@@ -86,13 +86,15 @@ def get_all_bots() -> list[BotModel]:
 def insert_bot(current_user: UserModel, name: str, game_type: ObjectId) -> BotModel:
     """
     Inserts a bot into the database.
+    Returns the created bot.
     """
 
     with get_db_connection() as db:
         bots_collection = Bot(db)
-        bot_id = bots_collection.create_bot(name, game_type, f"{current_user.id}/")
+        bot_id = bots_collection.create_bot(name, game_type)
 
-        # code = f"{current_user.id}/{bot_id}"  TODO: Implement in db
+        code_path = f"{current_user.id}/{bot_id}"
+        bots_collection.add_code_path(bot_id, code_path)
 
         users_collection = User(db)
         users_collection.add_bot(current_user.id, bot_id)
@@ -106,11 +108,14 @@ def insert_bot(current_user: UserModel, name: str, game_type: ObjectId) -> BotMo
 def update_bot(bot_id: ObjectId, bot_data: BotUpdate) -> BotModel:
     """
     Updates the name of a bot in the database.
+    Returns the updated bot.
     """
 
-    # with get_db_connection() as db:
-    #     bots_collection = Bot(db)
-    #     bots_collection.update_bot_name(bot_id, name)  TODO: Implement in db
+    with get_db_connection() as db:
+        bots_collection = Bot(db)
+
+        if bot_data.name is not None:
+            bots_collection.update_name(bot_id, bot_data.name)
 
     bot_dict = get_bot_by_id(bot_id)
     return convert_bot(bot_dict)

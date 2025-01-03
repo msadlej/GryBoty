@@ -22,14 +22,14 @@ def bot_dict(game_dict):
     return {
         "_id": ObjectId(),
         "name": "Test Bot",
+        "game_type": GameModel(**game_dict),
+        "code_path": "path/to/bot.py",
         "is_validated": True,
         "games_played": 4,
         "wins": 3,
         "losses": 2,
         "total_tournaments": 1,
         "tournaments_won": 0,
-        "game_type": GameModel(**game_dict),
-        "code": "path/to/bot.py",
     }
 
 

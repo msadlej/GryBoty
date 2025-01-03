@@ -28,8 +28,8 @@ class TournamentModel(BaseModel):
 class TournamentCreate(BaseModel):
     """Represents a tournament creation model"""
 
-    name: str = Field(min_length=3, max_length=16)
-    description: str = Field(max_length=64)
+    name: str = Field(min_length=5, max_length=32)
+    description: str = Field(max_length=128)
     game_type: PyObjectId
     start_date: datetime
     max_participants: int = Field(ge=2)
@@ -38,7 +38,7 @@ class TournamentCreate(BaseModel):
 class TournamentUpdate(BaseModel):
     """Represents a tournament update model"""
 
-    name: str | None = Field(min_length=3, max_length=16, default=None)
-    description: str | None = Field(max_length=64, default=None)
+    name: str | None = Field(min_length=5, max_length=32, default=None)
+    description: str | None = Field(max_length=128, default=None)
     start_date: datetime | None = None
     max_participants: int | None = Field(ge=2, default=None)

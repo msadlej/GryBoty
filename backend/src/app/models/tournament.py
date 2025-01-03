@@ -170,6 +170,7 @@ def insert_tournament(
 ) -> TournamentModel:
     """
     Inserts a new tournament into the database.
+    Returns the created tournament.
     """
 
     if get_game_type_by_id(tournament.game_type) is None:
@@ -182,7 +183,14 @@ def insert_tournament(
 
     with get_db_connection() as db:
         tournaments_collection = Tournament(db)
-        # if get_tournament_by_access_code(access_code)  TODO: Implement in db
+        if (
+            tournaments_collection.get_tournament_by_access_code(access_code)
+            is not None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Access code: {access_code} already exists.",
+            )
 
         tournament_id = tournaments_collection.create_tournament(
             tournament.name,
@@ -203,21 +211,29 @@ def update_tournament(
 ) -> TournamentModel:
     """
     Updates an existing tournament in the database.
+    Returns the updated tournament.
     """
 
     with get_db_connection() as db:
-        _ = Tournament(db)
+        tournaments_collection = Tournament(db)
+
         if tournament_data.name is not None:
-            ...  # TODO: Implement in db
+            tournaments_collection.update_name(tournament_id, tournament_data.name)
 
         if tournament_data.description is not None:
-            ...  # TODO: Implement in db
+            tournaments_collection.update_description(
+                tournament_id, tournament_data.description
+            )
 
         if tournament_data.start_date is not None:
-            ...  # TODO: Implement in db
+            tournaments_collection.update_start_date(
+                tournament_id, tournament_data.start_date
+            )
 
         if tournament_data.max_participants is not None:
-            ...  # TODO: Implement in db
+            tournaments_collection.update_max_participants(
+                tournament_id, tournament_data.max_participants
+            )
 
     tournament_dict = get_tournament_by_id(tournament_id)
     return convert_tournament(tournament_dict, detail=True)

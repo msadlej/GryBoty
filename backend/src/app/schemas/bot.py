@@ -12,7 +12,7 @@ class BotModel(BaseModel):
     id: PyObjectId = Field(alias="_id")
     name: str
     game_type: GameModel | None = None
-    code: str
+    code_path: str
     is_validated: bool
     games_played: int
     wins: int

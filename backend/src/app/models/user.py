@@ -78,7 +78,7 @@ def insert_user(username, password) -> dict[str, Any]:
     if get_user_by_username(username) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User {username} already exists",
+            detail=f"User: {username} already exists",
         )
 
     with get_db_connection() as db:
@@ -94,9 +94,9 @@ def update_user_password(user_id: ObjectId, hashed_password: str) -> dict[str, A
     Updates a user's password in the database.
     """
 
-    # with get_db_connection() as db:
-    # users_collection = User(db)
-    # users_collection.update_user_password(user_id, hashed_password)  TODO: Implement in db
+    with get_db_connection() as db:
+        users_collection = User(db)
+        users_collection.update_password(user_id, hashed_password)
 
     return get_user_by_id(user_id)
 
@@ -116,12 +116,15 @@ def update_user(user_id: ObjectId, user_data: UserUpdate) -> UserModel:
 
     with get_db_connection() as db:
         users_collection = User(db)
+
         if user_data.account_type is not None:
-            ...
-            # users_collection.update_user_type(user_id, account_type)  TODO: Implement in db
+            users_collection.update_account_type(user_id, user_data.account_type)
 
         if user_data.is_banned is not None:
-            users_collection.ban_user(user_id)  # TODO: Implement unban in db
+            if user_data.is_banned:
+                users_collection.ban_user(user_id)
+            else:
+                users_collection.unban_user(user_id)
 
     user_dict = get_user_by_id(user_id)
     return convert_user(user_dict)

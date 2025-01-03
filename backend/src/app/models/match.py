@@ -116,9 +116,9 @@ def process_logs(
     if match.players is None:
         match.players = get_bots_by_match(match.id)
 
-    if winner_code == bot_1.code:
+    if winner_code == bot_1.code_path:
         return moves, bot_1, bot_2
-    elif winner_code == bot_2.code:
+    elif winner_code == bot_2.code_path:
         return moves, bot_2, bot_1
 
     return moves, None, None
