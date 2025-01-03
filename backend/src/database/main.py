@@ -83,6 +83,12 @@ class Bot:
     def update_stats(self, bot_id: ObjectId, won: bool) -> None:
         update = {"$inc": {"games_played": 1, "wins" if won else "losses": 1}}
         self.collection.update_one({"_id": bot_id}, update)
+    
+    def update_name(self, bot_id: ObjectId, new_name: str) -> None:
+        self.collection.update_one(
+            {"_id": bot_id}, 
+            {"$set": {"name": new_name}}
+        )
 
     def validate_bot(self, bot_id: ObjectId) -> None:
         self.collection.update_one({"_id": bot_id}, {"$set": {"is_validated": True}})
