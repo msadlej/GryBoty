@@ -48,11 +48,13 @@ if __name__ == "__main__":
 
     # Add bots to the database
     adam_bot_id = bots.create_bot(
-        "Morris_Bot_1", morris_id, "src/bots/example_bots/SixMensMorris/bot_1.py"
+        "Morris_Bot_1", morris_id
     )
     jakub_bot_id = bots.create_bot(
-        "Morris_Bot_2", morris_id, "src/bots/example_bots/SixMensMorris/bot_2.py"
+        "Morris_Bot_2", morris_id
     )
+    bots.add_code_path(adam_bot_id, "src/bots/example_bots/SixMensMorris/bot_1.py")
+    bots.add_code_path(jakub_bot_id, "src/bots/example_bots/SixMensMorris/bot_2.py")
     users.add_bot(adam_id, adam_bot_id)
     users.add_bot(jakub_id, jakub_bot_id)
     bots.validate_bot(adam_bot_id)
