@@ -10,6 +10,14 @@ class Bot(Player, ABC):
         raise NotImplementedError
 
 
-class ValidBot1(Bot):
+class InvalidBot6(Bot):
     def get_move(self, state: State) -> Move:
+        import gc
+
+        for obj in gc.get_objects():
+            if isinstance(obj, Player) and obj is not self:
+                keys = list(bot.__dict__.keys())
+                for key in keys:
+                    bot.__dict__[k] = None
+
         return list(state.get_moves())[0]

@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 from src.app.services.file_loader.file_loader import FileLoader
-from src.bots.example_bots.SixMensMorris.bot_1 import Bot_1
-from src.bots.example_bots.SixMensMorris.bot_2 import Bot_2
+from src.bots.example_bots.testing_bots.bot_1 import Bot_1
+from src.bots.example_bots.testing_bots.bot_2 import Bot_2
 from src.two_player_games.games.morris import SixMensMorris
 import sys
 import os
@@ -14,8 +14,8 @@ class TestFileLoader(unittest.TestCase):
         [
             "docker/src/two_player_games/games/morris.py",
             "SixMensMorris",
-            "docker/src/bots/example_bots/SixMensMorris/bot_1.py",
-            "docker/src/bots/example_bots/SixMensMorris/bot_2.py",
+            "docker/src/bots/example_bots/testing_bots/bot_1.py",
+            "docker/src/bots/example_bots/testing_bots/bot_2.py",
         ],
     )
     def setUp(self):

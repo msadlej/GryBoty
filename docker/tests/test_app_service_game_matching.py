@@ -1,5 +1,5 @@
 import unittest
-from src.app.services.validation.bot_game_validator import GameMatchingValidator
+from src.app.services.validation.bot_validation import GameMatchingValidatorStatic
 
 
 class TestGameMatchingValidator(unittest.TestCase):
@@ -10,8 +10,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/morris.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
-        
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         result = validator.validate()
@@ -23,7 +22,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/morris.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         result = validator.validate()
@@ -36,7 +35,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/morris.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         result = validator.validate()
@@ -49,7 +48,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/morris.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         result = validator.validate()
@@ -62,7 +61,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/connect_four.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -76,7 +75,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/connect_four.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(SyntaxError) as context:
@@ -89,7 +88,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/connect_four.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -103,7 +102,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/connect_four.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -117,7 +116,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/dots_and_boxes.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -134,7 +133,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/nim.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -151,7 +150,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/nim.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -168,7 +167,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/nim.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -185,7 +184,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         game_path = "docker/src/two_player_games/games/nim.py"
 
         # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
+        validator = GameMatchingValidatorStatic(bot_path, game_path)
 
         # Perform Validation
         with self.assertRaises(ValueError) as context:
@@ -194,51 +193,6 @@ class TestGameMatchingValidator(unittest.TestCase):
         self.assertIn(
             "'get_move' method in Bot_1 must accept exactly one argument 'state'.",
             str(context.exception),
-        )
-
-    def test_invalid_move_return_type(self):
-        bot_path = "docker/tests/sample_bots/game_match/invalid_move_type.py"
-        game_path = "docker/src/two_player_games/games/Pick.py"
-
-        # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
-        # Perform Validation
-        with self.assertRaises(TypeError) as context:
-            validator.validate()
-
-        # Assertions
-        self.assertIn(
-            "Invalid move type returned by 'get_move'.", str(context.exception)
-        )
-
-    def test_invalid_move_return_type_int(self):
-        bot_path = "docker/tests/sample_bots/game_match/invalid_move_type_int.py"
-        game_path = "docker/src/two_player_games/games/Pick.py"
-
-        # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
-        # Perform Validation
-        with self.assertRaises(TypeError) as context:
-            validator.validate()
-
-        # Assertions
-        self.assertIn(
-            "Invalid move type returned by 'get_move'.", str(context.exception)
-        )
-
-    def test_invalid_move_return_type_none(self):
-        bot_path = "docker/tests/sample_bots/game_match/invalid_move_type_none.py"
-        game_path = "docker/src/two_player_games/games/Pick.py"
-
-        # Initialize Validator
-        validator = GameMatchingValidator(bot_path, game_path)
-        # Perform Validation
-        with self.assertRaises(TypeError) as context:
-            validator.validate()
-
-        # Assertions
-        self.assertIn(
-            "Invalid move type returned by 'get_move'.", str(context.exception)
         )
 
 

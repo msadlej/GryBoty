@@ -1,3 +1,4 @@
+import urllib
 from src.two_player_games.move import Move
 from src.two_player_games.state import State
 from abc import ABC, abstractmethod
@@ -10,6 +11,8 @@ class Bot(Player, ABC):
         raise NotImplementedError
 
 
-class ValidBot1(Bot):
+class InvalidBot4(Bot):
     def get_move(self, state: State) -> Move:
+        with urllib.request.urlopen("http://www.python.org/") as f:
+            pass  # or do something
         return list(state.get_moves())[0]

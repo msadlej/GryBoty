@@ -10,6 +10,9 @@ class Bot(Player, ABC):
         raise NotImplementedError
 
 
-class ValidBot1(Bot):
+class InvalidBot5(Bot):
     def get_move(self, state: State) -> Move:
+        for _ in range(2**1000):
+            pass  # or do something
+
         return list(state.get_moves())[0]

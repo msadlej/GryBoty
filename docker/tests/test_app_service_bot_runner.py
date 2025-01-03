@@ -14,8 +14,8 @@ class TestSixMensMorrisBotRun(unittest.TestCase):
         [
             "docker/app/services/bot_runner.py",
             "docker/src/two_player_games/games/morris.py",
-            "docker/src/bots/example_bots/SixMensMorris/bot_1.py",
-            "docker/src/bots/example_bots/SixMensMorris/bot_2.py",
+            "docker/src/bots/example_bots/testing_bots/bot_1.py",
+            "docker/src/bots/example_bots/testing_bots/bot_2.py",
         ],
     )
     def test_run(self):
