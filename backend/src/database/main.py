@@ -46,6 +46,12 @@ class User:
     def ban_user(self, user_id: ObjectId) -> None:
         self.collection.update_one({"_id": user_id}, {"$set": {"is_banned": True}})
 
+    def update_account_type(self, user_id: ObjectId, new_account_type: str) -> None:
+        self.collection.update_one(
+            {"_id": user_id}, 
+            {"$set": {"account_type": new_account_type}}
+        )
+
     def get_user_by_id(self, user_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"_id": user_id})
 
