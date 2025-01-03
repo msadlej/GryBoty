@@ -206,6 +206,12 @@ class Tournament:
             {"_id": tournament_id},
             {"$set": {"description": new_description}}
         )
+        
+    def update_start_date(self, tournament_id: ObjectId, new_start_date: datetime) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id},
+            {"$set": {"start_date": new_start_date}}
+        )
 
     def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
