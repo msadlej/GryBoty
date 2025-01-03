@@ -87,3 +87,9 @@ class TestGameDynamicBehavior(unittest.TestCase):
 
         # Assertions
         self.assertIn('Bot exceeded time limit for move', str(context.exception))   
+
+        ## restricted python blocks this, handle such syntax error
+# InvalidAttributeError(f"Invalid attribute name: \"{key}\" starts with an underscore, which is not allowed. Attribute names should not begin with an underscore.")
+# class InvalidAttributeError(Exception):
+#     def __init__(self, message):
+#         super().__init__(message)
