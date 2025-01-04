@@ -126,7 +126,7 @@ class GameValidatorDynamic(BaseValidator):
                 "_getattr_": safer_getattr,
                 # "__init__": "__init__",
                 # "_print_": PrintCollector,
-                # "_write_": lambda value: value,
+                "_write_": lambda value: value,
             }
 
             exec(byte_code, exec_env)

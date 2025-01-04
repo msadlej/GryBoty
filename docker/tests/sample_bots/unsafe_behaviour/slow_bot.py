@@ -32,21 +32,21 @@ class Bot(Player, ABC):
 
 
 # Helper class that performs some operations
-# class MoveAnalyzer:
-#     def __init__(:
-#         move_statistics = collections.defaultdict(int)
+class MoveAnalyzer:
+    def __init__(self):
+        self.move_statistics = collections.defaultdict(int)
 
-#     def analyze_moves( moves: list) -> dict:
-#         """Analyze the moves and return statistics."""
-#         for move in moves:
-#             move_statistics[move] = move_statistics.get(move, 0) + 1
-#         return dict(move_statistics)
+    def analyze_moves(self, moves: list) -> dict:
+        """Analyze the moves and return statistics."""
+        for move in moves:
+            self.move_statistics[move] = self.move_statistics.get(move, 0) + 1
+        return dict(self.move_statistics)
 
-#     def get_most_common_move( -> str:
-#         """Return the most common move."""
-#         if not move_statistics:
-#             return None
-#         return max(move_statistics.items(), key=lambda x: x[1])[0]
+    def get_most_common_move(self) -> str:
+        """Return the most common move."""
+        if not self.move_statistics:
+            return None
+        return max(self.move_statistics.items(), key=lambda x: x[1])[0]
 
 
 # Concrete implementation of a Bot that uses various data types and the MoveAnalyzer
@@ -67,7 +67,7 @@ class TestBot(Bot):
         moves = tuple(["move1", "move2", "move3"])
         available_moves = set(moves)
         counter = 0
-        # analyzer = MoveAnalyzer()  # Instance of the MoveAnalyzer
+        analyzer = MoveAnalyzer()  # Instance of the MoveAnalyzer
         """Returns a random move from the available moves in the current state."""
         self.simulate_delay(1)  # Simulate a delay of 1 second
 
@@ -82,7 +82,7 @@ class TestBot(Bot):
             k = k + 1
         # Update history and analyze moves
         history.append(move)
-        # analyzer.analyze_moves(history)
+        analyzer.analyze_moves("sth")
 
         # # Print some debug information
         # print(f"{name} is choosing a move: {move}")
