@@ -3,15 +3,21 @@ from src.app.utils.class_retriever import ClassRetriever
 from src.app.services.validation.validator_base_class import BaseValidator
 from copy import deepcopy
 from src.bots.example_bots.testing_bots.bot_1 import Bot_1
-
 from RestrictedPython import compile_restricted, safe_builtins
 from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getitem
 from RestrictedPython.Guards import (
     safer_getattr,
     guarded_iter_unpack_sequence,
 )
-import multiprocessing
-from queue import Empty
+from src.app.services.validation.runtime_validation import run_with_timer
+from RestrictedPython.PrintCollector import PrintCollector
+
+EXEC_TIME_LIMIT_SEC = 2000
+
+
+class InvalidAttributeError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 
 class BotValidationManager(BaseValidator):
@@ -62,82 +68,109 @@ class GameMatchingValidatorStatic(BaseValidator):
 
 
 class GameValidatorDynamic(BaseValidator):
-    def __init__(self, bot_path, game_path, time_limit=2.0):
+    def __init__(self, bot_path, game_path):
         super().__init__(bot_path, game_path)
         self.game_move = ClassRetriever(game_path).get_move()
         self.move = FileLoader.get_class(game_path, self.game_move)
-        self.time_limit = time_limit
         self.bot_source_code = FileLoader.load_file_as_string(bot_path)
 
     def validate(self):
-        restricted_builtins = deepcopy(safe_builtins)
-        restricted_builtins["__build_class__"] = __build_class__
-        restricted_builtins["__import__"] = self.restricted_import
-
-        # try:
-        byte_code = compile_restricted(
-            self.bot_source_code, filename="<bot_code>", mode="exec"
-        )
-        exec_env = {
-            "__builtins__": restricted_builtins,
-            "__name__": "restricted_module",
-            "__metaclass__": type,
-            "_getiter_": default_guarded_getiter,
-            "_getitem_": default_guarded_getitem,
-            "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
-            "_getattr_": safer_getattr,
-        }
-        exec(byte_code, exec_env)
-
-        retriever = ClassRetriever(self.bot_path)
-        bot_classes = retriever.get_bot()
-        bot_class = bot_classes[0]
-        bot_class = FileLoader.get_class(self.bot_path, bot_class)
-
-        bot_class = exec_env[bot_class.__name__]
-        bot_player = bot_class("1")
-        mock_player = Bot_1("2")
+        exec_env = self._prepare_execution_environment()
+        bot_class = self._load_bot_class(exec_env)
+        bot_player, mock_player = self._initialize_players(bot_class)
 
         self.game = self.game(first_player=bot_player, second_player=mock_player)
+        return self._run_game(bot_player)
 
+    def custom_inplacevar(self, op, x, y):
+        import operator
+
+        ops = {
+            "+=": operator.add,
+            "-=": operator.sub,
+            "*=": operator.mul,
+            "/=": operator.truediv,
+            "%=": operator.mod,
+        }
+        if op in ops:
+            return ops[op](x, y)
+        raise ValueError(f"Unsupported operation: {op}")
+
+    def _prepare_execution_environment(self):
+        restricted_builtins = deepcopy(safe_builtins)
+        restricted_builtins.update(
+            {
+                "__build_class__": __build_class__,
+                "__import__": self.restricted_import,
+                "_inplacevar_": self.custom_inplacevar,
+                "list": list,
+                "set": set,
+                "tuple": tuple,
+                "dict": dict,
+                "__print__": PrintCollector,
+            }
+        )
+
+        try:
+            byte_code = compile_restricted(
+                self.bot_source_code, filename="<bot_code>", mode="exec"
+            )
+
+            exec_env = {
+                "__builtins__": restricted_builtins,
+                "__name__": "restricted_module",
+                "__metaclass__": type,
+                "_getiter_": default_guarded_getiter,
+                "_getitem_": default_guarded_getitem,
+                "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
+                "_getattr_": safer_getattr,
+                "__init__": "__init__",
+                "_print_": PrintCollector,
+                # "_write_": lambda value: value,
+            }
+
+            exec(byte_code, exec_env)
+            return exec_env
+        except SyntaxError as e:
+            if 'is an invalid attribute name because it starts with "_"' in str(e):
+                raise InvalidAttributeError(f"Invalid attribute name: {e.msg}")
+            else:
+                raise Exception(e.msg)
+
+    def _load_bot_class(self, exec_env):
+        retriever = ClassRetriever(self.bot_path)
+        bot_classes = retriever.get_bot()
+        bot_class_name = bot_classes[0]
+        bot_class = FileLoader.get_class(self.bot_path, bot_class_name)
+        return exec_env[bot_class.__name__]
+
+    def _initialize_players(self, bot_class):
+        bot_player = bot_class(self.game.FIRST_PLAYER_DEFAULT_CHAR)
+        mock_player = Bot_1(self.game.SECOND_PLAYER_DEFAULT_CHAR)
+        return bot_player, mock_player
+
+    @run_with_timer(max_execution_time=EXEC_TIME_LIMIT_SEC)
+    def _run_game(self, bot_player):
         while not self.game.is_finished():
             current_player = self.game.get_current_player()
             state_copy = deepcopy(self.game.state)
 
-            def bot_move(queue, state_copy, current_player):
-                try:
-                    move = current_player.get_move(state_copy)
-                    queue.put(move)
-                except Exception as e:
-                    queue.put(e)
+            move, printed = current_player.get_move(state_copy)
+            print(printed)
+            if current_player == bot_player:
+                self._validate_move_type(move)
 
-            queue = multiprocessing.Queue()
-            process = multiprocessing.Process(
-                target=bot_move, args=(queue, state_copy, current_player)
-            )
-            process.start()
-            process.join(timeout=self.time_limit)
-
-            if process.is_alive():
-                process.terminate()
-                raise TimeoutError("Bot exceeded time limit for move")
-
-            try:
-                result = queue.get_nowait()
-                if isinstance(result, Exception):
-                    raise result
-                move = result
-            except Empty:
-                raise RuntimeError("Bot does not meet runtime limits.")
-
-            if current_player == bot_player and not (
-                type(move).__name__ == self.move.__name__
-                and type(move).__module__ == self.move.__module__
-            ):
-                raise TypeError(
-                    f"Invalid move type returned by 'get_move'. Expected {self.move}, got {type(move)}."
-                )
             self.game.make_move(move)
+            return True
+
+    def _validate_move_type(self, move):
+        if not (
+            type(move).__name__ == self.move.__name__
+            and type(move).__module__ == self.move.__module__
+        ):
+            raise TypeError(
+                f"Invalid move type returned by 'get_move'. Expected {self.move}, got {type(move)}."
+            )
 
     def restricted_import(self, name, *args):
         allowed_modules = {
@@ -150,7 +183,6 @@ class GameValidatorDynamic(BaseValidator):
             "src.bots.example_bots.example_bot",
             "abc",
         }
-        if name not in allowed_modules:
-            if not name.startswith("src.two_player_games"):
-                raise ImportError(f"Import of '{name}' is not allowed")
+        if name not in allowed_modules and not name.startswith("src.two_player_games"):
+            raise ImportError(f"Import of '{name}' is not allowed")
         return __import__(name, *args)
