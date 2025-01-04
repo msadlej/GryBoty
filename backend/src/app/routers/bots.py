@@ -33,7 +33,7 @@ async def create_bot(
     return new_bot
 
 
-@router.put("/{bot_id}", response_model=BotModel)
+@router.put("/{bot_id}/", response_model=BotModel)
 async def edit_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,
@@ -50,7 +50,7 @@ async def edit_bot_by_id(
     return updated_bot
 
 
-@router.get("/{bot_id}", response_model=BotModel)
+@router.get("/{bot_id}/", response_model=BotModel)
 async def read_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,

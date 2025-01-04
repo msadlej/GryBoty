@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/token",
+    "/token/",
     response_model=Token,
     name="login",
     description="Login for access token",
@@ -31,7 +31,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.post("/register", response_model=UserModel)
+@router.post("/register/", response_model=UserModel)
 async def register_user(user_data: UserCreate = Form(...)):
     return auth.create_user(user_data)
 

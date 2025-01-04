@@ -52,7 +52,7 @@ async def join_tournament(
     return add_tournament_participant(tournament_id, bot_id)
 
 
-@router.get("/{tournament_id}", response_model=TournamentModel)
+@router.get("/{tournament_id}/", response_model=TournamentModel)
 async def read_tournament_by_id(
     current_user: UserDependency,
     tournament_id: PyObjectId,
@@ -67,7 +67,7 @@ async def read_tournament_by_id(
     return convert_tournament(tournament_dict, detail=True)
 
 
-@router.put("/{tournament_id}", response_model=TournamentModel)
+@router.put("/{tournament_id}/", response_model=TournamentModel)
 async def edit_tournament_by_id(
     current_premium_user: PremiumDependency,
     tournament_id: PyObjectId,
@@ -83,7 +83,7 @@ async def edit_tournament_by_id(
 
 
 @router.get(
-    "/{tournament_id}/bots",
+    "/{tournament_id}/bots/",
     response_model=list[BotModel],
 )
 async def read_bots_by_tournament_id(

@@ -39,7 +39,7 @@ async def read_matches_by_tournament_id(
 
 
 @router.get(
-    "/{match_id}",
+    "/{match_id}/",
     response_model=MatchModel,
 )
 async def read_match_by_id(
@@ -57,7 +57,7 @@ async def read_match_by_id(
 
 
 @router.get(
-    "/{match_id}/bots",
+    "/{match_id}/bots/",
     response_model=dict[str, BotModel],
 )
 async def read_bots_by_match_id(
@@ -75,7 +75,7 @@ async def read_bots_by_match_id(
 
 
 @router.put(
-    "/{match_id}/run",
+    "/{match_id}/run/",
     response_model=dict[str, BotModel],
 )
 async def run_match(
