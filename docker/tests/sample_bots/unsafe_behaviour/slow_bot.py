@@ -73,7 +73,7 @@ class TestBot(Bot):
 
         # Use some random logic to select a move
         move = random.choice(list(state.get_moves()))
-        print(history)
+        # print(history)
 
         for i in range(0, 1):
             i = i + 1
@@ -89,6 +89,6 @@ class TestBot(Bot):
         # print(f"History of moves: {history}")
         # print(f"Current settings: {settings}")
         # print(f"Most common move so far: {analyzer.get_most_common_move()}")
-        result = printed
+        # result = printed
 
-        return random.choice(list(state.get_moves())), result
+        return random.choice(list(state.get_moves()))

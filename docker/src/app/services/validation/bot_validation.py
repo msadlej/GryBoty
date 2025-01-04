@@ -12,7 +12,7 @@ from RestrictedPython.Guards import (
 from src.app.services.validation.runtime_validation import run_with_timer
 from RestrictedPython.PrintCollector import PrintCollector
 
-EXEC_TIME_LIMIT_SEC = 2000
+EXEC_TIME_LIMIT_SEC = 2
 
 
 class InvalidAttributeError(Exception):
@@ -107,7 +107,7 @@ class GameValidatorDynamic(BaseValidator):
                 "set": set,
                 "tuple": tuple,
                 "dict": dict,
-                "__print__": PrintCollector,
+                # "__print__": PrintCollector,
             }
         )
 
@@ -124,8 +124,8 @@ class GameValidatorDynamic(BaseValidator):
                 "_getitem_": default_guarded_getitem,
                 "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
                 "_getattr_": safer_getattr,
-                "__init__": "__init__",
-                "_print_": PrintCollector,
+                # "__init__": "__init__",
+                # "_print_": PrintCollector,
                 # "_write_": lambda value: value,
             }
 
@@ -155,8 +155,7 @@ class GameValidatorDynamic(BaseValidator):
             current_player = self.game.get_current_player()
             state_copy = deepcopy(self.game.state)
 
-            move, printed = current_player.get_move(state_copy)
-            print(printed)
+            move = current_player.get_move(state_copy)
             if current_player == bot_player:
                 self._validate_move_type(move)
 
