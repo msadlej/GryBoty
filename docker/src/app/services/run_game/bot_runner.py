@@ -5,12 +5,14 @@ from copy import deepcopy
 
 class BotRunner:
 
-    def __init__(self, game_name: str, bot_1: str, bot_2: str):
+    def __init__(
+        self, game_name: str, bot_1: str, bot_2: str, bot_1_name: str, bot_2_name
+    ):
         self._initialize_game(game_name)
         self._initialize_bots(bot_1, bot_2)
         self._init_game()
         self.moves = []
-        self.map = {self.bot_1: bot_1, self.bot_2: bot_2}
+        self.map = {self.bot_1: bot_1_name, self.bot_2: bot_2_name}
 
     def _initialize_game(self, game_name: str):
         """Load the game file and class."""
@@ -28,7 +30,7 @@ class BotRunner:
     def _init_game(self):
         self.bot_1 = self.bot_1(self.game.FIRST_PLAYER_DEFAULT_CHAR)
         self.bot_2 = self.bot_2(self.game.SECOND_PLAYER_DEFAULT_CHAR)
-        self.game = self.game(self.bot_1, self.bot_2)
+        self.game = self.game(first_player=self.bot_1, second_player=self.bot_2)
 
     def run_game(self):
         while not self.game.is_finished():

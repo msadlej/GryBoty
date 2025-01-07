@@ -20,17 +20,17 @@ class InvalidAttributeError(Exception):
 
 
 class BotValidationManager(BaseValidator):
-    def __init__(self, bot_str, game_str):
-        super().__init__(bot_str, game_str)
+    def __init__(self, bot_str, game_name_str):
+        super().__init__(bot_str, game_name_str)
 
     def validate(self):
         """Run all validators and aggregate results."""
         validators = [
             GameMatchingValidatorStatic(
                 self.bot_str,
-                self.game_str,
+                self.game_name_str,
             ),
-            GameValidatorDynamic(self.bot_str, self.game_str),
+            GameValidatorDynamic(self.bot_str, self.game_name_str),
         ]
 
         for validator in validators:
@@ -39,8 +39,8 @@ class BotValidationManager(BaseValidator):
 
 
 class GameMatchingValidatorStatic(BaseValidator):
-    def __init__(self, bot_str, game_str):
-        super().__init__(bot_str, game_str)
+    def __init__(self, bot_str, game_name_str):
+        super().__init__(bot_str, game_name_str)
 
     def validate(self):
         """Validate if the bot matches the game requirements."""
@@ -63,10 +63,10 @@ class GameMatchingValidatorStatic(BaseValidator):
 
 
 class GameValidatorDynamic(BaseValidator):
-    def __init__(self, bot_str, game_str):
-        super().__init__(bot_str, game_str)
-        self.game_move = ClassRetriever(game_str).get_move()
-        self.move = FileLoader.get_class(game_str, self.game_move)
+    def __init__(self, bot_str, game_name_str):
+        super().__init__(bot_str, game_name_str)
+        self.game_move = ClassRetriever(self.game_str).get_move()
+        self.move = FileLoader.get_class(self.game_str, self.game_move)
         self.bot_source_code = bot_str
 
     def validate(self):

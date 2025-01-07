@@ -28,15 +28,16 @@ class TestSixMensMorrisBotRun(unittest.TestCase):
 
         bot_1 = file_vars["docker/src/bots/example_bots/testing_bots/bot_1.py"]
         bot_2 = file_vars["docker/src/bots/example_bots/testing_bots/bot_2.py"]
-        bots_map = {bot_1: "bot_1", bot_2: "bot_2"}
+        bot_1_filename = "bot_1"
+        bot_2_filename = "bot_2"
 
         bot_1_str = FileLoader.load_file_as_string(bot_1)
         bot_2_str = FileLoader.load_file_as_string(bot_2)
 
-        runner = BotRunner(game_name, bot_1_str, bot_2_str)
+        runner = BotRunner(game_name, bot_1_str, bot_2_str, bot_1_filename, bot_2_filename)
         winner, states = runner.run_game()
 
-        self.assertIn(winner, [bot_1_str, bot_2_str, None])
+        self.assertIn(winner, [bot_1_filename, bot_2_filename, None])
         self.assertIsInstance(states, list)
         self.assertGreaterEqual(len(states), 0)
 
