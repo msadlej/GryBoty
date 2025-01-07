@@ -23,7 +23,6 @@ allowed_modules = {
 }
 
 
-# Abstract Bot class
 class Bot(Player, ABC):
     @abstractmethod
     def get_move(state: State) -> Move:
@@ -31,7 +30,6 @@ class Bot(Player, ABC):
         raise NotImplementedError
 
 
-# Helper class that performs some operations
 class MoveAnalyzer:
     def __init__(self):
         self.move_statistics = collections.defaultdict(int)
@@ -49,15 +47,14 @@ class MoveAnalyzer:
         return max(self.move_statistics.items(), key=lambda x: x[1])[0]
 
 
-# Concrete implementation of a Bot that uses various data types and the MoveAnalyzer
 class TestBot(Bot):
 
     def simulate_delay(self, seconds: int) -> None:
         """Simulates a delay for a given number of seconds."""
-        end_time = 10**seconds  # Adjusted for a more reasonable delay
+        end_time = 10 * seconds
         count = 0
         while count < end_time:
-            count += 1  # Busy-wait loop to simulate delay
+            count += 1
 
     def get_move(self, state: State) -> Move:
 
@@ -67,28 +64,23 @@ class TestBot(Bot):
         moves = tuple(["move1", "move2", "move3"])
         available_moves = set(moves)
         counter = 0
-        analyzer = MoveAnalyzer()  # Instance of the MoveAnalyzer
-        """Returns a random move from the available moves in the current state."""
-        self.simulate_delay(1)  # Simulate a delay of 1 second
+        analyzer = MoveAnalyzer()
 
-        # Use some random logic to select a move
+        self.simulate_delay(1)
+
         move = random.choice(list(state.get_moves()))
-        # print(history)
 
         for i in range(0, 1):
             i = i + 1
         k = -1
+
         while k < 0:
             k = k + 1
-        # Update history and analyze moves
-        history.append(move)
-        analyzer.analyze_moves("sth")
 
-        # # Print some debug information
-        # print(f"{name} is choosing a move: {move}")
-        # print(f"History of moves: {history}")
-        # print(f"Current settings: {settings}")
-        # print(f"Most common move so far: {analyzer.get_most_common_move()}")
-        # result = printed
+        p = [j for j in range(2)]
+
+        history.append(move)
+        analyzer.analyze_moves("sthh")
+        analyzer.get_most_common_move()
 
         return random.choice(list(state.get_moves()))
