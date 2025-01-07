@@ -36,16 +36,16 @@ class TestRunMatch(unittest.TestCase):
         bot2_path = "docker/src/bots/example_bots/testing_bots/bot_2.py"
 
         with open(bot1_path, "rb") as f:
-            bot1_content = BytesIO(f.read())
+            bot1_content = f.read()
 
         with open(bot2_path, "rb") as f:
-            bot2_content = BytesIO(f.read())
+            bot2_content = f.read()
 
         filename1 = "bot1.py"
         filename2 = "bot2.py"
 
-        bot1_content = bot1_content.getvalue()
-        bot2_content = bot2_content.getvalue()
+        bot1_content = BytesIO(bot1_content).getvalue()
+        bot2_content = BytesIO(bot2_content).getvalue()
         response = client.post(
             "/run-match",
             data={

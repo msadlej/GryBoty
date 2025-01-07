@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  bot_env:
+    build: ./docker
+    ports:
+      - "8080:5000"
+    volumes:
+      - ./docker/src:/docker/src
+      - ./docker/main.py:/docker/main.py
+    environment:
+      - PYTHONUNBUFFERED=1

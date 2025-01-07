@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch
 import sys
 from pathlib import Path
-import json
 import io
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))

@@ -25,7 +25,7 @@ async def run_match(
         filename1 = filename1 or "file1.py"
         filename2 = filename2 or "file2.py"
 
-        bot_1_str = preprocess_file(file1)
+        bot_1_str = preprocess_file(file1) # TODO think if its needed
         bot_2_str = preprocess_file(file2)
 
         runner = BotRunner(game, bot_1_str, bot_2_str, filename1, filename2)
