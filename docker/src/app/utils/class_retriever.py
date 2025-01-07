@@ -4,8 +4,8 @@ import ast
 
 
 class ClassRetriever:
-    def __init__(self, game_path):
-        self.game_path = game_path
+    def __init__(self, file_str: str):
+        self.game_file = file_str
         self.base_classes = {"Game": "Game", "Move": "Move", "Bot": "Bot"}
 
     def _get_class(self, base_class_key):
@@ -13,9 +13,7 @@ class ClassRetriever:
         if class_name is None:
             raise ValueError(f"Invalid base class key: {base_class_key}")
 
-        # Load the file content and get the last child class.
-        file_content = FileLoader.load_file_as_string(self.game_path)
-        self.analyzer = InheritanceAnalyzer(file_content, class_name)
+        self.analyzer = InheritanceAnalyzer(self.game_file, class_name)
         child_classes = self.analyzer.get_last_children()
 
         if not child_classes:
@@ -30,9 +28,13 @@ class ClassRetriever:
         return self._get_class("Move")[0]
 
     def get_bot(self):
-        return self._get_class("Bot")
+        result = self._get_class("Bot")
+        if len(result) > 1:
+            raise ValueError("Multiple classes inherit from Bot. Only one is allowed.")
+        return result[0]
 
     def get_method(self, bot_class, method_name):
+        body_items = []
         for node in self.analyzer.tree.body:
             if isinstance(node, ast.ClassDef) and node.name == bot_class:
                 for body_item in node.body:
@@ -40,5 +42,7 @@ class ClassRetriever:
                         isinstance(body_item, ast.FunctionDef)
                         and body_item.name == method_name
                     ):  # It's a method
-                        return body_item
-        return None
+                        body_items.append(body_item)
+        if len(body_items) > 1:
+            raise ValueError(f"Too many methods: {method_name} in {bot_class} class")
+        return body_items[0] if len(body_items) > 0 else None

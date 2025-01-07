@@ -1,6 +1,6 @@
-import os
-import importlib.util
 import inspect
+from typing import BinaryIO
+import types
 
 
 class FileLoader:
@@ -9,41 +9,20 @@ class FileLoader:
     """
 
     @staticmethod
-    def get_class(path, class_name=None):
-        """
-        Load a class from a file.
-
-        Args:
-            path (str): Path to the file.
-            class_name (str, optional): Name of the class to load. If None, attempts to
-                                         infer the class name from the file name.
-
-        Returns:
-            type: The loaded class.
-
-        Raises:
-            FileNotFoundError: If the file does not exist.
-            AttributeError: If the specified class is not found in the module.
-        """
-        module = FileLoader.load_module(path)
+    def get_class(file_str, class_name):
+        module = FileLoader.load_module_from_str(file_str)
         return FileLoader.retrieve_class(module, class_name)
 
     @staticmethod
-    def load_module(path):
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"File not found: {path}")
-
-        module_name = os.path.splitext(os.path.basename(path))[0]
-        spec = importlib.util.spec_from_file_location(module_name, path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+    def load_module_from_str(file_str):
+        module_name = "dynamic_module"
+        module = types.ModuleType(module_name)
+        exec(file_str, module.__dict__)
         return module
 
     @staticmethod
-    def load_file_as_string(path):
-        with open(path, "r") as file:
-            file_content = file.read()
-        return file_content
+    def load_file_as_string(file: BinaryIO):
+        return file.getvalue().decode("utf-8")
 
     @staticmethod
     def retrieve_class(module, class_name=None):
@@ -61,3 +40,19 @@ class FileLoader:
             if not hasattr(module, class_name):
                 raise AttributeError(f"Class '{class_name}' not found in the module.")
             return getattr(module, class_name)
+
+    @staticmethod
+    def get_file_str_by_name(game_name: str):
+        file_map = {
+            "morris": "docker/src/two_player_games/games/morris.py",
+            "connect_four": "docker/src/two_player_games/games/connect_four.py",
+            "dots_and_boxes": "docker/src/two_player_games/games/dots_and_boxes.py",
+            "nim": "docker/src/two_player_games/games/nim.py",
+            "pick": "docker/src/two_player_games/games/Pick.py",
+        }
+
+        if game_name not in file_map:
+            raise ValueError(f"Game '{game_name}' not found in the file map.")
+
+        with open(file_map[game_name], "r") as f:
+            return f.read()

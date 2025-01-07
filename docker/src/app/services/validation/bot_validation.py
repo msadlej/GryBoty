@@ -10,7 +10,6 @@ from RestrictedPython.Guards import (
     guarded_iter_unpack_sequence,
 )
 from src.app.services.validation.runtime_validation import run_with_timer
-from RestrictedPython.PrintCollector import PrintCollector
 
 EXEC_TIME_LIMIT_SEC = 2
 
@@ -21,36 +20,32 @@ class InvalidAttributeError(Exception):
 
 
 class BotValidationManager(BaseValidator):
-    def __init__(self, bot_path, game_path):
-        super().__init__(bot_path, game_path)
+    def __init__(self, bot_str, game_str):
+        super().__init__(bot_str, game_str)
 
     def validate(self):
         """Run all validators and aggregate results."""
         validators = [
             GameMatchingValidatorStatic(
-                self.bot_path,
-                self.game_path,
+                self.bot_str,
+                self.game_str,
             ),
-            GameValidatorDynamic(self.bot_path, self.game_path),
+            GameValidatorDynamic(self.bot_str, self.game_str),
         ]
 
         for validator in validators:
             validator.validate()
+        return True
 
 
 class GameMatchingValidatorStatic(BaseValidator):
-    def __init__(self, bot_path, game_path):
-        super().__init__(bot_path, game_path)
+    def __init__(self, bot_str, game_str):
+        super().__init__(bot_str, game_str)
 
     def validate(self):
         """Validate if the bot matches the game requirements."""
-        retriever = ClassRetriever(self.bot_path)
-        bot_classes = retriever.get_bot()
-
-        if len(bot_classes) > 1:
-            raise ValueError("Multiple classes inherit from Bot. Only one is allowed.")
-
-        bot_class = bot_classes[0]
+        retriever = ClassRetriever(self.bot_str)
+        bot_class = retriever.get_bot()
 
         func = retriever.get_method(bot_class, "get_move")
         if func is None:
@@ -68,11 +63,11 @@ class GameMatchingValidatorStatic(BaseValidator):
 
 
 class GameValidatorDynamic(BaseValidator):
-    def __init__(self, bot_path, game_path):
-        super().__init__(bot_path, game_path)
-        self.game_move = ClassRetriever(game_path).get_move()
-        self.move = FileLoader.get_class(game_path, self.game_move)
-        self.bot_source_code = FileLoader.load_file_as_string(bot_path)
+    def __init__(self, bot_str, game_str):
+        super().__init__(bot_str, game_str)
+        self.game_move = ClassRetriever(game_str).get_move()
+        self.move = FileLoader.get_class(game_str, self.game_move)
+        self.bot_source_code = bot_str
 
     def validate(self):
         exec_env = self._prepare_execution_environment()
@@ -107,7 +102,14 @@ class GameValidatorDynamic(BaseValidator):
                 "set": set,
                 "tuple": tuple,
                 "dict": dict,
-                # "__print__": PrintCollector,
+                "max": max,
+                "min": min,
+                "all": all,
+                "any": any,
+                "filter": filter,
+                "range": range,
+                "reversed": reversed,
+                "sum": sum,
             }
         )
 
@@ -124,8 +126,6 @@ class GameValidatorDynamic(BaseValidator):
                 "_getitem_": default_guarded_getitem,
                 "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
                 "_getattr_": safer_getattr,
-                # "__init__": "__init__",
-                # "_print_": PrintCollector,
                 "_write_": lambda value: value,
             }
 
@@ -138,10 +138,9 @@ class GameValidatorDynamic(BaseValidator):
                 raise Exception(e.msg)
 
     def _load_bot_class(self, exec_env):
-        retriever = ClassRetriever(self.bot_path)
-        bot_classes = retriever.get_bot()
-        bot_class_name = bot_classes[0]
-        bot_class = FileLoader.get_class(self.bot_path, bot_class_name)
+        retriever = ClassRetriever(self.bot_str)
+        bot_class_name = retriever.get_bot()
+        bot_class = FileLoader.get_class(self.bot_str, bot_class_name)
         return exec_env[bot_class.__name__]
 
     def _initialize_players(self, bot_class):

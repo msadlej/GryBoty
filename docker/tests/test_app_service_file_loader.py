@@ -1,88 +1,88 @@
 import unittest
-from unittest.mock import patch
 from src.app.services.file_loader.file_loader import FileLoader
-from src.bots.example_bots.testing_bots.bot_1 import Bot_1
-from src.bots.example_bots.testing_bots.bot_2 import Bot_2
-from src.two_player_games.games.morris import SixMensMorris
-import sys
-import os
+import io
+from src.app.utils.class_retriever import ClassRetriever
 
 
 class TestFileLoader(unittest.TestCase):
-    @patch(
-        "sys.argv",
-        [
-            "docker/src/two_player_games/games/morris.py",
-            "SixMensMorris",
+    def setUp(self):
+        game_name = "morris"
+
+        file_paths = [
             "docker/src/bots/example_bots/testing_bots/bot_1.py",
             "docker/src/bots/example_bots/testing_bots/bot_2.py",
-        ],
-    )
-    def setUp(self):
-        self.game_file = sys.argv[0]
-        self.game_class = sys.argv[1]
-        self.bot_1_file = sys.argv[2]
-        self.bot_2_file = sys.argv[3]
+        ]
 
-    def _load_and_assert_module(self, file_path, expected_name):
-        module = FileLoader.load_module(file_path)
-        self.assertEqual(module.__name__, expected_name)
-        return module
+        file_vars = {}
+
+        for path in file_paths:
+            with open(path, "rb") as f:
+                file_vars[path] = io.BytesIO(f.read())
+
+        bot_1 = file_vars["docker/src/bots/example_bots/testing_bots/bot_1.py"]
+        bot_2 = file_vars["docker/src/bots/example_bots/testing_bots/bot_2.py"]
+
+        self.bot_1_file_str = FileLoader.load_file_as_string(bot_1)
+        self.bot_2_file_str = FileLoader.load_file_as_string(bot_2)
+
+        self.game_file_str = FileLoader.get_file_str_by_name(game_name)
+        self.game_class = ClassRetriever(self.game_file_str).get_game()
+
+        self.bot_1_class = ClassRetriever(self.bot_1_file_str).get_bot()
+        self.bot_2_class = ClassRetriever(self.bot_2_file_str).get_bot()
 
     def test_module_load(self):
-        self._load_and_assert_module(self.bot_1_file, "bot_1")
-        self._load_and_assert_module(self.bot_2_file, "bot_2")
-        self._load_and_assert_module(self.game_file, "morris")
+        # Test loading modules from strings
+        game_module = FileLoader.load_module_from_str(self.game_file_str)
+        bot_1_module = FileLoader.load_module_from_str(self.bot_1_file_str)
+        bot_2_module = FileLoader.load_module_from_str(self.bot_2_file_str)
+
+        self.assertTrue(hasattr(game_module, "SixMensMorris"))
+        self.assertTrue(hasattr(bot_1_module, "Bot_1"))
+        self.assertTrue(hasattr(bot_2_module, "Bot_2"))
 
     def test_retrieve_class(self):
-        bot_1_module = self._load_and_assert_module(self.bot_1_file, "bot_1")
-        bot_2_module = self._load_and_assert_module(self.bot_2_file, "bot_2")
-        game_module = self._load_and_assert_module(self.game_file, "morris")
+        # Test retrieving classes from loaded modules
+        game_module = FileLoader.load_module_from_str(self.game_file_str)
+        bot_1_module = FileLoader.load_module_from_str(self.bot_1_file_str)
+        bot_2_module = FileLoader.load_module_from_str(self.bot_2_file_str)
+
         self.assertEqual(
-            FileLoader.retrieve_class(bot_1_module).__name__, Bot_1.__name__
+            FileLoader.retrieve_class(bot_1_module, self.bot_1_class).__name__, "Bot_1"
         )
         self.assertEqual(
-            FileLoader.retrieve_class(bot_2_module).__name__, Bot_2.__name__
+            FileLoader.retrieve_class(bot_2_module, self.bot_2_class).__name__, "Bot_2"
         )
         self.assertEqual(
             FileLoader.retrieve_class(game_module, self.game_class).__name__,
-            SixMensMorris.__name__,
+            "SixMensMorris",
         )
 
     def test_class_load(self):
-        self.assertEqual(FileLoader.get_class(self.bot_1_file).__name__, Bot_1.__name__)
-        self.assertEqual(FileLoader.get_class(self.bot_2_file).__name__, Bot_2.__name__)
+        # Test directly loading classes
+        self.assertEqual(FileLoader.get_class(self.bot_1_file_str, self.bot_1_class).__name__, "Bot_1")
+        self.assertEqual(FileLoader.get_class(self.bot_2_file_str, self.bot_2_class).__name__, "Bot_2")
         self.assertEqual(
-            FileLoader.get_class(self.game_file, self.game_class).__name__,
-            SixMensMorris.__name__,
+            FileLoader.get_class(self.game_file_str, self.game_class).__name__,
+            "SixMensMorris",
         )
 
     def test_exceptions(self):
-        with self.assertRaises(FileNotFoundError):
-            FileLoader.load_module("nonexistent_file.py")
-
-        with self.assertRaises(FileNotFoundError):
-            FileLoader.load_module("/invalid/path/to/module.py")
-
+        # Test exceptions for invalid input
         with self.assertRaises(AttributeError):
-            fake_module = self._load_and_assert_module(self.bot_1_file, "bot_1")
+            fake_module = FileLoader.load_module_from_str(self.bot_1_file_str)
             FileLoader.retrieve_class(fake_module, "NonexistentClass")
 
         with self.assertRaises(AttributeError):
-            FileLoader.get_class(self.bot_1_file, "NonexistentClass")
+            FileLoader.get_class(self.bot_1_file_str, "NonexistentClass")
 
     def test_no_passed_class_attribute_error(self):
-        import tempfile
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".py", prefix="test", delete=False
-        ) as tmp_file:
-            tmp_file.write(b"class Invalid:\n pass")  # Write invalid Python code
-
-        try:
-            with self.assertRaises(
-                AttributeError, msg="No matching class found in the module"
-            ):
-                FileLoader.get_class(tmp_file.name)
-        finally:
-            os.remove(tmp_file.name)  # Clean up the temporary file
+        # Test for no matching class in the module
+        invalid_module_str = """
+class Invalid:
+    pass
+"""
+        with self.assertRaises(
+            AttributeError, msg="No matching class found in the module"
+        ):
+            FileLoader.get_class(invalid_module_str, 'SomeClass')
