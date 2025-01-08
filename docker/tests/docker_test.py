@@ -1,7 +1,4 @@
 import requests
-from io import BytesIO
-
-
 
 
 # The URL of the FastAPI app running inside Docker
@@ -9,22 +6,12 @@ url = "http://localhost:8080/validate"
 
 # Prepare the data to send
 game_name = "morris"
-file_path = "docker/src/bots/example_bots/testing_bots/bot_1.py"
-
-# Prepare the files and form data
+file_path = "/home/kosla/Studies/pzsp2/project/docker/tests/sample_bots/unsafe_behaviour/runtime_error.py"
 with open(file_path, "rb") as f:
-    bot = f.read()
+    files = {"file": f}
+    data = {"game": game_name}
 
+    # Send the POST request with the file
+    response = requests.post(url, data=data, files=files)
 
-bot_file = BytesIO(bot).getvalue()
-
-files = {"file": bot_file}  # Open the file in binary mode
-data = {"game": game_name}
-
-data = {"game": game_name, "file": bot_file}
-
-# Send the POST request
-response = requests.post(url, data=data)
-
-# Print the response from FastAPI
 print(response.json())
