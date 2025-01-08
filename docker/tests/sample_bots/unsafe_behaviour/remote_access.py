@@ -1,8 +1,8 @@
 import urllib
-from src.two_player_games.move import Move
-from src.two_player_games.state import State
+from two_player_games.move import Move
+from two_player_games.state import State
 from abc import ABC, abstractmethod
-from src.two_player_games.player import Player
+from two_player_games.player import Player
 
 
 class Bot(Player, ABC):

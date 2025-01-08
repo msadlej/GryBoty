@@ -44,11 +44,11 @@ class FileLoader:
     @staticmethod
     def get_file_str_by_name(game_name: str):
         file_map = {
-            "morris": "docker/src/two_player_games/games/morris.py", # TODO change path
-            "connect_four": "docker/src/two_player_games/games/connect_four.py",
-            "dots_and_boxes": "docker/src/two_player_games/games/dots_and_boxes.py",
-            "nim": "docker/src/two_player_games/games/nim.py",
-            "pick": "docker/src/two_player_games/games/Pick.py",
+            "morris": "docker/two_player_games/games/morris.py",  # TODO change path
+            "connect_four": "docker/two_player_games/games/connect_four.py",
+            "dots_and_boxes": "docker/two_player_games/games/dots_and_boxes.py",
+            "nim": "docker/two_player_games/games/nim.py",
+            "pick": "docker/two_player_games/games/Pick.py",
         }
 
         if game_name not in file_map:

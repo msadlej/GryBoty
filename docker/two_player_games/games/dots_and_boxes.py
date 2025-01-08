@@ -1,16 +1,19 @@
 from typing import Dict, Iterable, List, Optional, Tuple
-from src.two_player_games.game import Game
-from src.two_player_games.move import Move
-from src.two_player_games.player import Player
-from src.two_player_games.state import State
+from two_player_games.game import Game
+from two_player_games.move import Move
+from two_player_games.player import Player
+from two_player_games.state import State
 
 
 class DotsAndBoxes(Game):
     """Class that represents the dots and boxes game"""
-    FIRST_PLAYER_DEFAULT_CHAR = '1'
-    SECOND_PLAYER_DEFAULT_CHAR = '2'
 
-    def __init__(self, size: int = 2, first_player: Player = None, second_player: Player = None):
+    FIRST_PLAYER_DEFAULT_CHAR = "1"
+    SECOND_PLAYER_DEFAULT_CHAR = "2"
+
+    def __init__(
+        self, size: int = 2, first_player: Player = None, second_player: Player = None
+    ):
         """
         Initializes game.
 
@@ -35,6 +38,7 @@ class DotsAndBoxesMove(Move):
         connection: str, 'h' if a horizontal line or 'v' if a vertical line
         loc: line coordinates as a tuple: (column, row) for horizontal or (row, column) for vertical
     """
+
     def __init__(self, connection: str, loc: Tuple[int, int]):
         self.connection = connection
         self.loc = loc
@@ -47,9 +51,16 @@ class DotsAndBoxesMove(Move):
 
 class DotsAndBoxesState(State):
     """Class that represents a state in the dots and boxes game"""
-    def __init__(self,
-            current_player: Player, other_player: Player, size: int = None,
-            horizontals: List[List[bool]] = None, verticals: List[List[bool]] = None, boxes: List[List[Player]] = None):
+
+    def __init__(
+        self,
+        current_player: Player,
+        other_player: Player,
+        size: int = None,
+        horizontals: List[List[bool]] = None,
+        verticals: List[List[bool]] = None,
+        boxes: List[List[Player]] = None,
+    ):
         """Creates the state. Do not call directly."""
 
         if horizontals and verticals and boxes:
@@ -67,20 +78,24 @@ class DotsAndBoxesState(State):
 
     def get_moves(self) -> Iterable[DotsAndBoxesMove]:
         return [
-            DotsAndBoxesMove("h", loc)
-            for loc in self._get_free_lines(self.horizontals)
-        ] + [
-            DotsAndBoxesMove("v", loc)
-            for loc in self._get_free_lines(self.verticals)
-        ]
+            DotsAndBoxesMove("h", loc) for loc in self._get_free_lines(self.horizontals)
+        ] + [DotsAndBoxesMove("v", loc) for loc in self._get_free_lines(self.verticals)]
 
-    def make_move(self, move: DotsAndBoxesMove) -> 'DotsAndBoxesState':
+    def make_move(self, move: DotsAndBoxesMove) -> "DotsAndBoxesState":
         collection = self.horizontals if move.connection == "h" else self.verticals
         if collection[move.loc[0]][move.loc[1]]:
             raise ValueError("Invalid move")
 
-        horizontals = self._set(self.horizontals, move.loc) if move.connection == "h" else self.horizontals
-        verticals = self._set(self.verticals, move.loc) if move.connection == "v" else self.verticals
+        horizontals = (
+            self._set(self.horizontals, move.loc)
+            if move.connection == "h"
+            else self.horizontals
+        )
+        verticals = (
+            self._set(self.verticals, move.loc)
+            if move.connection == "v"
+            else self.verticals
+        )
         boxes, changed = self._check_boxes_after_move(horizontals, verticals, move)
 
         if changed:
@@ -91,8 +106,11 @@ class DotsAndBoxesState(State):
             other_player = self._current_player
 
         return DotsAndBoxesState(
-            next_player, other_player,
-            horizontals=horizontals, verticals=verticals, boxes=boxes
+            next_player,
+            other_player,
+            horizontals=horizontals,
+            verticals=verticals,
+            boxes=boxes,
         )
 
     def is_finished(self) -> bool:
@@ -118,13 +136,10 @@ class DotsAndBoxesState(State):
 
         text.append(self._lines_row_to_str(len(self.boxes)))
 
-        return f'Current player: {self._current_player.char}\n' + '\n'.join(text)
+        return f"Current player: {self._current_player.char}\n" + "\n".join(text)
 
     def get_scores(self) -> Dict[Player, int]:
-        scores = {
-            self._current_player: 0,
-            self._other_player: 0
-        }
+        scores = {self._current_player: 0, self._other_player: 0}
 
         for row in self.boxes:
             for box in row:
@@ -143,12 +158,15 @@ class DotsAndBoxesState(State):
             if not line
         ]
 
-    def _set(self, collection: List[List[bool]], loc: Tuple[int, int]) -> List[List[bool]]:
+    def _set(
+        self, collection: List[List[bool]], loc: Tuple[int, int]
+    ) -> List[List[bool]]:
         return [
-            [
-                True if loc2 == loc[1] else line
-                for loc2, line in enumerate(subcol)
-            ] if loc1 == loc[0] else subcol
+            (
+                [True if loc2 == loc[1] else line for loc2, line in enumerate(subcol)]
+                if loc1 == loc[0]
+                else subcol
+            )
             for loc1, subcol in enumerate(collection)
         ]
 
@@ -156,16 +174,24 @@ class DotsAndBoxesState(State):
         if self.boxes[row][col]:
             return self.boxes[row][col]
 
-        if horizontals[col][row] and horizontals[col][row + 1] and verticals[row][col] and verticals[row][col + 1]:
+        if (
+            horizontals[col][row]
+            and horizontals[col][row + 1]
+            and verticals[row][col]
+            and verticals[row][col + 1]
+        ):
             return self._current_player
 
         return None
 
     def _check_boxes_after_move(
-            self, horizontals: List[List[bool]], verticals: List[List[bool]],
-            move: DotsAndBoxesMove) -> Tuple[List[List[Player]], bool]:
+        self,
+        horizontals: List[List[bool]],
+        verticals: List[List[bool]],
+        move: DotsAndBoxesMove,
+    ) -> Tuple[List[List[Player]], bool]:
         box1_col = None
-        box1_row = None        
+        box1_row = None
 
         box2_col = None
         box2_row = None
@@ -188,11 +214,18 @@ class DotsAndBoxesState(State):
                 box2_row = row
 
         new_boxes = [
-            [
-                self._check_box(horizontals, verticals, col, row)
-                if col in (box1_col, box2_col) else box
-                for col, box in enumerate(row_boxes)
-            ] if row in (box1_row, box2_row) else row_boxes
+            (
+                [
+                    (
+                        self._check_box(horizontals, verticals, col, row)
+                        if col in (box1_col, box2_col)
+                        else box
+                    )
+                    for col, box in enumerate(row_boxes)
+                ]
+                if row in (box1_row, box2_row)
+                else row_boxes
+            )
             for row, row_boxes in enumerate(self.boxes)
         ]
 
@@ -208,14 +241,16 @@ class DotsAndBoxesState(State):
         return new_boxes, changed
 
     def _lines_row_to_str(self, row):
-        return 'o' + 'o'.join('-' if col[row] else ' ' for col in self.horizontals) + 'o'
+        return (
+            "o" + "o".join("-" if col[row] else " " for col in self.horizontals) + "o"
+        )
 
     def _row_to_str(self, row):
         chars = []
         for line, box in zip(self.verticals[row], self.boxes[row]):
-            chars.append('|' if line else ' ')
-            chars.append(box.char if box else ' ')
+            chars.append("|" if line else " ")
+            chars.append(box.char if box else " ")
 
-        chars.append('|' if self.verticals[row][-1] else ' ')
+        chars.append("|" if self.verticals[row][-1] else " ")
 
-        return ''.join(chars)
+        return "".join(chars)

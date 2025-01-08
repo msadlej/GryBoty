@@ -181,6 +181,6 @@ class GameValidatorDynamic(BaseValidator):
             "src.bots.example_bots.example_bot",
             "abc",
         }
-        if name not in allowed_modules and not name.startswith("src.two_player_games"):
+        if name not in allowed_modules and not name.startswith("two_player_games"):
             raise ImportError(f"Import of '{name}' is not allowed")
         return __import__(name, *args)

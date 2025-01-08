@@ -1,16 +1,22 @@
 from typing import Dict, Iterable, List, Optional, Tuple
-from src.two_player_games.game import Game
-from src.two_player_games.move import Move
-from src.two_player_games.player import Player
-from src.two_player_games.state import State
+from two_player_games.game import Game
+from two_player_games.move import Move
+from two_player_games.player import Player
+from two_player_games.state import State
 
 
 class Nim(Game):
     """Class that represents the nim game (misere variant)"""
-    FIRST_PLAYER_DEFAULT_CHAR = '1'
-    SECOND_PLAYER_DEFAULT_CHAR = '2'
 
-    def __init__(self, heaps: Iterable[int] = (7, 7, 7), first_player: Player = None, second_player: Player = None):
+    FIRST_PLAYER_DEFAULT_CHAR = "1"
+    SECOND_PLAYER_DEFAULT_CHAR = "2"
+
+    def __init__(
+        self,
+        heaps: Iterable[int] = (7, 7, 7),
+        first_player: Player = None,
+        second_player: Player = None,
+    ):
         """
         Initializes game.
 
@@ -35,6 +41,7 @@ class NimMove(Move):
         heap: int, heap number from which the elements are taken
         n: number of elements to take
     """
+
     def __init__(self, heap: int, n: int):
         self.heap = heap
         self.n = n
@@ -47,8 +54,10 @@ class NimMove(Move):
 
 class NimState(State):
     """Class that represents a state in the nim game (misere variant)"""
-    def __init__(self,
-            current_player: Player, other_player: Player, heaps: Iterable[int]):
+
+    def __init__(
+        self, current_player: Player, other_player: Player, heaps: Iterable[int]
+    ):
         """Creates the state. Do not call directly."""
 
         self.heaps = tuple(heaps)
@@ -57,11 +66,18 @@ class NimState(State):
         super().__init__(current_player, other_player)
 
     def get_moves(self) -> Iterable[NimMove]:
-        return [NimMove(i, n) for i, heap in enumerate(self.heaps) for n in range(1, heap + 1)]
+        return [
+            NimMove(i, n)
+            for i, heap in enumerate(self.heaps)
+            for n in range(1, heap + 1)
+        ]
 
-    def make_move(self, move: NimMove) -> 'NimState':
+    def make_move(self, move: NimMove) -> "NimState":
         assert move.n > 0 and self.heaps[move.heap] >= move.n
-        heaps = tuple(heap - move.n if i == move.heap else heap for i, heap in enumerate(self.heaps))
+        heaps = tuple(
+            heap - move.n if i == move.heap else heap
+            for i, heap in enumerate(self.heaps)
+        )
         return NimState(self._other_player, self._current_player, heaps)
 
     def is_finished(self) -> bool:
@@ -71,12 +87,17 @@ class NimState(State):
         if not self.is_finished():
             return None
         else:
-            return self._current_player  # previous player lost, because it picked the last elements
+            return (
+                self._current_player
+            )  # previous player lost, because it picked the last elements
 
     def __str__(self) -> str:
-        text = [('Winner: ' if self.is_finished() else 'Current player: ') + self._current_player.char]
+        text = [
+            ("Winner: " if self.is_finished() else "Current player: ")
+            + self._current_player.char
+        ]
 
         for i, heap in enumerate(self.heaps):
-            text.append(str(i + 1) + ': ' + '|' * heap)
+            text.append(str(i + 1) + ": " + "|" * heap)
 
-        return '\n'.join(text)
+        return "\n".join(text)
