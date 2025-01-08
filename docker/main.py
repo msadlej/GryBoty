@@ -7,10 +7,6 @@ from typing import Optional
 app = FastAPI()
 
 
-def preprocess_file(file: bytes):
-    return file.decode().replace("\\n", "\n")[2:-1]
-
-
 @app.post("/run-match")
 async def run_match(
     game: str = Form(...),
@@ -21,9 +17,6 @@ async def run_match(
 
         filename1 = file1.filename
         filename2 = file2.filename  # test for the same names TODO
-
-        # bot_1_str = preprocess_file(file1) # TODO think if its needed
-        # bot_2_str = preprocess_file(file2)
 
         bot_1_str = file1.file.read().decode()  # TODO think if its needed
         bot_2_str = file2.file.read().decode()

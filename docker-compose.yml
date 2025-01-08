@@ -11,3 +11,4 @@ services:
       - ./docker/two_player_games:/app/two_player_games
     environment:
       - PYTHONUNBUFFERED=1
+      - IN_DOCKER=true

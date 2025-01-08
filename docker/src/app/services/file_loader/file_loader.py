@@ -1,6 +1,13 @@
 import inspect
 from typing import BinaryIO
 import types
+import os
+
+# Check if running in Docker (e.g., based on an environment variable)
+IN_DOCKER = os.getenv("IN_DOCKER", "false").lower() == "true"
+
+# Adjust base path accordingly
+base_path = "" if IN_DOCKER else "docker/"
 
 
 class FileLoader:
@@ -44,11 +51,15 @@ class FileLoader:
     @staticmethod
     def get_file_str_by_name(game_name: str):
         file_map = {
-            "morris": "docker/two_player_games/games/morris.py",  # TODO change path
-            "connect_four": "docker/two_player_games/games/connect_four.py",
-            "dots_and_boxes": "docker/two_player_games/games/dots_and_boxes.py",
-            "nim": "docker/two_player_games/games/nim.py",
-            "pick": "docker/two_player_games/games/Pick.py",
+            "morris": os.path.join(base_path, "two_player_games/games/morris.py"),
+            "connect_four": os.path.join(
+                base_path, "two_player_games/games/connect_four.py"
+            ),
+            "dots_and_boxes": os.path.join(
+                base_path, "two_player_games/games/dots_and_boxes.py"
+            ),
+            "nim": os.path.join(base_path, "two_player_games/games/nim.py"),
+            "pick": os.path.join(base_path, "two_player_games/games/Pick.py"),
         }
 
         if game_name not in file_map:
