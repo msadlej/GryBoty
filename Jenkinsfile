@@ -44,7 +44,7 @@ pipeline {
         stage('Run Backend Tests') {
             steps {
                 echo 'Running backend tests with pytest...'
-                dir("$BACKEND_DIR}") {
+                dir("{$BACKEND_DIR}") {
                     sh 'ls -l'         
                     sh 'pytest tests/'
             }
