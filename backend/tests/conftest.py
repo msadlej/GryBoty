@@ -81,10 +81,11 @@ def patch_get_user_by_username(monkeypatch):
                 "password_hash": get_password_hash("password"),
                 "account_type": "standard",
                 "bots": [],
-                "is_banned": True,
+                "is_banned": False,
             }
             if username == "username"
             else None
         )
 
     monkeypatch.setattr("app.utils.authentication.get_user_by_username", mock_get)
+    monkeypatch.setattr("app.dependencies.get_user_by_username", mock_get)

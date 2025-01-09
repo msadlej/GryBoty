@@ -13,7 +13,7 @@ def test_verify_password():
     assert not verify_password("wrong_password", hashed_password)
 
 
-def test_authenticate_user(patch_get_user_by_username, user_dict):
+def test_authenticate_user(patch_get_user_by_username):
     user = authenticate_user("username", "password")
     assert user is not None
 
