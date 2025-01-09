@@ -5,6 +5,8 @@ pipeline {
     }
     environment {
         DOCKER_TESTS_DIR = 'docker/tests'
+        DOCKER_DIR = 'docker'
+        BACKEND_DIR = 'backend'
         BACKEND_TESTS_DIR = 'backend/tests'
     }
     stages {
@@ -17,7 +19,7 @@ pipeline {
         stage('Setup Docker Tests Environment') {
             steps {
                 echo 'Installing requirements for docker tests...'
-                dir("${DOCKER_TESTS_DIR}") {
+                dir("${DOCKER_DIR}") {
                     sh 'pip install -r requirements.txt --break-system-packages'
                 }
             }
@@ -33,7 +35,7 @@ pipeline {
         stage('Setup Backend Tests Environment') {
             steps {
                 echo 'Installing requirements for backend tests...'
-                dir("${BACKEND_TESTS_DIR}") {
+                dir("${BACKEND_DIR}") {
                     sh 'pip install -r requirements.txt --break-system-packages'
                 }
             }
