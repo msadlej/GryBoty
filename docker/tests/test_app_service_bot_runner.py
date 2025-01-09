@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 import io
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "src"))
 
 
 class TestSixMensMorrisBotRun(unittest.TestCase):
