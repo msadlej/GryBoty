@@ -3,12 +3,11 @@ from typing import BinaryIO
 import types
 import os
 
-IN_JENKINS = os.getenv("IN_JENKINS", "false").lower() == "true"
+# Check if running in Docker (e.g., based on an environment variable)
 IN_DOCKER = os.getenv("IN_DOCKER", "false").lower() == "true"
 
-# base_path = "docker/" if not IN_DOCKER else ""
-# if IN_JENKINS:
-base_path = "/var/jenkins_home/workspace/pzsp2/"
+# Adjust base path accordingly
+base_path = "" if IN_DOCKER else "docker/"
 
 
 class FileLoader:
