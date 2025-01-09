@@ -6,9 +6,9 @@ import os
 IN_JENKINS = os.getenv("IN_JENKINS", "false").lower() == "true"
 IN_DOCKER = os.getenv("IN_DOCKER", "false").lower() == "true"
 
-base_path = "docker/" if not IN_DOCKER else ""
-if IN_JENKINS:
-    base_path = "/var/jenkins_home/workspace/pzsp2/"
+# base_path = "docker/" if not IN_DOCKER else ""
+# if IN_JENKINS:
+base_path = "/var/jenkins_home/workspace/pzsp2/"
 
 
 class FileLoader:
