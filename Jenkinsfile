@@ -18,7 +18,7 @@ pipeline {
             steps {
                 echo 'Installing requirements for docker tests...'
                 dir("${DOCKER_TESTS_DIR}") {
-                    sh 'pip install -r requirements.txt'
+                    sh 'pip install -r requirements.txt --break-system-packages'
                 }
             }
         }
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 echo 'Installing requirements for backend tests...'
                 dir("${BACKEND_TESTS_DIR}") {
-                    sh 'pip install -r requirements.txt'
+                    sh 'pip install -r requirements.txt --break-system-packages'
                 }
             }
         }
