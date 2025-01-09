@@ -3,7 +3,7 @@ import mongomock
 from bson import ObjectId
 from typing import Generator
 
-from database.main import MongoDB, User, Bot
+from database.main import MongoDB, User, Bot, GameType
 
 
 @pytest.fixture
@@ -24,6 +24,11 @@ def user_manager(mock_db: MongoDB) -> User:
 @pytest.fixture
 def bot_manager(mock_db: MongoDB) -> Bot:
     return Bot(mock_db)
+
+
+@pytest.fixture
+def game_type_manager(mock_db: MongoDB) -> GameType:
+    return GameType(mock_db)
 
 
 class TestUser:
@@ -176,3 +181,28 @@ class TestBot:
         bot_names = [bot["name"] for bot in bots]
         assert "bot1" in bot_names
         assert "bot2" in bot_names
+
+
+class TestGameType:
+    def test_create_game_type(self, game_type_manager: GameType):
+        game_type_id = game_type_manager.create_game_type("Chess", "Classic chess game")
+        assert game_type_id is not None
+        game_type = game_type_manager.get_game_type_by_id(game_type_id)
+        assert game_type["name"] == "Chess"
+        assert game_type["description"] == "Classic chess game"
+
+    def test_get_game_type_by_name(self, game_type_manager: GameType):
+        game_type_manager.create_game_type("Chess", "Classic chess game")
+        game_type = game_type_manager.get_game_type_by_name("Chess")
+        assert game_type is not None
+        assert game_type["name"] == "Chess"
+        assert game_type["description"] == "Classic chess game"
+
+    def test_get_all_game_types(self, game_type_manager: GameType):
+        game_type_manager.create_game_type("Chess", "Classic chess game")
+        game_type_manager.create_game_type("Checkers", "Classic checkers game")
+        game_types = game_type_manager.get_all_game_types()
+        assert len(game_types) == 2
+        game_names = [gt["name"] for gt in game_types]
+        assert "Chess" in game_names
+        assert "Checkers" in game_names
