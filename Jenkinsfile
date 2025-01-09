@@ -4,10 +4,10 @@ pipeline {
         skipDefaultCheckout(true)
     }
     environment {
-        DOCKER_TESTS_DIR = 'docker/tests'
-        DOCKER_DIR = 'docker'
-        BACKEND_DIR = 'backend'
-        BACKEND_TESTS_DIR = 'backend/tests'
+        DOCKER_TESTS_DIR = './docker/tests'
+        DOCKER_DIR = './docker'
+        BACKEND_DIR = './backend'
+        BACKEND_TESTS_DIR = './backend/tests'
     }
     stages {
         stage('Checkout') {
@@ -15,7 +15,6 @@ pipeline {
                 checkout scm
                 echo "Branch name: ${env.gitlabSourceBranch}"
                 sh 'ls -lR' 
-                sh 'tree -L 3'
             }
         }
         stage('Setup Docker Tests Environment') {
@@ -29,7 +28,7 @@ pipeline {
         stage('Run Docker Tests') {
             steps {
                 echo 'Running unit tests with unittest...'
-                dir('docker/tests/src/two_player_games/games') {
+                dir('./docker/tests/src/two_player_games/games') {
                     sh 'ls -l'
                 }
 
