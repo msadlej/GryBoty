@@ -3,7 +3,7 @@ requires = ["fastapi[standard]", "passlib[bcrypt]", "pydantic-settings", "pyjwt"
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "--cov=src/app"
+addopts = "--cov=src"
 testpaths = [
     "tests",
 ]
