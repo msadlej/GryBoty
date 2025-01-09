@@ -30,7 +30,7 @@ pipeline {
                 echo 'Running unit tests with unittest...'
 
                 dir("${DOCKER_TESTS_DIR}") {
-                    sh 'PYTHONPATH=../src python3 -m unittest discover -s . -p "test*.py"'
+                    sh 'python3 -m unittest discover -s . -p "test*.py"'
                 }
             }
         }
