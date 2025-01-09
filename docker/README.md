@@ -15,12 +15,14 @@ API działa na porcie `8080` i udostępnia dwa endpointy:
 2. Uruchamianie mecz: `/run-match`:
     - Metoda: `POST`
     - Parametry:
-        -`game` (string): Nazwa gry.
-        -`file1` (UploadFile): Plik z kodem pierwszego bota.
-        -`file2` (UploadFile): Plik z kodem drugiego bota.
+        - `game` (string): Nazwa gry.
+        - `file1` (UploadFile): Plik z kodem pierwszego bota.
+        - `file2` (UploadFile): Plik z kodem drugiego bota.
 
 # Wyniki
-1. **Walidacja bota** zwraca odpowiedź JSON:
+1. **Walidacja bota** 
+
+    Zwraca odpowiedź JSON:
 
    ```json
    {
@@ -28,7 +30,7 @@ API działa na porcie `8080` i udostępnia dwa endpointy:
        "message": "Validation passed."
    }
 
-W przypadku błędu zwracany jest komunikat o błędzie z kodem statusu 400. Przykład odpowiedzi w przypadku błędnej walidacji:
+    W przypadku błędu zwracany jest komunikat o błędzie z kodem statusu 400. Przykład odpowiedzi w przypadku błędnej walidacji:
 
 ```json
 {
@@ -40,21 +42,25 @@ W przypadku błędu zwracany jest komunikat o błędzie z kodem statusu 400. Prz
 }
 ```
 
-2. **Uruchomienie meczu** zwraca odpowiedź JSON z wynikiem meczu oraz stanem gry:
+2. **Uruchomienie meczu** 
+    
+    Zwraca odpowiedź JSON z wynikiem meczu oraz stanem gry:
 ```json
 {
-    "winner": "bot1",  // Zwycięzca meczu
-    "states": "[state1, state2, state3]"  // Lista stanów gry w formie JSON
+    "winner": "bot1",  // Winner filename (from UploadFile)
+    "states": "[state1, state2, state3]"  // states
 }
 ```
+
 W przypadku błędu w trakcie rozgrywki, zwrócony zostanie komunikat o błędzie w formacie JSON:
+
 ```json
 {
     "detail": "Error message describing what went wrong"
 }
-
-Tutaj zakładamy, że żadne błędy nie będą występować, zwracane błędy służą jedynie podczas procesu developmentu.
 ```
+Tutaj zakładamy, że żadne błędy nie będą występować, zwracane błędy służą jedynie podczas procesu developmentu.
+
 # Przykłady
 
 ## Walidacja bota
