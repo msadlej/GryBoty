@@ -2,8 +2,9 @@ import pytest
 import mongomock
 from bson import ObjectId
 from typing import Generator
+from datetime import datetime
 
-from database.main import MongoDB, User, Bot, GameType
+from database.main import MongoDB, User, Bot, GameType, Tournament
 
 
 @pytest.fixture
@@ -29,6 +30,11 @@ def bot_manager(mock_db: MongoDB) -> Bot:
 @pytest.fixture
 def game_type_manager(mock_db: MongoDB) -> GameType:
     return GameType(mock_db)
+
+
+@pytest.fixture
+def tournament_manager(mock_db: MongoDB) -> Tournament:
+    return Tournament(mock_db)
 
 
 class TestUser:
@@ -206,3 +212,278 @@ class TestGameType:
         game_names = [gt["name"] for gt in game_types]
         assert "Chess" in game_names
         assert "Checkers" in game_names
+
+
+class TestTournament:
+    def test_create_tournament(self, tournament_manager: Tournament):
+        start_date = datetime.now()
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            start_date,
+            "ACCESS123",
+            8
+        )
+        assert tournament_id is not None
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["name"] == "Test Tournament"
+        assert tournament["max_participants"] == 8
+        assert tournament["participants"] == []
+
+    def test_add_participant(self, tournament_manager: Tournament):
+        start_date = datetime.now()
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            start_date,
+            "ACCESS123",
+            2
+        )
+        bot_id = ObjectId()
+        success = tournament_manager.add_participant(tournament_id, bot_id)
+        assert success is True
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert bot_id in tournament["participants"]
+
+    def test_add_match(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        match_id = ObjectId()
+        tournament_manager.add_match(tournament_id, match_id)
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert match_id in tournament["matches"]
+
+    def test_update_name(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        tournament_manager.update_name(tournament_id, "New Name")
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["name"] == "New Name"
+
+    def test_update_description(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        tournament_manager.update_description(tournament_id, "New Description")
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["description"] == "New Description"
+
+    def test_update_start_date(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        new_date = datetime(2050, 12, 31)
+        tournament_manager.update_start_date(tournament_id, new_date)
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["start_date"] == new_date
+
+    def test_update_max_participants(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        success = tournament_manager.update_max_participants(tournament_id, 10)
+        assert success is True
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["max_participants"] == 10
+
+    def test_update_max_participants_fail(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            2
+        )
+        tournament_manager.add_participant(tournament_id, ObjectId())
+        tournament_manager.add_participant(tournament_id, ObjectId())
+        success = tournament_manager.update_max_participants(tournament_id, 1)
+        assert success is False
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["max_participants"] == 2
+
+    def test_get_tournament_matches(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Test Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        match_id1 = ObjectId()
+        match_id2 = ObjectId()
+        tournament_manager.add_match(tournament_id, match_id1)
+        tournament_manager.add_match(tournament_id, match_id2)
+        matches = tournament_manager.get_tournament_matches(tournament_id)
+        assert len(matches) == 2
+        assert match_id1 in matches
+        assert match_id2 in matches
+
+    def test_get_tournaments_by_game_type(self, tournament_manager: Tournament):
+        game_type_id = ObjectId()
+        _ = tournament_manager.create_tournament(
+            "Tournament 1",
+            "Description 1",
+            game_type_id,
+            ObjectId(),
+            datetime.now(),
+            "ACCESS1",
+            8
+        )
+        _ = tournament_manager.create_tournament(
+            "Tournament 2",
+            "Description 2",
+            game_type_id,
+            ObjectId(),
+            datetime.now(),
+            "ACCESS2",
+            8
+        )
+        tournaments = tournament_manager.get_tournaments_by_game_type(game_type_id)
+        assert len(tournaments) == 2
+        tournament_names = [t["name"] for t in tournaments]
+        assert "Tournament 1" in tournament_names
+        assert "Tournament 2" in tournament_names
+
+    def test_get_tournaments_by_creator(self, tournament_manager: Tournament):
+        creator_id = ObjectId()
+        _ = tournament_manager.create_tournament(
+            "Tournament 1",
+            "Description 1",
+            ObjectId(),
+            creator_id,
+            datetime.now(),
+            "ACCESS1",
+            8
+        )
+        _ = tournament_manager.create_tournament(
+            "Tournament 2",
+            "Description 2",
+            ObjectId(),
+            creator_id,
+            datetime.now(),
+            "ACCESS2",
+            8
+        )
+        tournaments = tournament_manager.get_tournaments_by_creator(creator_id)
+        assert len(tournaments) == 2
+        tournament_names = [t["name"] for t in tournaments]
+        assert "Tournament 1" in tournament_names
+        assert "Tournament 2" in tournament_names
+
+    def test_get_tournament_by_access_code(self, tournament_manager: Tournament):
+        _ = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        tournament = tournament_manager.get_tournament_by_access_code("ACCESS123")
+        assert tournament is not None
+        assert tournament["name"] == "Test Tournament"
+
+    def test_get_upcoming_tournaments(self, tournament_manager: Tournament):
+        future_date = datetime(2050, 1, 1)
+        past_date = datetime(2023, 1, 1)
+
+        _ = tournament_manager.create_tournament(
+            "Future Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            future_date,
+            "ACCESS1",
+            8
+        )
+        _ = tournament_manager.create_tournament(
+            "Past Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            past_date,
+            "ACCESS2",
+            8
+        )
+
+        upcoming = tournament_manager.get_upcoming_tournaments()
+        assert len(upcoming) == 1
+        assert upcoming[0]["name"] == "Future Tournament"
+
+    def test_get_tournament_participants(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        bot_id1 = ObjectId()
+        bot_id2 = ObjectId()
+        tournament_manager.add_participant(tournament_id, bot_id1)
+        tournament_manager.add_participant(tournament_id, bot_id2)
+
+        participants = tournament_manager.get_tournament_participants(tournament_id)
+        assert len(participants) == 2
+        assert bot_id1 in participants
+        assert bot_id2 in participants
+
+    def test_get_tournaments_by_bot_id(self, tournament_manager: Tournament):
+        bot_id = ObjectId()
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8
+        )
+        tournament_manager.add_participant(tournament_id, bot_id)
+
+        tournaments = tournament_manager.get_tournaments_by_bot_id(bot_id)
+        assert len(tournaments) == 1
+        assert tournaments[0]["name"] == "Test Tournament"
