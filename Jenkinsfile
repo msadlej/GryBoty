@@ -28,8 +28,8 @@ pipeline {
             steps {
                 echo 'Running unit tests with unittest...'
 
-                dir("${DOCKER_TESTS_DIR}") {
-                    sh 'python3 -m unittest discover -s . -p "test*.py"'
+                dir("${DOCKER_DIR}") {
+                    sh 'python3 -m unittest discover -s tests -p "test*.py"'
                 }
             }
         }
