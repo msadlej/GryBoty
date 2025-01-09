@@ -14,7 +14,6 @@ pipeline {
             steps {
                 checkout scm
                 echo "Branch name: ${env.gitlabSourceBranch}"
-                sh 'ls -lR' 
             }
         }
         stage('Setup Docker Tests Environment') {
@@ -46,9 +45,8 @@ pipeline {
             steps {
                 echo 'Running backend tests with pytest...'
                 dir("$BACKEND_DIR}") {
-                    sh 'pytest ./tests/'
-                }
-                
+                    sh 'ls -l'         
+                    sh 'pytest tests/'
             }
         }
     }
