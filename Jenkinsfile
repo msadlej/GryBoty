@@ -14,6 +14,7 @@ pipeline {
             steps {
                 checkout scm
                 echo "Branch name: ${env.gitlabSourceBranch}"
+                sh 'ls -l' 
             }
         }
         stage('Setup Docker Tests Environment') {
