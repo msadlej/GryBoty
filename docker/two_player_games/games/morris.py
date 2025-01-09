@@ -1,21 +1,36 @@
 from typing import Dict, Iterable, List, Optional, Tuple
-from src.two_player_games.game import Game
-from src.two_player_games.move import Move
-from src.two_player_games.player import Player
-from src.two_player_games.state import State
+from two_player_games.game import Game
+from two_player_games.move import Move
+from two_player_games.player import Player
+from two_player_games.state import State
+
 
 class Morris(Game):
     """Class that represents the morris games. Current implementation does not allow flying."""
+
     def __init__(
-            self, n_pawns: int, size: int, connections: List[Tuple[int, int]],
-            possible_morrises: List[Tuple[int, int, int]], moves_limit: int,
-            grid_str: str, first_player: Player, second_player: Player) -> None:
+        self,
+        n_pawns: int,
+        size: int,
+        connections: List[Tuple[int, int]],
+        possible_morrises: List[Tuple[int, int, int]],
+        moves_limit: int,
+        grid_str: str,
+        first_player: Player,
+        second_player: Player,
+    ) -> None:
         self.first_player = first_player
         self.second_player = second_player
 
         state = MorrisState(
-            n_pawns, size, connections, possible_morrises, moves_limit, 
-            grid_str, first_player, second_player
+            n_pawns,
+            size,
+            connections,
+            possible_morrises,
+            moves_limit,
+            grid_str,
+            first_player,
+            second_player,
         )
 
         super().__init__(state)
@@ -23,20 +38,46 @@ class Morris(Game):
 
 class SixMensMorris(Morris):
     """Class that represents the Six Men's Morris Game."""
-    FIRST_PLAYER_DEFAULT_CHAR = '1'
-    SECOND_PLAYER_DEFAULT_CHAR = '2'
 
-    def __init__(self, first_player: Player = None, second_player: Player = None) -> None:
+    FIRST_PLAYER_DEFAULT_CHAR = "1"
+    SECOND_PLAYER_DEFAULT_CHAR = "2"
+
+    def __init__(
+        self, first_player: Player = None, second_player: Player = None
+    ) -> None:
         n_pawns = 6
         size = 16
         connections = [
-            (0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 0),  # outer
-            (8, 9), (9, 10), (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 8),  # inner
-            (1, 9), (3, 11), (5, 13), (7, 15)  # between outer and inner
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 0),  # outer
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 12),
+            (12, 13),
+            (13, 14),
+            (14, 15),
+            (15, 8),  # inner
+            (1, 9),
+            (3, 11),
+            (5, 13),
+            (7, 15),  # between outer and inner
         ]
         possible_morrises = [
-            (0, 1, 2), (2, 3, 4), (4, 5, 6), (6, 7, 0),  # outer
-            (8, 9, 10), (10, 11, 12), (12, 13, 14), (14, 15, 8)  # inner
+            (0, 1, 2),
+            (2, 3, 4),
+            (4, 5, 6),
+            (6, 7, 0),  # outer
+            (8, 9, 10),
+            (10, 11, 12),
+            (12, 13, 14),
+            (14, 15, 8),  # inner
         ]
         moves_limit = 40
         grid_str = (
@@ -57,8 +98,14 @@ class SixMensMorris(Morris):
             second_player = Player(self.SECOND_PLAYER_DEFAULT_CHAR)
 
         super().__init__(
-            n_pawns, size, connections, possible_morrises,
-            moves_limit, grid_str, first_player, second_player
+            n_pawns,
+            size,
+            connections,
+            possible_morrises,
+            moves_limit,
+            grid_str,
+            first_player,
+            second_player,
         )
 
 
@@ -75,10 +122,13 @@ class MorrisMove(Move):
      - move pawn from take_pawn to place_pawn
      - additionally, an enemy pawn may be removed
     """
+
     def __init__(
-            self, take_pawn: Optional[int] = None,
-            place_pawn: Optional[int] = None,
-            remove_pawn: Optional[int] = None) -> None:
+        self,
+        take_pawn: Optional[int] = None,
+        place_pawn: Optional[int] = None,
+        remove_pawn: Optional[int] = None,
+    ) -> None:
         self.take_pawn = take_pawn
         self.place_pawn = place_pawn
         self.remove_pawn = remove_pawn
@@ -89,38 +139,29 @@ class MorrisMove(Move):
         if not isinstance(o, MorrisMove):
             return False
         return (
-            self.take_pawn == o.take_pawn and self.place_pawn == o.place_pawn
+            self.take_pawn == o.take_pawn
+            and self.place_pawn == o.place_pawn
             and self.remove_pawn == o.remove_pawn
         )
- 
-    def __str__(self):
-        if self.take_pawn is None and self.remove_pawn is None:
-            return f"Umieszczenie pionka na polu {self.place_pawn}"
-
-        # Moving a pawn
-        if self.take_pawn is not None and self.remove_pawn is None:
-            return (
-                f"Przesunięcie pionka z pola {self.take_pawn} na pole {self.place_pawn}"
-            )
-
-        # Placing or moving and removing an opponent's pawn
-        if self.remove_pawn is not None:
-            if self.take_pawn is None:
-                message = f"Umieszczenie pionka na polu {self.place_pawn}"
-            else:
-                message = f"Przesunięcie pionka z pola {self.take_pawn} na pole {self.place_pawn}"
-            return message + f", usunięcie pionka przeciwnika z pola {self.remove_pawn}"
-
 
 
 class MorrisState(State):
     """Represents a state in the morris game. Current implementation does not allow flying."""
+
     def __init__(
-            self, n_pawns: int, size: int, connections: List[Tuple[int, int]],
-            possible_morrises: List[Tuple[int, int, int]], moves_limit: int,
-            grid_str: str, current_player: Player, other_player: Player,
-            n_moves: int = None, placed_pawns: Dict[Player, int] = None,
-            grid: List[Optional[Player]] = None) -> None:
+        self,
+        n_pawns: int,
+        size: int,
+        connections: List[Tuple[int, int]],
+        possible_morrises: List[Tuple[int, int, int]],
+        moves_limit: int,
+        grid_str: str,
+        current_player: Player,
+        other_player: Player,
+        n_moves: int = None,
+        placed_pawns: Dict[Player, int] = None,
+        grid: List[Optional[Player]] = None,
+    ) -> None:
         self.n_pawns = n_pawns
         self.size = size
         self.connections = connections
@@ -144,8 +185,9 @@ class MorrisState(State):
 
     def check_finished(self) -> Tuple[bool, Optional[Player]]:
         pawns = {
-            self._current_player: self.n_pawns - self.placed_pawns[self._current_player],
-            self._other_player: self.n_pawns - self.placed_pawns[self._other_player]
+            self._current_player: self.n_pawns
+            - self.placed_pawns[self._current_player],
+            self._other_player: self.n_pawns - self.placed_pawns[self._other_player],
         }
 
         for field in self.grid:
@@ -165,8 +207,10 @@ class MorrisState(State):
                     break
         for connection in self.connections:
             if (
-                self.grid[connection[0]] is self._current_player and self.grid[connection[1]] is None
-                or self.grid[connection[1]] is self._current_player and self.grid[connection[0]] is None
+                self.grid[connection[0]] is self._current_player
+                and self.grid[connection[1]] is None
+                or self.grid[connection[1]] is self._current_player
+                and self.grid[connection[0]] is None
             ):
                 available_move = True
                 break
@@ -185,18 +229,28 @@ class MorrisState(State):
         else:
             moves = []
             for connection in self.connections:
-                if self.grid[connection[0]] is self._current_player and self.grid[connection[1]] is None:
+                if (
+                    self.grid[connection[0]] is self._current_player
+                    and self.grid[connection[1]] is None
+                ):
                     moves.append((connection[0], connection[1]))
-                if self.grid[connection[1]] is self._current_player and self.grid[connection[0]] is None:
+                if (
+                    self.grid[connection[1]] is self._current_player
+                    and self.grid[connection[0]] is None
+                ):
                     moves.append((connection[1], connection[0]))
 
-        other_player_pawns = {i for i, field in enumerate(self.grid) if field == self._other_player}
+        other_player_pawns = {
+            i for i, field in enumerate(self.grid) if field == self._other_player
+        }
         other_player_pawns_in_morrises = set()
         for morris in self.possible_morrises:
             if all(self.grid[i] == self._other_player for i in morris):
                 other_player_pawns_in_morrises.update(morris)
 
-        other_player_pawns_not_in_morrises = other_player_pawns.difference(other_player_pawns_in_morrises)
+        other_player_pawns_not_in_morrises = other_player_pawns.difference(
+            other_player_pawns_in_morrises
+        )
 
         if other_player_pawns_not_in_morrises:
             removables = other_player_pawns_not_in_morrises
@@ -209,18 +263,23 @@ class MorrisState(State):
             makes_morris = False
             for morris in self.possible_morrises:
                 if move[0] not in morris and move[1] in morris:
-                    if len([i for i in morris if self.grid[i] == self._current_player]) == 2:
+                    if (
+                        len([i for i in morris if self.grid[i] == self._current_player])
+                        == 2
+                    ):
                         makes_morris = True
                         break
 
             if makes_morris:
-                moves_list.extend(MorrisMove(*move, removable) for removable in removables)
+                moves_list.extend(
+                    MorrisMove(*move, removable) for removable in removables
+                )
             else:
                 moves_list.append(MorrisMove(*move, None))
 
         return moves_list
 
-    def make_move(self, move: MorrisMove) -> 'MorrisState':
+    def make_move(self, move: MorrisMove) -> "MorrisState":
         if self.finished:
             raise ValueError("Cannot make move on finished game")
         new_grid = list(self.grid)
@@ -249,8 +308,17 @@ class MorrisState(State):
             n_moves += 1
 
         return MorrisState(
-            self.n_pawns, self.size, self.connections, self.possible_morrises, self.moves_limit, self.grid_str,
-            self._other_player, self._current_player, n_moves, new_placed_pawns, new_grid
+            self.n_pawns,
+            self.size,
+            self.connections,
+            self.possible_morrises,
+            self.moves_limit,
+            self.grid_str,
+            self._other_player,
+            self._current_player,
+            n_moves,
+            new_placed_pawns,
+            new_grid,
         )
 
     def is_finished(self) -> bool:
@@ -279,6 +347,10 @@ class MorrisState(State):
             )
 
         return (
-            self.grid_str.format(*[' ' if field is None else field.char for field in self.grid])
-            + pawns_to_place + current_player_text + finished_text
+            self.grid_str.format(
+                *[" " if field is None else field.char for field in self.grid]
+            )
+            + pawns_to_place
+            + current_player_text
+            + finished_text
         )
