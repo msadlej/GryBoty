@@ -47,7 +47,9 @@ class TestGameDynamicBehavior(unittest.TestCase):
         )
 
     def test_invalid_move_return_type_none(self):
-        bot_str = "docker/tests/sample_bots/game_match/invalid_move_type_none.py"
+        bot_str = (
+            "docker/tests/sample_bots/game_match/invalid_move_type_none.py"
+        )
         game_str = "nim"
         bot_str = self.get_str(bot_str)
         # Initialize Validator
@@ -88,7 +90,9 @@ class TestGameDynamicBehavior(unittest.TestCase):
         self.assertIn("Bot does not meet runtime limits.", str(context.exception))
 
     def test_unauthorized_behavior(self):
-        bot_str = "docker/tests/sample_bots/unsafe_behaviour/unauthorized_access.py"
+        bot_str = (
+            "docker/tests/sample_bots/unsafe_behaviour/unauthorized_access.py"
+        )
         game_str = "nim"
         bot_str = self.get_str(bot_str)
         # Initialize Validator
@@ -311,7 +315,9 @@ class TestGameMatchingValidator(unittest.TestCase):
         )
 
     def test_invalid_get_move_signature_wrong_arg_self(self):
-        bot_str = "docker/tests/sample_bots/game_match/invalid_get_move_name_self.py"
+        bot_str = (
+            "docker/tests/sample_bots/game_match/invalid_get_move_name_self.py"
+        )
         game_str = "pick"
         bot_str = self.get_str(bot_str)
         # Initialize Validator

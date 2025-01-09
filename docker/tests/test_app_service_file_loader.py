@@ -60,8 +60,14 @@ class TestFileLoader(unittest.TestCase):
 
     def test_class_load(self):
         # Test directly loading classes
-        self.assertEqual(FileLoader.get_class(self.bot_1_file_str, self.bot_1_class).__name__, "Bot_1")
-        self.assertEqual(FileLoader.get_class(self.bot_2_file_str, self.bot_2_class).__name__, "Bot_2")
+        self.assertEqual(
+            FileLoader.get_class(self.bot_1_file_str, self.bot_1_class).__name__,
+            "Bot_1",
+        )
+        self.assertEqual(
+            FileLoader.get_class(self.bot_2_file_str, self.bot_2_class).__name__,
+            "Bot_2",
+        )
         self.assertEqual(
             FileLoader.get_class(self.game_file_str, self.game_class).__name__,
             "SixMensMorris",
@@ -85,4 +91,4 @@ class Invalid:
         with self.assertRaises(
             AttributeError, msg="No matching class found in the module"
         ):
-            FileLoader.get_class(invalid_module_str, 'SomeClass')
+            FileLoader.get_class(invalid_module_str, "SomeClass")
