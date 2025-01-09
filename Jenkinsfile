@@ -27,10 +27,12 @@ pipeline {
         stage('Run Docker Tests') {
             steps {
                 echo 'Running unit tests with unittest...'
-
-                dir("${DOCKER_DIR}") {
+                withEnv(["IN_JENKINS=true", "IN_DOCKER=false"]) {
+                    dir("${DOCKER_DIR}") {
                     sh 'python3 -m unittest discover -s tests -p "test*.py"'
                 }
+                }
+               
             }
         }
         stage('Setup Backend Tests Environment') {
