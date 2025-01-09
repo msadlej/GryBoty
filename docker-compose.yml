@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  bot_env:
+    build: ./docker
+    ports:
+      - "8080:5000"
+    volumes:
+      - ./docker/src:/app/src
+      - ./docker/main.py:/app/main.py
+      - ./docker/two_player_games:/app/two_player_games
+    environment:
+      - PYTHONUNBUFFERED=1
+      - IN_DOCKER=true

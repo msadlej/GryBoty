@@ -8,10 +8,13 @@ from two_player_games.state import State
 
 class Pick(Game):
     """Class that represents the Pick game"""
-    FIRST_PLAYER_DEFAULT_CHAR = '1'
-    SECOND_PLAYER_DEFAULT_CHAR = '2'
 
-    def __init__(self, first_player: Player = None, second_player: Player = None, n: int = 4):
+    FIRST_PLAYER_DEFAULT_CHAR = "1"
+    SECOND_PLAYER_DEFAULT_CHAR = "2"
+
+    def __init__(
+        self, first_player: Player = None, second_player: Player = None, n: int = 4
+    ):
         """
         Initializes game.
 
@@ -48,10 +51,14 @@ class PickMove(Move):
 class PickState(State):
     """Class that represents a state in the PickState game"""
 
-    def __init__(self,
-                 current_player: Player, other_player: Player, n,
-                 current_player_numbers: List[int] = None,
-                 other_player_numbers: List[int] = None):
+    def __init__(
+        self,
+        current_player: Player,
+        other_player: Player,
+        n,
+        current_player_numbers: List[int] = None,
+        other_player_numbers: List[int] = None,
+    ):
         """Creates the state. Do not call directly."""
 
         if current_player_numbers is None:
@@ -61,16 +68,22 @@ class PickState(State):
 
         self.current_player_numbers = current_player_numbers
         self.other_player_numbers = other_player_numbers
-        self.selected_numbers = set(self.current_player_numbers).union(self.other_player_numbers)
+        self.selected_numbers = set(self.current_player_numbers).union(
+            self.other_player_numbers
+        )
         self.n = n
-        self.max_number = n ** 2
-        self.aim_value = int((n ** 2 * (n ** 2 + 1)) / (2 * n))
+        self.max_number = n**2
+        self.aim_value = int((n**2 * (n**2 + 1)) / (2 * n))
         super().__init__(current_player, other_player)
 
     def get_moves(self) -> Iterable[PickMove]:
-        return [PickMove(number) for number in range(1, self.max_number + 1) if number not in self.selected_numbers]
+        return [
+            PickMove(number)
+            for number in range(1, self.max_number + 1)
+            if number not in self.selected_numbers
+        ]
 
-    def make_move(self, move: PickMove) -> 'PickState':
+    def make_move(self, move: PickMove) -> "PickState":
         if move.number > self.max_number or move.number in self.selected_numbers:
             raise ValueError("Invalid move")
         else:
@@ -85,9 +98,11 @@ class PickState(State):
         )
 
     def is_finished(self) -> bool:
-        return self._check_if_sums_to_aim_value(self.current_player_numbers) or \
-               self._check_if_sums_to_aim_value(self.other_player_numbers) or \
-               len(self.selected_numbers) == self.max_number
+        return (
+            self._check_if_sums_to_aim_value(self.current_player_numbers)
+            or self._check_if_sums_to_aim_value(self.other_player_numbers)
+            or len(self.selected_numbers) == self.max_number
+        )
 
     def get_winner(self) -> Optional[Player]:
         if not self.is_finished():
@@ -100,13 +115,17 @@ class PickState(State):
             return None
 
     def __str__(self) -> str:
-        return f"n: {self.n}, aim_value: {self.aim_value}" \
-               f"\nCurrent player: {self._current_player.char}, Numbers: " \
-               f"{'[]' if not self.current_player_numbers else sorted(self.current_player_numbers)}," \
-               f"\nOther player: {self._other_player.char}, Numbers: " \
-               f"{'[]' if not self.other_player_numbers else sorted(self.other_player_numbers)}"
+        return (
+            f"n: {self.n}, aim_value: {self.aim_value}"
+            f"\nCurrent player: {self._current_player.char}, Numbers: "
+            f"{'[]' if not self.current_player_numbers else sorted(self.current_player_numbers)},"
+            f"\nOther player: {self._other_player.char}, Numbers: "
+            f"{'[]' if not self.other_player_numbers else sorted(self.other_player_numbers)}"
+        )
 
     # below are helper methods for the public interface
 
     def _check_if_sums_to_aim_value(self, numbers: List[int]) -> bool:
-        return self.aim_value in [sum(i) for i in itertools.combinations(numbers, self.n)]
+        return self.aim_value in [
+            sum(i) for i in itertools.combinations(numbers, self.n)
+        ]

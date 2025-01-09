@@ -13,3 +13,5 @@ Ponadto, system powinien umożliwiać wyznaczonym użytkownikom (tzw. Użytkowni
 W systemie będzie istniał jeden główny administrator - tzw. Superużytkownik z uprawnieniami Użytkownika Premium, którego kompetencje będą ponadto rozszerzone o możliwość nadawania zwykłym użytkownikom statusu Użytkownika Premium mogącego tworzyć turnieje. 
 
 Dodatkowo realizowany projekt powinien zapewnić  uczciwość i bezpieczeństwo systemu, zatem system będzie odpowiednio izolował środowisko wykonawcze wgrywanych botów, zapobiegając nieautoryzowanemu dostępowi do zasobów systemu.
+
+
