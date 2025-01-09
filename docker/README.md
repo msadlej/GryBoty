@@ -29,7 +29,8 @@ API działa na porcie `8080` i udostępnia dwa endpointy:
        "success": true,
        "message": "Validation passed."
    }
-
+    ```
+    
     W przypadku błędu zwracany jest komunikat o błędzie z kodem statusu 400. Przykład odpowiedzi w przypadku błędnej walidacji:
 
 ```json
