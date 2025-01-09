@@ -28,9 +28,6 @@ pipeline {
         stage('Run Docker Tests') {
             steps {
                 echo 'Running unit tests with unittest...'
-                dir('./docker/tests/src/two_player_games/games') {
-                    sh 'ls -l'
-                }
 
                 dir("${DOCKER_TESTS_DIR}") {
                     sh 'python3 -m unittest discover -s . -p "test*.py"'
