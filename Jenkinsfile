@@ -10,7 +10,7 @@ pipeline {
                 echo "Branch name: ${env.gitlabSourceBranch}"
             }
         }
-        
+    }
     post {
         success {
             updateGitlabCommitStatus(name: 'Pipeline', state: 'success')
@@ -23,6 +23,5 @@ pipeline {
             cleanWs()
         }
     }
-}
 }
 
