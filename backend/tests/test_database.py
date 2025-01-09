@@ -4,7 +4,7 @@ from bson import ObjectId
 from typing import Generator
 from datetime import datetime
 
-from database.main import MongoDB, User, Bot, GameType, Tournament
+from database.main import MongoDB, User, Bot, GameType, Tournament, Match
 
 
 @pytest.fixture
@@ -35,6 +35,11 @@ def game_type_manager(mock_db: MongoDB) -> GameType:
 @pytest.fixture
 def tournament_manager(mock_db: MongoDB) -> Tournament:
     return Tournament(mock_db)
+
+
+@pytest.fixture
+def match_manager(mock_db: MongoDB) -> Match:
+    return Match(mock_db)
 
 
 class TestUser:
@@ -487,3 +492,68 @@ class TestTournament:
         tournaments = tournament_manager.get_tournaments_by_bot_id(bot_id)
         assert len(tournaments) == 1
         assert tournaments[0]["name"] == "Test Tournament"
+
+
+class TestMatch:
+    def test_create_match(self, match_manager: Match):
+        bot1_id = ObjectId()
+        bot2_id = ObjectId()
+        match_id = match_manager.create_match(1, bot1_id, bot2_id)
+        assert match_id is not None
+        match = match_manager.get_match_by_id(match_id)
+        assert match["game_num"] == 1
+        assert match["players"]["bot1"] == bot1_id
+        assert match["players"]["bot2"] == bot2_id
+        assert match["moves"] == []
+        assert match["winner"] is None
+
+    def test_add_move(self, match_manager: Match):
+        match_id = match_manager.create_match(1, ObjectId(), ObjectId())
+        match_manager.add_move(match_id, "e2e4")
+        match = match_manager.get_match_by_id(match_id)
+        assert "e2e4" in match["moves"]
+
+    def test_set_winner(self, match_manager: Match):
+        bot1_id = ObjectId()
+        bot2_id = ObjectId()
+        match_id = match_manager.create_match(1, bot1_id, bot2_id)
+        match_manager.set_winner(match_id, bot1_id)
+        match = match_manager.get_match_by_id(match_id)
+        assert match["winner"] == bot1_id
+
+    def test_get_matches_by_bot(self, match_manager: Match):
+        bot1_id = ObjectId()
+        bot2_id = ObjectId()
+        _ = match_manager.create_match(1, bot1_id, bot2_id)
+        _ = match_manager.create_match(2, bot2_id, bot1_id)
+
+        matches = match_manager.get_matches_by_bot(bot1_id)
+        assert len(matches) == 2
+        game_nums = [match["game_num"] for match in matches]
+        assert 1 in game_nums
+        assert 2 in game_nums
+
+    def test_get_match_moves(self, match_manager: Match):
+        match_id = match_manager.create_match(1, ObjectId(), ObjectId())
+        match_manager.add_move(match_id, "e2e4")
+        match_manager.add_move(match_id, "e7e5")
+
+        moves = match_manager.get_match_moves(match_id)
+        assert len(moves) == 2
+        assert moves[0] == "e2e4"
+        assert moves[1] == "e7e5"
+
+    def test_get_matches_by_winner(self, match_manager: Match):
+        bot1_id = ObjectId()
+        bot2_id = ObjectId()
+        match_id1 = match_manager.create_match(1, bot1_id, bot2_id)
+        match_id2 = match_manager.create_match(2, bot2_id, bot1_id)
+
+        match_manager.set_winner(match_id1, bot1_id)
+        match_manager.set_winner(match_id2, bot1_id)
+
+        matches = match_manager.get_matches_by_winner(bot1_id)
+        assert len(matches) == 2
+        game_nums = [match["game_num"] for match in matches]
+        assert 1 in game_nums
+        assert 2 in game_nums
