@@ -3,11 +3,10 @@ from typing import BinaryIO
 import types
 import os
 
-# Check if running in Docker (e.g., based on an environment variable)
+IN_JENKINS = os.getenv("JENKINS_HOME") is not None
 IN_DOCKER = os.getenv("IN_DOCKER", "false").lower() == "true"
 
-# Adjust base path accordingly
-base_path = "" if IN_DOCKER else "docker/"
+base_path = "docker/" if not IN_JENKINS and not IN_DOCKER else ""
 
 
 class FileLoader:
