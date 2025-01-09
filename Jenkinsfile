@@ -46,7 +46,7 @@ pipeline {
                 echo 'Running backend tests with pytest...'
                 dir("${BACKEND_DIR}") {
                     sh 'ls -l'         
-                    sh 'pytest tests/' 
+                    sh 'PYTHONPATH=./src pytest tests/' 
                 }
             }
         }
