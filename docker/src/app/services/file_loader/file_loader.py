@@ -3,7 +3,7 @@ from typing import BinaryIO
 import types
 import os
 
-IN_JENKINS = os.getenv("JENKINS_HOME") is not None
+IN_JENKINS = os.getenv("IN_JENKINS", "false").lower() == "true"
 IN_DOCKER = os.getenv("IN_DOCKER", "false").lower() == "true"
 
 base_path = "docker/" if not IN_DOCKER else ""
