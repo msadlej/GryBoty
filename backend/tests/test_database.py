@@ -3,7 +3,7 @@ import mongomock
 from bson import ObjectId
 from typing import Generator
 
-from database.main import MongoDB, User
+from database.main import MongoDB, User, Bot
 
 
 @pytest.fixture
@@ -19,6 +19,11 @@ def mock_db() -> Generator[MongoDB, None, None]:
 @pytest.fixture
 def user_manager(mock_db: MongoDB) -> User:
     return User(mock_db)
+
+
+@pytest.fixture
+def bot_manager(mock_db: MongoDB) -> Bot:
+    return Bot(mock_db)
 
 
 class TestUser:
@@ -82,3 +87,92 @@ class TestUser:
         usernames = [user["username"] for user in users]
         assert "user1" in usernames
         assert "user2" in usernames
+
+
+class TestBot:
+    def test_create_bot(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        assert bot_id is not None
+        bot = bot_manager.get_bot_by_id(bot_id)
+        assert bot["name"] == "testbot"
+        assert bot["game_type"] == game_type_id
+        assert bot["is_validated"] is False
+        assert bot["games_played"] == 0
+        assert bot["wins"] == 0
+        assert bot["losses"] == 0
+
+    def test_add_code_path(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_manager.add_code_path(bot_id, "/path/to/code")
+        bot = bot_manager.get_bot_by_id(bot_id)
+        assert bot["code_path"] == "/path/to/code"
+
+    def test_update_stats(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_manager.update_stats(bot_id, True)
+        bot = bot_manager.get_bot_by_id(bot_id)
+        assert bot["games_played"] == 1
+        assert bot["wins"] == 1
+        assert bot["losses"] == 0
+
+        bot_manager.update_stats(bot_id, False)
+        bot = bot_manager.get_bot_by_id(bot_id)
+        assert bot["games_played"] == 2
+        assert bot["wins"] == 1
+        assert bot["losses"] == 1
+
+    def test_update_name(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_manager.update_name(bot_id, "newname")
+        bot = bot_manager.get_bot_by_id(bot_id)
+        assert bot["name"] == "newname"
+
+    def test_validate_bot(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_manager.validate_bot(bot_id)
+        bot = bot_manager.get_bot_by_id(bot_id)
+        assert bot["is_validated"] is True
+
+    def test_get_bots_by_game_type(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        _ = bot_manager.create_bot("bot1", game_type_id)
+        _ = bot_manager.create_bot("bot2", game_type_id)
+        bots = bot_manager.get_bots_by_game_type(game_type_id)
+        assert len(bots) == 2
+        bot_names = [bot["name"] for bot in bots]
+        assert "bot1" in bot_names
+        assert "bot2" in bot_names
+
+    def test_get_validated_bots(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id1 = bot_manager.create_bot("bot1", game_type_id)
+        _ = bot_manager.create_bot("bot2", game_type_id)
+        bot_manager.validate_bot(bot_id1)
+        validated_bots = bot_manager.get_validated_bots()
+        assert len(validated_bots) == 1
+        assert validated_bots[0]["name"] == "bot1"
+
+    def test_get_bot_stats(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_manager.update_stats(bot_id, True)
+        bot_manager.update_stats(bot_id, False)
+        stats = bot_manager.get_bot_stats(bot_id)
+        assert stats["games_played"] == 2
+        assert stats["wins"] == 1
+        assert stats["losses"] == 1
+
+    def test_get_all_bots(self, bot_manager: Bot):
+        game_type_id = ObjectId()
+        _ = bot_manager.create_bot("bot1", game_type_id)
+        _ = bot_manager.create_bot("bot2", game_type_id)
+        bots = bot_manager.get_all_bots()
+        assert len(bots) == 2
+        bot_names = [bot["name"] for bot in bots]
+        assert "bot1" in bot_names
+        assert "bot2" in bot_names
