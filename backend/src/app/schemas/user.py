@@ -1,6 +1,11 @@
 from pydantic import BaseModel, Field
-from pyobjectID import MongoObjectId
+from pyobjectID import PyObjectId
 from enum import Enum
+
+from app.schemas.bot import BotModel
+
+
+BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
 
 
 class Token(BaseModel):
@@ -16,32 +21,40 @@ class TokenData(BaseModel):
     username: str | None = None
 
 
-class AccountType(Enum):
+class AccountType(str, Enum):
     """Represents the type of an account"""
 
-    STANDARD: str = "standard"
-    PREMIUM: str = "premium"
-    ADMIN: str = "admin"
+    STANDARD = "standard"
+    PREMIUM = "premium"
+    ADMIN = "admin"
 
 
 class UserModel(BaseModel):
     """Represents a user"""
 
-    id: MongoObjectId = Field(alias="_id")
+    id: PyObjectId = Field(alias="_id")
     username: str
-    password_hash: str
     account_type: AccountType
-    bots: list[MongoObjectId]
+    bots: list[BotModel] | None = None
     is_banned: bool
 
 
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    """Represents a user creation model"""
+
+    username: str = Field(min_length=3, max_length=16)
+    password: str = Field(min_length=5, max_length=32)
 
 
 class UserUpdate(BaseModel):
-    password_hash: str | None = None
+    """Represents a user update model"""
+
     account_type: AccountType | None = None
-    bots: list[MongoObjectId] | None = None
     is_banned: bool | None = None
+
+
+class PasswordUpdate(BaseModel):
+    """Represents a password update model"""
+
+    old_password: str
+    new_password: str = Field(min_length=5, max_length=32)

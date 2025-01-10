@@ -18,6 +18,9 @@ class MongoDB:
     def get_all_bots(self) -> List[Dict]:
         return list(self.db.bots.find())
 
+    def get_all_game_types(self) -> List[Dict]:
+        return list(self.db.game_types.find())
+
 
 class User:
     def __init__(self, db: MongoDB):
@@ -40,8 +43,18 @@ class User:
     def add_bot(self, user_id: ObjectId, bot_id: ObjectId) -> None:
         self.collection.update_one({"_id": user_id}, {"$push": {"bots": bot_id}})
 
-    def ban_user(self, user_id: ObjectId) -> None:
-        self.collection.update_one({"_id": user_id}, {"$set": {"is_banned": True}})
+    def update_ban(self, user_id: ObjectId, is_banned: bool) -> None:
+        self.collection.update_one({"_id": user_id}, {"$set": {"is_banned": is_banned}})
+
+    def update_account_type(self, user_id: ObjectId, new_account_type: str) -> None:
+        self.collection.update_one(
+            {"_id": user_id}, {"$set": {"account_type": new_account_type}}
+        )
+
+    def update_password(self, user_id: ObjectId, new_password_hash: str) -> None:
+        self.collection.update_one(
+            {"_id": user_id}, {"$set": {"password_hash": new_password_hash}}
+        )
 
     def get_user_by_id(self, user_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"_id": user_id})
@@ -62,11 +75,11 @@ class Bot:
         self.db = db.db
         self.collection = db.db.bots
 
-    def create_bot(self, name: str, game_type: ObjectId, code: str) -> ObjectId:
+    def create_bot(self, name: str, game_type: ObjectId) -> ObjectId:
         bot_data = {
             "name": name,
             "game_type": game_type,
-            "code": code,
+            "code_path": "",
             "is_validated": False,
             "games_played": 0,
             "wins": 0,
@@ -77,9 +90,15 @@ class Bot:
         result = self.collection.insert_one(bot_data)
         return result.inserted_id
 
+    def add_code_path(self, bot_id: ObjectId, code_path: str) -> None:
+        self.collection.update_one({"_id": bot_id}, {"$set": {"code_path": code_path}})
+
     def update_stats(self, bot_id: ObjectId, won: bool) -> None:
         update = {"$inc": {"games_played": 1, "wins" if won else "losses": 1}}
         self.collection.update_one({"_id": bot_id}, update)
+
+    def update_name(self, bot_id: ObjectId, new_name: str) -> None:
+        self.collection.update_one({"_id": bot_id}, {"$set": {"name": new_name}})
 
     def validate_bot(self, bot_id: ObjectId) -> None:
         self.collection.update_one({"_id": bot_id}, {"$set": {"is_validated": True}})
@@ -174,6 +193,30 @@ class Tournament:
             {"_id": tournament_id}, {"$push": {"matches": match_id}}
         )
 
+    def update_name(self, tournament_id: ObjectId, new_name: str) -> None:
+        self.collection.update_one({"_id": tournament_id}, {"$set": {"name": new_name}})
+
+    def update_description(self, tournament_id: ObjectId, new_description: str) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id}, {"$set": {"description": new_description}}
+        )
+
+    def update_start_date(
+        self, tournament_id: ObjectId, new_start_date: datetime
+    ) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id}, {"$set": {"start_date": new_start_date}}
+        )
+
+    def update_max_participants(self, tournament_id: ObjectId, new_max: int) -> bool:
+        tournament = self.get_tournament_by_id(tournament_id)
+        if len(tournament["participants"]) <= new_max:
+            self.collection.update_one(
+                {"_id": tournament_id}, {"$set": {"max_participants": new_max}}
+            )
+            return True
+        return False
+
     def get_tournament_matches(self, tournament_id: ObjectId) -> List[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
         return tournament.get("matches", []) if tournament else []
@@ -189,6 +232,9 @@ class Tournament:
 
     def get_tournament_by_match(self, match_id: ObjectId) -> Optional[Dict]:
         return self.collection.find_one({"matches": match_id})
+
+    def get_tournament_by_access_code(self, access_code: str) -> Optional[Dict]:
+        return self.collection.find_one({"access_code": access_code})
 
     def get_upcoming_tournaments(self) -> List[Dict]:
         current_date = datetime.now()

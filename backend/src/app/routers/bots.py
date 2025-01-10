@@ -1,10 +1,16 @@
-from app.models.bot import get_own_bots, get_bot_by_id
-from app.utils.authentication import get_current_active_user
-from app.schemas.bot import BotModel
-from fastapi import HTTPException, status
-from fastapi import APIRouter, Depends
-from app.schemas.user import UserModel
-from typing import Annotated
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from pyobjectID import PyObjectId
+
+from app.models.bot import insert_bot, update_bot
+from app.utils.database import get_db_connection
+from app.schemas.bot import BotModel, BotUpdate
+from app.dependencies import UserDependency
+from app.models.bot import (
+    check_bot_access,
+    get_bot_by_id,
+    convert_bot,
+    get_bots_by_user_id,
+)
 
 
 router = APIRouter(prefix="/bots")
@@ -12,22 +18,58 @@ router = APIRouter(prefix="/bots")
 
 @router.get("/", response_model=list[BotModel])
 async def read_own_bots(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    current_user: UserDependency,
 ):
-    return get_own_bots(current_user)
+    with get_db_connection() as db:
+        bot = get_bots_by_user_id(db, current_user.id)
+
+    return bot
 
 
-@router.get("/{bot_id}", response_model=BotModel)
+@router.post("/", response_model=BotModel)
+async def create_bot(
+    current_user: UserDependency,
+    name: str = Form(min_length=3, max_length=16),
+    game_type: PyObjectId = Form(...),
+    code: UploadFile = File(...),
+):
+    with get_db_connection() as db:
+        new_bot = insert_bot(db, current_user, name, game_type)
+
+    return new_bot
+
+
+@router.put("/{bot_id}/", response_model=BotModel)
+async def edit_bot_by_id(
+    current_user: UserDependency,
+    bot_id: PyObjectId,
+    bot_data: BotUpdate = Form(...),
+):
+    with get_db_connection() as db:
+        if not check_bot_access(db, current_user, bot_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
+
+        updated_bot = update_bot(db, bot_id, bot_data)
+
+    return updated_bot
+
+
+@router.get("/{bot_id}/", response_model=BotModel)
 async def read_bot_by_id(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
-    bot_id: str,
+    current_user: UserDependency,
+    bot_id: PyObjectId,
 ):
-    bot: BotModel | None = get_bot_by_id(bot_id)
+    with get_db_connection() as db:
+        if not check_bot_access(db, current_user, bot_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
 
-    if bot is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Bot: {bot_id} not found.",
-        )
+        bot_dict = get_bot_by_id(db, bot_id)
+        bot = convert_bot(db, bot_dict, detail=True)
 
     return bot

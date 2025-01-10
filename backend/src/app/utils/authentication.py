@@ -1,19 +1,20 @@
+from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from app.models.user import get_user_by_username
-from app.schemas.user import TokenData, UserModel
-from jwt.exceptions import InvalidTokenError
-from passlib.context import CryptContext
-from typing import Annotated, Any
+from typing import Any
 import jwt
 
+from app.schemas.user import UserModel, UserCreate, PasswordUpdate
+from database.main import MongoDB
+from app.config import settings
+from app.models.user import (
+    get_user_by_username,
+    convert_user,
+    insert_user,
+    update_user_password,
+)
 
-SECRET_KEY = "1365209f8d9033360934a875f588f8075296a115e712beee38a5a23c527a0dd4"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+pwd_context = settings.pwd_context
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -34,17 +35,17 @@ def get_password_hash(password: str) -> str:
     return hashed_password
 
 
-def authenticate_user(username: str, password: str) -> UserModel | None:
+def authenticate_user(db: MongoDB, username: str, password: str) -> UserModel | None:
     """
     Authenticate the user with the password.
     Returns None if the user is not found or the password is incorrect.
     """
 
-    user: UserModel | None = get_user_by_username(username)
-
-    if user is None or not verify_password(password, user.password_hash):
+    user = get_user_by_username(db, username)
+    if user is None or not verify_password(password, user["password_hash"]):
         return None
-    return user
+
+    return convert_user(db, user)
 
 
 def create_access_token(
@@ -54,58 +55,47 @@ def create_access_token(
     Create the access token.
     """
 
-    to_encode: dict[str, Any] = data.copy()
-    expire: datetime = datetime.now(timezone.utc)
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc)
 
     if expires_delta is not None:
         expire += expires_delta
     else:
-        expire += timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire += timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-    return encoded_jwt
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
+def create_user(db: MongoDB, user_data: UserCreate) -> UserModel:
     """
-    Get the current user from the token.
+    Create a new user.
+    Returns the new user.
     """
 
-    credentials_exception: HTTPException = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    hashed_password = get_password_hash(user_data.password)
+    user_dict = insert_user(db, user_data.username, hashed_password)
 
-    try:
-        payload: dict[str, Any] = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str | None = payload.get("sub")
-
-        if username is None:
-            raise credentials_exception
-
-        token_data = TokenData(username=username)
-    except InvalidTokenError:
-        raise credentials_exception
-
-    user: UserModel | None = get_user_by_username(token_data.username)
-    if user is None:
-        raise credentials_exception
-
-    return user
+    return convert_user(db, user_dict)
 
 
-async def get_current_active_user(
-    current_user: Annotated[UserModel, Depends(get_current_user)]
+def change_user_password(
+    db: MongoDB, current_user: UserModel, password_data: PasswordUpdate
 ) -> UserModel:
     """
-    Get the current active user.
-    Raises an exception if the user is inactive.
+    Updates a user's password.
+    Returns the updated user.
     """
 
-    if current_user.is_banned:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    if authenticate_user(db, current_user.username, password_data.old_password) is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    return current_user
+    hashed_password = get_password_hash(password_data.new_password)
+    user_dict = update_user_password(db, current_user.id, hashed_password)
+
+    return convert_user(db, user_dict)

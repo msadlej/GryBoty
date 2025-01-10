@@ -1,6 +1,7 @@
-from app.schemas.user import Token, TokenData, AccountType, UserModel
-from bson import ObjectId
 import pytest
+
+from app.schemas.user import Token, TokenData, AccountType, UserModel
+from app.models.user import convert_user, insert_user
 
 
 def test_token():
@@ -17,29 +18,34 @@ def test_account_type():
     premium_account = AccountType("premium")
     admin_account = AccountType("admin")
 
-    assert standard_account == AccountType.STANDARD
-    assert premium_account == AccountType.PREMIUM
-    assert admin_account == AccountType.ADMIN
+    assert standard_account is AccountType.STANDARD
+    assert premium_account is AccountType.PREMIUM
+    assert admin_account is AccountType.ADMIN
 
     with pytest.raises(ValueError):
         AccountType("invalid")
 
 
-@pytest.mark.filterwarnings("ignore:`__get_validators__` is deprecated")
-def test_user():
-    user_dict = {
-        "_id": ObjectId(),
-        "username": "username",
-        "password_hash": "password_hash",
-        "account_type": "standard",
-        "bots": [ObjectId()],
-        "is_banned": True,
-    }
-
+def test_user(user_dict):
     user = UserModel(**user_dict)
 
+    assert user.id == user_dict["_id"]
     assert user.username == "username"
-    assert user.password_hash == "password_hash"
-    assert user.account_type == AccountType.STANDARD
-    assert user.bots
+    assert user.account_type is AccountType.STANDARD
+    assert user.bots == user_dict["bots"]
     assert user.is_banned
+
+
+def test_convert_user(user_dict):
+    user = convert_user(..., user_dict, detail=False)
+
+    assert user.bots is None
+
+
+def test_insert_user(db_connection):
+    user = insert_user(db_connection, "username", "password")
+
+    assert user["username"] == "username"
+    assert user["account_type"] == "standard"
+    assert user["bots"] == []
+    assert user["is_banned"] is False
