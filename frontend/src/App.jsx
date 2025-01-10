@@ -11,6 +11,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  console.log('Interceptor applied:', config);
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -76,7 +77,7 @@ const BackButton = ({ onNavigate, to = 'dashboard', ...params }) => (
   </button>
 );
 
-const LoginScreen = ({ onNavigate }) => {
+export const LoginScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -152,7 +153,7 @@ const LoginScreen = ({ onNavigate }) => {
   );
 };
 
-const RegisterScreen = ({ onNavigate }) => {
+export const RegisterScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -229,7 +230,7 @@ const RegisterScreen = ({ onNavigate }) => {
   );
 };
 
-const SettingsScreen = ({ onNavigate }) => {
+export const SettingsScreen = ({ onNavigate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
@@ -286,7 +287,7 @@ const SettingsScreen = ({ onNavigate }) => {
   );
 };
 
-const ChangePasswordScreen = ({ onNavigate }) => {
+export const ChangePasswordScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -359,7 +360,7 @@ const ChangePasswordScreen = ({ onNavigate }) => {
   );
 };
 
-const DashboardScreen = ({ onNavigate }) => {
+export const DashboardScreen = ({ onNavigate }) => {
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <h1 className="text-5xl mb-12 font-light">Boty gierki</h1>
@@ -393,7 +394,7 @@ const DashboardScreen = ({ onNavigate }) => {
   );
 };
 
-const TournamentsScreen = ({ onNavigate }) => {
+export const TournamentsScreen = ({ onNavigate }) => {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -463,7 +464,7 @@ const TournamentsScreen = ({ onNavigate }) => {
   );
 };
 
-const CreateTournamentScreen = ({ onNavigate }) => {
+export const CreateTournamentScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -565,7 +566,7 @@ const CreateTournamentScreen = ({ onNavigate }) => {
   );
 };
 
-const BotsListScreen = ({ onNavigate }) => {
+export const BotsListScreen = ({ onNavigate }) => {
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -635,7 +636,7 @@ const BotsListScreen = ({ onNavigate }) => {
   );
 };
 
-const AddBotScreen = ({ onNavigate }) => {
+export const AddBotScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: '',
     game: '',
@@ -811,7 +812,7 @@ const AddBotScreen = ({ onNavigate }) => {
   );
 };
 
-const BotDetailsScreen = ({ onNavigate }) => {
+export const BotDetailsScreen = ({ onNavigate }) => {
   const [bot, setBot] = useState(null);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -888,7 +889,7 @@ const BotDetailsScreen = ({ onNavigate }) => {
   );
 };
 
-const JoinTournamentScreen = ({ onNavigate }) => {
+export const JoinTournamentScreen = ({ onNavigate }) => {
   const [accessCode, setAccessCode] = useState('');
   const [error, setError] = useState('');
 
@@ -931,7 +932,7 @@ const JoinTournamentScreen = ({ onNavigate }) => {
   );
 };
 
-const SelectBotScreen = ({ onNavigate }) => {
+export const SelectBotScreen = ({ onNavigate }) => {
   const [tournamentInfo, setTournamentInfo] = useState(null);
   const [availableBots, setAvailableBots] = useState([]);
   const [selectedBotId, setSelectedBotId] = useState('');
@@ -1041,7 +1042,7 @@ const SelectBotScreen = ({ onNavigate }) => {
   );
 };
 
-const ManageTournamentScreen = ({ onNavigate }) => {
+export const ManageTournamentScreen = ({ onNavigate }) => {
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1179,7 +1180,7 @@ const ManageTournamentScreen = ({ onNavigate }) => {
   );
 };
 
-const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => {
+export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => {
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1266,7 +1267,7 @@ const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => {
   );
 };
 
-const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
+export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   console.log('TournamentTreeScreen props:', { onNavigate, tournamentId });
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
