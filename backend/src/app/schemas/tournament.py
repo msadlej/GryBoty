@@ -1,10 +1,11 @@
+from pydantic import BaseModel, Field
+from pyobjectID import PyObjectId
+from datetime import datetime
+
 from app.schemas.match import MatchModel
 from app.schemas.game import GameModel
 from app.schemas.user import UserModel
-from pydantic import BaseModel, Field
 from app.schemas.bot import BotModel
-from pyobjectID import PyObjectId
-from datetime import datetime
 
 
 BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}

@@ -1,6 +1,7 @@
-from app.schemas.game import GameModel
 from pydantic import BaseModel, Field
 from pyobjectID import PyObjectId
+
+from app.schemas.game import GameModel
 
 
 BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
