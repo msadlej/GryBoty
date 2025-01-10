@@ -10,6 +10,7 @@ testpaths = [
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.mypy]
 mypy_path = "src/app"
