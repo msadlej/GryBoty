@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, status
+from pyobjectID import PyObjectId
+
+from app.utils.database import get_db_connection
 from app.dependencies import UserDependency
 from app.schemas.match import MatchModel
 from app.utils.docker import run_game
 from app.schemas.bot import BotModel
-from pyobjectID import PyObjectId
 from app.models.tournament import (
     check_tournament_creator,
     check_tournament_access,
@@ -12,7 +14,7 @@ from app.models.tournament import (
 from app.models.match import (
     get_match_by_id,
     convert_match,
-    get_bots_by_match,
+    get_bots_by_match_id,
     update_match,
     process_logs,
 )
@@ -53,7 +55,11 @@ async def read_match_by_id(
             detail=f"Match: {match_id} not found.",
         )
 
-    return convert_match(get_match_by_id(match_id), detail=True)
+    with get_db_connection() as db:
+        match_dict = get_match_by_id(db, match_id)
+        match = convert_match(db, match_dict, detail=True)
+
+    return match
 
 
 @router.get(
@@ -71,7 +77,10 @@ async def read_bots_by_match_id(
             detail=f"Match: {match_id} not found.",
         )
 
-    return get_bots_by_match(match_id)
+    with get_db_connection() as db:
+        bots = get_bots_by_match_id(db, match_id)
+
+    return bots
 
 
 @router.put(
@@ -89,27 +98,30 @@ async def run_match(
             detail="User does not have access to run this match.",
         )
 
-    match_dict = get_match_by_id(match_id)
-    match = convert_match(match_dict, detail=True)
-    if match.players is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No bots not found for match: {match_id}.",
-        )
+    with get_db_connection() as db:
+        match_dict = get_match_by_id(db, match_id)
+        match = convert_match(db, match_dict, detail=True)
+        if match.players is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No bots not found for match: {match_id}.",
+            )
 
-    bot_1, bot_2 = match.players.values()
-    docker_logs = run_game(bot_1.code_path, bot_2.code_path)
-    if docker_logs is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error running Docker commands",
-        )
+        bot_1, bot_2 = match.players.values()
+        docker_logs = run_game(bot_1.code_path, bot_2.code_path)
+        if docker_logs is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error running Docker commands",
+            )
 
-    moves, winner, loser = process_logs(match, docker_logs, bot_1, bot_2)
-    if winner is None or loser is None:
-        raise HTTPException(
-            status_code=status.HTTP_200_OK,
-            detail=f"Match: {match_id} ended in a draw.",
-        )  # TODO: Replay match after a draw
+        moves, winner, loser = process_logs(docker_logs, bot_1, bot_2)
+        if winner is None or loser is None:
+            raise HTTPException(
+                status_code=status.HTTP_200_OK,
+                detail=f"Match: {match_id} ended in a draw.",
+            )  # TODO: Replay match after a draw
 
-    return update_match(match, winner, loser, moves)
+        result = update_match(db, match, winner, loser, moves)
+
+    return result

@@ -112,12 +112,11 @@ def convert_tournament(
             bot_dict = get_bot_by_id(db, bot_id)
             participants.append(convert_bot(db, bot_dict))
 
-    matches = []
-    for match_id in match_ids:
-        match_dict = get_match_by_id(match_id)
-        matches.append(convert_match(match_dict))
+        matches = []
+        for match_id in match_ids:
+            match_dict = get_match_by_id(db, match_id)
+            matches.append(convert_match(db, match_dict))
 
-    with get_db_connection() as db:
         tournament_dict["game_type"] = get_game_type_by_id(db, game_type)
         tournament_dict["creator"] = convert_user(db, user_dict)
 
@@ -149,11 +148,12 @@ def get_matches_by_tournament(tournament_id: ObjectId) -> list[MatchModel]:
 
     tournament = get_tournament_by_id(tournament_id)
 
-    return [
-        convert_match(match_dict)
-        for match_id in tournament["matches"]
-        if (match_dict := get_match_by_id(match_id))
-    ]
+    with get_db_connection() as db:
+        return [
+            convert_match(db, match_dict)
+            for match_id in tournament["matches"]
+            if (match_dict := get_match_by_id(db, match_id))
+        ]
 
 
 def get_tournaments_by_user_id(user_id: ObjectId) -> list[TournamentModel]:

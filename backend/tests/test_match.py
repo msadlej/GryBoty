@@ -13,7 +13,7 @@ def test_match_model(match_dict):
 
 
 def test_convert_match(match_dict):
-    match: MatchModel = convert_match(match_dict, detail=False)
+    match: MatchModel = convert_match(..., match_dict, detail=False)
 
     assert match.players is None
     assert match.moves is None
