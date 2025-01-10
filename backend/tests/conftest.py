@@ -1,11 +1,15 @@
+from contextlib import contextmanager
+from datetime import datetime
+from bson import ObjectId
+import mongomock
+import pytest
+
 from app.utils.authentication import get_password_hash
 from app.schemas.match import MatchModel
 from app.schemas.game import GameModel
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
-from datetime import datetime
-from bson import ObjectId
-import pytest
+from database.main import MongoDB
 
 
 @pytest.fixture
@@ -73,7 +77,7 @@ def tournament_dict(game_dict, bot_dict, user_dict, match_dict):
 
 @pytest.fixture
 def patch_get_user_by_username(monkeypatch):
-    def mock_get(username: str | None) -> UserModel | None:
+    def mock_get(_, username: str | None) -> UserModel | None:
         return (
             {
                 "_id": ObjectId(),
@@ -89,3 +93,21 @@ def patch_get_user_by_username(monkeypatch):
 
     monkeypatch.setattr("app.utils.authentication.get_user_by_username", mock_get)
     monkeypatch.setattr("app.dependencies.get_user_by_username", mock_get)
+
+
+@contextmanager
+def mock_get_db_connection(connection_string: str = "mongodb://localhost:27017/"):
+    client = mongomock.MongoClient()
+    db = MongoDB()
+    db.client = client
+    db.db = client.pzsp_database
+    try:
+        yield db
+    finally:
+        client.close()
+
+
+@pytest.fixture
+def db_connection():
+    with mock_get_db_connection() as db:
+        yield db
