@@ -104,9 +104,9 @@ def convert_tournament(
     if not detail:
         return TournamentModel(**tournament_dict)
 
-    user_dict = get_user_by_id(creator)
-
     with get_db_connection() as db:
+        user_dict = get_user_by_id(db, creator)
+
         participants = []
         for bot_id in participant_ids:
             bot_dict = get_bot_by_id(db, bot_id)
@@ -119,8 +119,8 @@ def convert_tournament(
 
     with get_db_connection() as db:
         tournament_dict["game_type"] = get_game_type_by_id(db, game_type)
+        tournament_dict["creator"] = convert_user(db, user_dict)
 
-    tournament_dict["creator"] = convert_user(user_dict)
     tournament_dict["participants"] = participants
     tournament_dict["matches"] = matches
 

@@ -1,7 +1,9 @@
-from app.schemas.user import Token, UserModel, UserCreate, PasswordUpdate
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
+
+from app.schemas.user import Token, UserModel, UserCreate, PasswordUpdate
 from app.dependencies import UserDependency
+from app.utils.database import get_db_connection
 import app.utils.authentication as auth
 
 
@@ -16,9 +18,10 @@ router = APIRouter()
     summary="User login",
 )
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user: UserModel | None = auth.authenticate_user(
-        form_data.username, form_data.password
-    )
+    with get_db_connection() as db:
+        user: UserModel | None = auth.authenticate_user(
+            db, form_data.username, form_data.password
+        )
 
     if user is None:
         raise HTTPException(
@@ -33,7 +36,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @router.post("/register/", response_model=UserModel)
 async def register_user(user_data: UserCreate = Form(...)):
-    return auth.create_user(user_data)
+    with get_db_connection() as db:
+        new_user = auth.create_user(db, user_data)
+
+    return new_user
 
 
 @router.get("/users/me/", response_model=UserModel)
@@ -46,4 +52,7 @@ async def change_password(
     current_user: UserDependency,
     user_data: PasswordUpdate = Form(...),
 ):
-    return auth.change_user_password(current_user, user_data)
+    with get_db_connection() as db:
+        user = auth.change_user_password(db, current_user, user_data)
+
+    return user

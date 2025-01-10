@@ -1,10 +1,12 @@
-from app.models.user import get_user_by_username, convert_user
-from app.schemas.user import TokenData, AccountType, UserModel
 from fastapi import Depends, HTTPException, status
 from jwt.exceptions import InvalidTokenError
 from typing import Annotated, Any
-from app.config import settings
 import jwt
+
+from app.models.user import get_user_by_username, convert_user
+from app.schemas.user import TokenData, AccountType, UserModel
+from app.utils.database import get_db_connection
+from app.config import settings
 
 
 oauth2_scheme = settings.oauth2_scheme
@@ -34,11 +36,14 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     except InvalidTokenError:
         raise credentials_exception
 
-    user_dict = get_user_by_username(token_data.username)
-    if user_dict is None:
-        raise credentials_exception
+    with get_db_connection() as db:
+        user_dict = get_user_by_username(db, token_data.username)
+        if user_dict is None:
+            raise credentials_exception
 
-    return convert_user(user_dict)
+        user = convert_user(db, user_dict)
+
+    return user
 
 
 async def get_current_active_user(

@@ -18,13 +18,19 @@ router = APIRouter(prefix="/admin")
 
 @router.get("/users/", response_model=list[UserModel])
 async def read_all_users(current_admin: AdminDependency):
-    return get_all_users()
+    with get_db_connection() as db:
+        users = get_all_users(db)
+
+    return users
 
 
 @router.get("/users/{user_id}/", response_model=UserModel)
 async def read_user_by_id(current_admin: AdminDependency, user_id: PyObjectId):
-    user_dict = get_user_by_id(user_id)
-    return convert_user(user_dict)
+    with get_db_connection() as db:
+        user_dict = get_user_by_id(db, user_id)
+        user = convert_user(db, user_dict)
+
+    return user
 
 
 @router.put("/users/{user_id}/", response_model=UserModel)
@@ -33,7 +39,10 @@ async def edit_user_by_id(
     user_id: PyObjectId,
     user_data: UserUpdate = Form(...),
 ):
-    return update_user(user_id, user_data)
+    with get_db_connection() as db:
+        user = update_user(db, user_id, user_data)
+
+    return user
 
 
 @router.get("/users/{user_id}/bots/", response_model=list[BotModel])

@@ -1,6 +1,7 @@
+import pytest
+
 from app.schemas.user import Token, TokenData, AccountType, UserModel
 from app.models.user import convert_user
-import pytest
 
 
 def test_token():
@@ -36,6 +37,6 @@ def test_user(user_dict):
 
 
 def test_convert_user(user_dict):
-    user = convert_user(user_dict, detail=False)
+    user = convert_user(..., user_dict, detail=False)
 
     assert user.bots is None

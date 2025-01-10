@@ -14,11 +14,11 @@ def test_verify_password():
 
 
 def test_authenticate_user(patch_get_user_by_username):
-    user = authenticate_user("username", "password")
+    user = authenticate_user(..., "username", "password")
     assert user is not None
 
-    user = authenticate_user("username", "wrong_password")
+    user = authenticate_user(..., "username", "wrong_password")
     assert user is None
 
-    user = authenticate_user("wrong_username", "password")
+    user = authenticate_user(..., "wrong_username", "password")
     assert user is None
