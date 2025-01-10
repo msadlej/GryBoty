@@ -1,8 +1,10 @@
+from fastapi import APIRouter, HTTPException, status, Form
+from pyobjectID import PyObjectId
+
 from app.schemas.tournament import TournamentModel, TournamentCreate, TournamentUpdate
 from app.dependencies import UserDependency, PremiumDependency
-from fastapi import APIRouter, HTTPException, status, Form
+from app.utils.database import get_db_connection
 from app.schemas.bot import BotModel
-from pyobjectID import PyObjectId
 from app.models.tournament import (
     check_tournament_access,
     check_tournament_creator,
@@ -24,7 +26,10 @@ router = APIRouter(prefix="/tournaments")
 async def read_own_tournaments(
     current_user: UserDependency,
 ):
-    return get_tournaments_by_user_id(current_user.id)
+    with get_db_connection() as db:
+        tournaments = get_tournaments_by_user_id(db, current_user.id)
+
+    return tournaments
 
 
 @router.post("/", response_model=TournamentModel)
@@ -32,7 +37,10 @@ async def create_tournament(
     current_premium_user: PremiumDependency,
     tournament: TournamentCreate = Form(...),
 ):
-    return insert_tournament(current_premium_user, tournament)
+    with get_db_connection() as db:
+        new_tournament = insert_tournament(db, current_premium_user, tournament)
+
+    return new_tournament
 
 
 @router.put("/", response_model=TournamentModel)
@@ -41,15 +49,18 @@ async def join_tournament(
     access_code: str = Form(...),
     bot_id: PyObjectId = Form(...),
 ):
-    tournament_id = get_tournament_id_by_access_code(access_code)
+    with get_db_connection() as db:
+        tournament_id = get_tournament_id_by_access_code(db, access_code)
 
-    if tournament_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Access code: {access_code} not found.",
-        )
+        if tournament_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Access code: {access_code} not found.",
+            )
 
-    return add_tournament_participant(tournament_id, bot_id)
+        tournament = add_tournament_participant(db, tournament_id, bot_id)
+
+    return tournament
 
 
 @router.get("/{tournament_id}/", response_model=TournamentModel)
@@ -57,14 +68,17 @@ async def read_tournament_by_id(
     current_user: UserDependency,
     tournament_id: PyObjectId,
 ):
-    if not check_tournament_access(current_user, tournament_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tournament: {tournament_id} not found.",
-        )
+    with get_db_connection() as db:
+        if not check_tournament_access(db, current_user, tournament_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
+            )
 
-    tournament_dict = get_tournament_by_id(tournament_id)
-    return convert_tournament(tournament_dict, detail=True)
+        tournament_dict = get_tournament_by_id(db, tournament_id)
+        tournament = convert_tournament(db, tournament_dict, detail=True)
+
+    return tournament
 
 
 @router.put("/{tournament_id}/", response_model=TournamentModel)
@@ -73,13 +87,16 @@ async def edit_tournament_by_id(
     tournament_id: PyObjectId,
     tournament_data: TournamentUpdate = Form(...),
 ):
-    if not check_tournament_creator(current_premium_user, tournament_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tournament: {tournament_id} not found.",
-        )
+    with get_db_connection() as db:
+        if not check_tournament_creator(db, current_premium_user, tournament_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
+            )
 
-    return update_tournament(tournament_id, tournament_data)
+        tournament = update_tournament(db, tournament_id, tournament_data)
+
+    return tournament
 
 
 @router.get(
@@ -90,10 +107,13 @@ async def read_bots_by_tournament_id(
     current_user: UserDependency,
     tournament_id: PyObjectId,
 ):
-    if not check_tournament_access(current_user, tournament_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tournament: {tournament_id} not found.",
-        )
+    with get_db_connection() as db:
+        if not check_tournament_access(db, current_user, tournament_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
+            )
 
-    return get_bots_by_tournament(tournament_id)
+        bots = get_bots_by_tournament(db, tournament_id)
+
+    return bots

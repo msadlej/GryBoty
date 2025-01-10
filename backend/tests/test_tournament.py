@@ -18,7 +18,7 @@ def test_tournament_model(tournament_dict):
 
 
 def test_convert_tournament(tournament_dict):
-    tournament: TournamentModel = convert_tournament(tournament_dict, detail=False)
+    tournament: TournamentModel = convert_tournament(..., tournament_dict, detail=False)
 
     assert tournament.game_type is None
     assert tournament.creator is None

@@ -61,12 +61,18 @@ async def read_users_tournaments(
     current_admin: AdminDependency,
     user_id: PyObjectId,
 ):
-    return get_tournaments_by_user_id(user_id)
+    with get_db_connection() as db:
+        tournaments = get_tournaments_by_user_id(db, user_id)
+
+    return tournaments
 
 
 @router.get("/tournaments/", response_model=list[TournamentModel])
 async def read_all_tournaments(current_admin: AdminDependency):
-    return get_all_tournaments()
+    with get_db_connection() as db:
+        tournaments = get_all_tournaments(db)
+
+    return tournaments
 
 
 @router.get("/bots/", response_model=list[BotModel])
