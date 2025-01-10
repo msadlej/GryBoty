@@ -1,7 +1,7 @@
 import pytest
 
 from app.schemas.user import Token, TokenData, AccountType, UserModel
-from app.models.user import convert_user
+from app.models.user import convert_user, insert_user
 
 
 def test_token():
@@ -40,3 +40,12 @@ def test_convert_user(user_dict):
     user = convert_user(..., user_dict, detail=False)
 
     assert user.bots is None
+
+
+def test_insert_user(db_connection):
+    user = insert_user(db_connection, "username", "password")
+
+    assert user["username"] == "username"
+    assert user["account_type"] == "standard"
+    assert user["bots"] == []
+    assert user["is_banned"] is False
