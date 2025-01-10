@@ -1,14 +1,16 @@
+from fastapi import APIRouter, Form
+from pyobjectID import PyObjectId
+
 from app.models.user import get_user_by_id, convert_user, get_all_users, update_user
 from app.models.tournament import get_all_tournaments, get_tournaments_by_user_id
 from app.models.bot import get_all_bots, get_bots_by_user_id
 from app.schemas.user import UserModel, UserUpdate
 from app.schemas.tournament import TournamentModel
 from app.schemas.game import GameModel, GameCreate
+from app.utils.database import get_db_connection
 from app.dependencies import AdminDependency
 from app.models.game import insert_game_type
 from app.schemas.bot import BotModel
-from fastapi import APIRouter, Form
-from pyobjectID import PyObjectId
 
 
 router = APIRouter(prefix="/admin")
@@ -62,4 +64,5 @@ async def read_all_bots(current_admin: AdminDependency):
 
 @router.post("/games/", response_model=GameModel)
 def create_game_type(current_admin: AdminDependency, game_data: GameCreate = Form(...)):
-    return insert_game_type(game_data)
+    with get_db_connection() as db:
+        return insert_game_type(db, game_data)

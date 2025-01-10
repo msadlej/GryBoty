@@ -48,7 +48,8 @@ def convert_bot(bot_dict: dict[str, Any], detail: bool = False) -> BotModel:
     if not detail:
         return BotModel(**bot_dict)
 
-    bot_dict["game_type"] = get_game_type_by_id(game_type)
+    with get_db_connection() as db:
+        bot_dict["game_type"] = get_game_type_by_id(db, game_type)
 
     return BotModel(**bot_dict)
 

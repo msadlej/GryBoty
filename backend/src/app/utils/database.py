@@ -1,6 +1,7 @@
 from contextlib import contextmanager
-from database.main import MongoDB
 from typing import Generator
+
+from database.main import MongoDB
 
 
 @contextmanager

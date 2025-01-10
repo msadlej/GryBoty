@@ -1,3 +1,9 @@
+from fastapi import HTTPException, status
+from bson import ObjectId
+from typing import Any
+import random
+import string
+
 from app.models.bot import get_bot_by_id, convert_bot, get_bots_by_user_id
 from app.schemas.tournament import TournamentModel, TournamentCreate, TournamentUpdate
 from app.models.match import get_match_by_id, convert_match
@@ -5,14 +11,9 @@ from app.models.user import get_user_by_id, convert_user
 from app.schemas.user import AccountType, UserModel
 from app.utils.database import get_db_connection
 from app.models.game import get_game_type_by_id
-from fastapi import HTTPException, status
 from app.schemas.match import MatchModel
 from app.schemas.bot import BotModel
 from database.main import Tournament
-from bson import ObjectId
-from typing import Any
-import random
-import string
 
 
 def generate_access_code(length: int = 6) -> str:
@@ -114,7 +115,9 @@ def convert_tournament(
         match_dict = get_match_by_id(match_id)
         matches.append(convert_match(match_dict))
 
-    tournament_dict["game_type"] = get_game_type_by_id(game_type)
+    with get_db_connection() as db:
+        tournament_dict["game_type"] = get_game_type_by_id(db, game_type)
+
     tournament_dict["creator"] = convert_user(user_dict)
     tournament_dict["participants"] = participants
     tournament_dict["matches"] = matches
@@ -186,15 +189,15 @@ def insert_tournament(
     Returns the created tournament.
     """
 
-    if get_game_type_by_id(tournament.game_type) is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Game type: {tournament.game_type} not found.",
-        )
-
-    access_code = generate_access_code()
-
     with get_db_connection() as db:
+        if get_game_type_by_id(db, tournament.game_type) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Game type: {tournament.game_type} not found.",
+            )
+
+        access_code = generate_access_code()
+
         tournaments_collection = Tournament(db)
         if get_tournament_id_by_access_code(access_code) is not None:
             raise HTTPException(
