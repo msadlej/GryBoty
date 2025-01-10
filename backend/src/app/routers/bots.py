@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from pyobjectID import PyObjectId
+
 from app.models.bot import insert_bot, update_bot
+from app.utils.database import get_db_connection
 from app.schemas.bot import BotModel, BotUpdate
 from app.dependencies import UserDependency
-from pyobjectID import PyObjectId
 from app.models.bot import (
     check_bot_access,
     get_bot_by_id,
@@ -18,7 +20,10 @@ router = APIRouter(prefix="/bots")
 async def read_own_bots(
     current_user: UserDependency,
 ):
-    return get_bots_by_user_id(current_user.id)
+    with get_db_connection() as db:
+        bot = get_bots_by_user_id(db, current_user.id)
+
+    return bot
 
 
 @router.post("/", response_model=BotModel)
@@ -28,7 +33,8 @@ async def create_bot(
     game_type: PyObjectId = Form(...),
     code: UploadFile = File(...),
 ):
-    new_bot = insert_bot(current_user, name, game_type)
+    with get_db_connection() as db:
+        new_bot = insert_bot(db, current_user, name, game_type)
 
     return new_bot
 
@@ -39,13 +45,14 @@ async def edit_bot_by_id(
     bot_id: PyObjectId,
     bot_data: BotUpdate = Form(...),
 ):
-    if not check_bot_access(current_user, bot_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Bot: {bot_id} not found.",
-        )
+    with get_db_connection() as db:
+        if not check_bot_access(db, current_user, bot_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
 
-    updated_bot = update_bot(bot_id, bot_data)
+        updated_bot = update_bot(db, bot_id, bot_data)
 
     return updated_bot
 
@@ -55,10 +62,14 @@ async def read_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,
 ):
-    if not check_bot_access(current_user, bot_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Bot: {bot_id} not found.",
-        )
+    with get_db_connection() as db:
+        if not check_bot_access(db, current_user, bot_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
 
-    return convert_bot(get_bot_by_id(bot_id), detail=True)
+        bot_dict = get_bot_by_id(db, bot_id)
+        bot = convert_bot(db, bot_dict, detail=True)
+
+    return bot

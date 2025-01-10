@@ -46,7 +46,8 @@ def check_tournament_access(current_user: UserModel, tournament_id: ObjectId) ->
     tournament = get_tournament_by_id(tournament_id)
 
     if current_user.bots is None:
-        current_user.bots = get_bots_by_user_id(current_user.id)
+        with get_db_connection() as db:
+            current_user.bots = get_bots_by_user_id(db, current_user.id)
 
     is_admin: bool = current_user.account_type is AccountType.ADMIN
     is_creator: bool = current_user.id == tournament["creator"]
@@ -105,10 +106,11 @@ def convert_tournament(
 
     user_dict = get_user_by_id(creator)
 
-    participants = []
-    for bot_id in participant_ids:
-        bot_dict = get_bot_by_id(bot_id)
-        participants.append(convert_bot(bot_dict))
+    with get_db_connection() as db:
+        participants = []
+        for bot_id in participant_ids:
+            bot_dict = get_bot_by_id(db, bot_id)
+            participants.append(convert_bot(db, bot_dict))
 
     matches = []
     for match_id in match_ids:
@@ -132,11 +134,12 @@ def get_bots_by_tournament(tournament_id: ObjectId) -> list[BotModel]:
 
     tournament = get_tournament_by_id(tournament_id)
 
-    return [
-        convert_bot(bot_dict)
-        for bot_id in tournament["participants"]
-        if (bot_dict := get_bot_by_id(bot_id))
-    ]
+    with get_db_connection() as db:
+        return [
+            convert_bot(db, bot_dict)
+            for bot_id in tournament["participants"]
+            if (bot_dict := get_bot_by_id(db, bot_id))
+        ]
 
 
 def get_matches_by_tournament(tournament_id: ObjectId) -> list[MatchModel]:
@@ -162,7 +165,7 @@ def get_tournaments_by_user_id(user_id: ObjectId) -> list[TournamentModel]:
         tournaments_collection = Tournament(db)
         tournaments = tournaments_collection.get_tournaments_by_creator(user_id)
 
-        bots = get_bots_by_user_id(user_id)
+        bots = get_bots_by_user_id(db, user_id)
         for bot in bots:
             tournaments.extend(tournaments_collection.get_tournaments_by_bot_id(bot.id))
 

@@ -18,6 +18,6 @@ def test_bot_model(bot_dict):
 
 
 def test_convert_bot(bot_dict):
-    bot = convert_bot(bot_dict, detail=False)
+    bot = convert_bot(..., bot_dict, detail=False)
 
     assert bot.game_type is None

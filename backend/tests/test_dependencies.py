@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
-from app.config import settings
 import pytest
 import jwt
+
+from app.config import settings
 from app.dependencies import (
     get_current_user,
     get_current_active_user,

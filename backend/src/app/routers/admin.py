@@ -41,7 +41,10 @@ async def read_users_bots(
     current_admin: AdminDependency,
     user_id: PyObjectId,
 ):
-    return get_bots_by_user_id(user_id)
+    with get_db_connection() as db:
+        bots = get_bots_by_user_id(db, user_id)
+
+    return bots
 
 
 @router.get("/users/{user_id}/tournaments/", response_model=list[TournamentModel])
@@ -59,10 +62,15 @@ async def read_all_tournaments(current_admin: AdminDependency):
 
 @router.get("/bots/", response_model=list[BotModel])
 async def read_all_bots(current_admin: AdminDependency):
-    return get_all_bots()
+    with get_db_connection() as db:
+        bots = get_all_bots(db)
+
+    return bots
 
 
 @router.post("/games/", response_model=GameModel)
 def create_game_type(current_admin: AdminDependency, game_data: GameCreate = Form(...)):
     with get_db_connection() as db:
-        return insert_game_type(db, game_data)
+        new_game = insert_game_type(db, game_data)
+
+    return new_game

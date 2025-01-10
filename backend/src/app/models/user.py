@@ -50,9 +50,12 @@ def convert_user(user_dict: dict[str, Any], detail: bool = False) -> UserModel:
     if not detail:
         return UserModel(**user_dict)
 
-    user_dict["bots"] = [
-        convert_bot(bot_dict) for bot_id in bots if (bot_dict := get_bot_by_id(bot_id))
-    ]
+    with get_db_connection() as db:
+        user_dict["bots"] = [
+            convert_bot(db, bot_dict)
+            for bot_id in bots
+            if (bot_dict := get_bot_by_id(db, bot_id))
+        ]
 
     return UserModel(**user_dict)
 

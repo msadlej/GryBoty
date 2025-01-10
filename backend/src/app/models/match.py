@@ -38,14 +38,15 @@ def convert_match(match_dict: dict[str, Any], detail: bool = False) -> MatchMode
         match_dict.pop("moves")
         return MatchModel(**match_dict)
 
-    match_dict["players"] = {}
-    for key, bot_id in players.items():
-        bot = get_bot_by_id(bot_id)
-        match_dict["players"][key] = convert_bot(bot)
+    with get_db_connection() as db:
+        match_dict["players"] = {}
+        for key, bot_id in players.items():
+            bot = get_bot_by_id(db, bot_id)
+            match_dict["players"][key] = convert_bot(db, bot)
 
-    if winner_id is not None:
-        winner = get_bot_by_id(winner_id)
-        match_dict["winner"] = convert_bot(winner)
+        if winner_id is not None:
+            winner = get_bot_by_id(db, winner_id)
+            match_dict["winner"] = convert_bot(db, winner)
 
     return MatchModel(**match_dict)
 
@@ -89,12 +90,13 @@ def update_match(
         bots_collection.update_stats(ObjectId(winner.id), won=True)
         bots_collection.update_stats(ObjectId(loser.id), won=False)
 
-    winner_dict = get_bot_by_id(winner.id)
-    loser_dict = get_bot_by_id(loser.id)
-    return {
-        "winner": convert_bot(winner_dict),
-        "loser": convert_bot(loser_dict),
-    }
+        winner_dict = get_bot_by_id(db, winner.id)
+        loser_dict = get_bot_by_id(db, loser.id)
+
+        return {
+            "winner": convert_bot(db, winner_dict),
+            "loser": convert_bot(db, loser_dict),
+        }
 
 
 def process_logs(
