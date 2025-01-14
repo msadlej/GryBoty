@@ -90,9 +90,6 @@ class Bot:
         result = self.collection.insert_one(bot_data)
         return result.inserted_id
 
-    def add_code_path(self, bot_id: ObjectId, code_path: str) -> None:
-        self.collection.update_one({"_id": bot_id}, {"$set": {"code_path": code_path}})
-
     def update_stats(self, bot_id: ObjectId, won: bool) -> None:
         update = {"$inc": {"games_played": 1, "wins" if won else "losses": 1}}
         self.collection.update_one({"_id": bot_id}, update)
