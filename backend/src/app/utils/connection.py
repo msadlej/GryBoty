@@ -1,3 +1,4 @@
+from typing import Any
 import requests
 
 
@@ -32,7 +33,7 @@ def validate_bot(game_name: str, code: bytes) -> bool:
         return False
 
 
-def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, str]:
+def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, Any]:
     """
     Runs a match between two bots for a specific game.
     Returns the match result as a dictionary.
@@ -47,7 +48,7 @@ def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, s
 
     # Parse the response
     if response.status_code == 200:
-        result: dict[str, str] = response.json()
+        result: dict[str, Any] = response.json()
 
         return result
     elif response.status_code == 400:
