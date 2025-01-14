@@ -5,7 +5,8 @@ from typing import Any
 from app.schemas.user import AccountType, UserModel
 from app.models.game import get_game_type_by_id
 from app.schemas.bot import BotModel, BotUpdate
-from database.main import MongoDB, User, Bot
+from database.main import MongoDB, User, Bot, GameType
+import app.utils.connection as conn
 
 
 def check_bot_access(db: MongoDB, current_user: UserModel, bot_id: ObjectId) -> bool:
@@ -83,23 +84,30 @@ def get_all_bots(db: MongoDB) -> list[BotModel]:
 
 
 def insert_bot(
-    db: MongoDB, current_user: UserModel, name: str, game_type: ObjectId
+    db: MongoDB,
+    current_user: UserModel,
+    name: str,
+    game_id: ObjectId,
+    code: bytes,
 ) -> BotModel:
     """
     Inserts a bot into the database.
     Returns the created bot.
     """
 
-    bots_collection = Bot(db)
-    bot_id = bots_collection.create_bot(name, game_type)
+    game = get_game_type_by_id(db, game_id)
 
-    code_path = f"{current_user.id}/{bot_id}"
-    bots_collection.add_code_path(bot_id, code_path)
+    bots_collection = Bot(db)
+    bot_id = bots_collection.create_bot(name, game.id, code)
 
     users_collection = User(db)
     users_collection.add_bot(current_user.id, bot_id)
 
-    # TODO: Save the file in docker
+    if not conn.validate_bot(game.name, code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bot validation failed.",
+        )
 
     bot_dict = get_bot_by_id(db, bot_id)
     return convert_bot(db, bot_dict, detail=True)
