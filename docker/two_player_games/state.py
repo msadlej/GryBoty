@@ -1,11 +1,12 @@
 from typing import Iterable, Optional
 
-from src.two_player_games.move import Move
-from src.two_player_games.player import Player
+from two_player_games.move import Move
+from two_player_games.player import Player
 
 
 class State:
     """Immutable game state object"""
+
     def __init__(self, current_player, other_player) -> None:
         self._current_player = current_player
         self._other_player = other_player
@@ -24,7 +25,7 @@ class State:
         """
         return self._current_player
 
-    def make_move(self, move: Move) -> 'State':
+    def make_move(self, move: Move) -> "State":
         """
         Creates a new state after making the move
 

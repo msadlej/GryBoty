@@ -1,10 +1,10 @@
 from src.bots.example_bots.example_bot import Bot
-from src.two_player_games.move import Move
-from src.two_player_games.state import State
+from two_player_games.move import Move
+from two_player_games.state import State
 import random
 
 
-class Bot_1(Bot):
+class Bot_2(Bot):
     """
     A simple example implementation of a bot that inherits from the base Bot class.
 

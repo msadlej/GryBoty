@@ -1,188 +1,45 @@
 import unittest
-from unittest.mock import patch
 import sys
 from pathlib import Path
+import io
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "src"))
 
 
 class TestSixMensMorrisBotRun(unittest.TestCase):
-
-    @patch(
-        "sys.argv",
-        [
-            "src/app/services/bot_runner.py",
-            "src/two_player_games/games/morris.py",
-            "SixMensMorris",
-            "src/bots/example_bots/SixMensMorris/bot_1.py",
-            "src/bots/example_bots/SixMensMorris/bot_2.py",
-        ],
-    )
     def test_run(self):
-        from src.app.services.bot_runner import main
+        from src.app.services.run_game.bot_runner import BotRunner
+        from src.app.services.file_loader.file_loader import FileLoader
 
-        result = main()
-        self.assertEqual(len(result), 2)
-        self.assertTrue(result[0] in [sys.argv[3], sys.argv[4], None])
-        self.assertEqual(len(result[1].keys()), 2)
+        game_name = "morris"
 
-        self.assertIn(sys.argv[3], result[1])
-        self.assertIn(sys.argv[4], result[1])
+        file_paths = [
+            "docker/src/bots/example_bots/testing_bots/bot_1.py",
+            "docker/src/bots/example_bots/testing_bots/bot_2.py",
+        ]
 
+        file_vars = {}
 
-class TestBotRunner(unittest.TestCase):
-    @patch(
-        "sys.argv",
-        [
-            "src/app/services/bot_runner.py",
-            "src/two_player_games/games/morris.py",
-            "SixMensMorris",
-            "src/bots/example_bots/SixMensMorris/bot_1.py",
-            "src/bots/example_bots/SixMensMorris/bot_2.py",
-        ],
-    )
-    def test_module_load(self):
-        from src.app.services.bot_runner import BotRunner
+        for path in file_paths:
+            with open(path, "rb") as f:
+                file_vars[path] = io.BytesIO(f.read())
 
-        game_file = sys.argv[1]
-        game_class = sys.argv[2]
-        bot_1 = sys.argv[3]
-        bot_2 = sys.argv[4]
-        bot_runner = BotRunner(game_file, game_class, bot_1, bot_2)
-        self.assertEqual(bot_runner.load_module(bot_1).__name__, "bot_1")
-        self.assertEqual(bot_runner.load_module(bot_2).__name__, "bot_2")
-        self.assertEqual(bot_runner.load_module(game_file).__name__, "morris")
+        bot_1 = file_vars["docker/src/bots/example_bots/testing_bots/bot_1.py"]
+        bot_2 = file_vars["docker/src/bots/example_bots/testing_bots/bot_2.py"]
+        bot_1_filename = "bot_1"
+        bot_2_filename = "bot_2"
 
-    @patch(
-        "sys.argv",
-        [
-            "src/app/services/bot_runner.py",
-            "src/two_player_games/games/morris.py",
-            "SixMensMorris",
-            "src/bots/example_bots/SixMensMorris/bot_1.py",
-            "src/bots/example_bots/SixMensMorris/bot_2.py",
-        ],
-    )
-    def test_retrieve_class(self):
-        from src.app.services.bot_runner import BotRunner
-        from src.bots.example_bots.SixMensMorris.bot_1 import Bot_1
-        from src.bots.example_bots.SixMensMorris.bot_2 import Bot_2
-        from src.two_player_games.games.morris import SixMensMorris
+        bot_1_str = FileLoader.load_file_as_string(bot_1)
+        bot_2_str = FileLoader.load_file_as_string(bot_2)
 
-        game_file = sys.argv[1]
-        game_class = sys.argv[2]
-        bot_1 = sys.argv[3]
-        bot_2 = sys.argv[4]
-        bot_runner = BotRunner(game_file, game_class, bot_1, bot_2)
-        bot_1_module = bot_runner.load_module(bot_1)
-        bot_2_module = bot_runner.load_module(bot_2)
-        game_module = bot_runner.load_module(game_file)
-        self.assertEqual(
-            bot_runner.retrieve_class(bot_1_module).__name__, Bot_1.__name__
+        runner = BotRunner(
+            game_name, bot_1_str, bot_2_str, bot_1_filename, bot_2_filename
         )
-        self.assertEqual(
-            bot_runner.retrieve_class(bot_2_module).__name__, Bot_2.__name__
-        )
-        self.assertEqual(
-            bot_runner.retrieve_class(game_module, game_class).__name__,
-            SixMensMorris.__name__,
-        )
+        winner, states = runner.run_game()
 
-    @patch(
-        "sys.argv",
-        [
-            "src/app/services/bot_runner.py",
-            "src/two_player_games/games/morris.py",
-            "SixMensMorris",
-            "src/bots/example_bots/SixMensMorris/bot_1.py",
-            "src/bots/example_bots/SixMensMorris/bot_2.py",
-        ],
-    )
-    def test_class_load(self):
-        from src.app.services.bot_runner import BotRunner
-        from src.bots.example_bots.SixMensMorris.bot_1 import Bot_1
-        from src.bots.example_bots.SixMensMorris.bot_2 import Bot_2
-        from src.two_player_games.games.morris import SixMensMorris
-
-        game_file = sys.argv[1]
-        game_class = sys.argv[2]
-        bot_1 = sys.argv[3]
-        bot_2 = sys.argv[4]
-        bot_runner = BotRunner(game_file, game_class, bot_1, bot_2)
-        self.assertEqual(bot_runner.get_class(bot_1).__name__, Bot_1.__name__)
-        self.assertEqual(bot_runner.get_class(bot_2).__name__, Bot_2.__name__)
-        self.assertEqual(
-            bot_runner.get_class(game_file, game_class).__name__,
-            SixMensMorris.__name__,
-        )
-
-
-# class TestConnectFourBotRun(unittest.TestCase):
-#     @patch(
-#         "sys.argv",
-#         [
-#             "src/app/services/bot_runner.py",
-#             "src/two_player_games/games/morris.py",
-#             "SixMensMorris",
-#             "src/bots/example_bots/SixMensMorris/bot_1.py",
-#             "src/bots/example_bots/SixMensMorris/bot_2.py",
-#         ],
-#     )
-#     def test_run(self):
-#         result = main()
-#         self.assertEqual(len(result), 2)
-#         self.assertTrue(result[0] in [sys.argv[3], sys.argv[4], None])
-
-
-# class TestDotsAndBoxesBotRun(unittest.TestCase):
-#     @patch(
-#         "sys.argv",
-#         [
-#             "src/app/services/bot_runner.py",
-#             "src/two_player_games/games/morris.py",
-#             "SixMensMorris",
-#             "src/bots/example_bots/SixMensMorris/bot_1.py",
-#             "src/bots/example_bots/SixMensMorris/bot_2.py",
-#         ],
-#     )
-#     def test_run(self):
-#         result = main()
-#         self.assertEqual(len(result), 2)
-#         self.assertTrue(result[0] in [sys.argv[3], sys.argv[4], None])
-
-
-# class TestNimBotRun(unittest.TestCase):
-#     @patch(
-#         "sys.argv",
-#         [
-#             "src/app/services/bot_runner.py",
-#             "src/two_player_games/games/morris.py",
-#             "SixMensMorris",
-#             "src/bots/example_bots/SixMensMorris/bot_1.py",
-#             "src/bots/example_bots/SixMensMorris/bot_2.py",
-#         ],
-#     )
-#     def test_run(self):
-#         result = main()
-#         self.assertEqual(len(result), 2)
-#         self.assertTrue(result[0] in [sys.argv[3], sys.argv[4], None])
-
-
-# class TestPickBotRun(unittest.TestCase):
-#     @patch(
-#         "sys.argv",
-#         [
-#             "src/app/services/bot_runner.py",
-#             "src/two_player_games/games/morris.py",
-#             "SixMensMorris",
-#             "src/bots/example_bots/SixMensMorris/bot_1.py",
-#             "src/bots/example_bots/SixMensMorris/bot_2.py",
-#         ],
-#     )
-#     def test_run(self):
-#         result = main()
-#         self.assertEqual(len(result), 2)
-#         self.assertTrue(result[0] in [sys.argv[3], sys.argv[4], None])
+        self.assertIn(winner, [bot_1_filename, bot_2_filename, None])
+        self.assertIsInstance(states, list)
+        self.assertGreaterEqual(len(states), 0)
 
 
 if __name__ == "__main__":
