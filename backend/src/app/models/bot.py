@@ -109,6 +109,8 @@ def insert_bot(
             detail="Bot validation failed.",
         )
 
+    bots_collection.validate_bot(bot_id)
+
     bot_dict = get_bot_by_id(db, bot_id)
     return convert_bot(db, bot_dict, detail=True)
 
