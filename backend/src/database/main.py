@@ -75,11 +75,11 @@ class Bot:
         self.db = db.db
         self.collection = db.db.bots
 
-    def create_bot(self, name: str, game_type: ObjectId) -> ObjectId:
+    def create_bot(self, name: str, game_type: ObjectId, code: bytes) -> ObjectId:
         bot_data = {
             "name": name,
             "game_type": game_type,
-            "code_path": "",
+            "code": code,
             "is_validated": False,
             "games_played": 0,
             "wins": 0,
