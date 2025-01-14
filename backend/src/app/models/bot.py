@@ -5,7 +5,7 @@ from typing import Any
 from app.schemas.user import AccountType, UserModel
 from app.models.game import get_game_type_by_id
 from app.schemas.bot import BotModel, BotUpdate
-from database.main import MongoDB, User, Bot, GameType
+from database.main import MongoDB, User, Bot
 import app.utils.connection as conn
 
 

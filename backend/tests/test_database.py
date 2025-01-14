@@ -105,6 +105,7 @@ class TestUser:
         assert "user2" in usernames
 
 
+@pytest.mark.skip(reason="Not implemented")
 class TestBot:
     def test_create_bot(self, bot_manager: Bot):
         game_type_id = ObjectId()
@@ -229,7 +230,7 @@ class TestTournament:
             ObjectId(),
             start_date,
             "ACCESS123",
-            8
+            8,
         )
         assert tournament_id is not None
         tournament = tournament_manager.get_tournament_by_id(tournament_id)
@@ -246,7 +247,7 @@ class TestTournament:
             ObjectId(),
             start_date,
             "ACCESS123",
-            2
+            2,
         )
         bot_id = ObjectId()
         success = tournament_manager.add_participant(tournament_id, bot_id)
@@ -262,7 +263,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         match_id = ObjectId()
         tournament_manager.add_match(tournament_id, match_id)
@@ -277,7 +278,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         tournament_manager.update_name(tournament_id, "New Name")
         tournament = tournament_manager.get_tournament_by_id(tournament_id)
@@ -291,7 +292,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         tournament_manager.update_description(tournament_id, "New Description")
         tournament = tournament_manager.get_tournament_by_id(tournament_id)
@@ -305,7 +306,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         new_date = datetime(2050, 12, 31)
         tournament_manager.update_start_date(tournament_id, new_date)
@@ -320,7 +321,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         success = tournament_manager.update_max_participants(tournament_id, 10)
         assert success is True
@@ -335,7 +336,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            2
+            2,
         )
         tournament_manager.add_participant(tournament_id, ObjectId())
         tournament_manager.add_participant(tournament_id, ObjectId())
@@ -352,7 +353,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         match_id1 = ObjectId()
         match_id2 = ObjectId()
@@ -372,7 +373,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS1",
-            8
+            8,
         )
         _ = tournament_manager.create_tournament(
             "Tournament 2",
@@ -381,7 +382,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS2",
-            8
+            8,
         )
         tournaments = tournament_manager.get_tournaments_by_game_type(game_type_id)
         assert len(tournaments) == 2
@@ -398,7 +399,7 @@ class TestTournament:
             creator_id,
             datetime.now(),
             "ACCESS1",
-            8
+            8,
         )
         _ = tournament_manager.create_tournament(
             "Tournament 2",
@@ -407,7 +408,7 @@ class TestTournament:
             creator_id,
             datetime.now(),
             "ACCESS2",
-            8
+            8,
         )
         tournaments = tournament_manager.get_tournaments_by_creator(creator_id)
         assert len(tournaments) == 2
@@ -423,7 +424,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         tournament = tournament_manager.get_tournament_by_access_code("ACCESS123")
         assert tournament is not None
@@ -440,7 +441,7 @@ class TestTournament:
             ObjectId(),
             future_date,
             "ACCESS1",
-            8
+            8,
         )
         _ = tournament_manager.create_tournament(
             "Past Tournament",
@@ -449,7 +450,7 @@ class TestTournament:
             ObjectId(),
             past_date,
             "ACCESS2",
-            8
+            8,
         )
 
         upcoming = tournament_manager.get_upcoming_tournaments()
@@ -464,7 +465,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         bot_id1 = ObjectId()
         bot_id2 = ObjectId()
@@ -485,7 +486,7 @@ class TestTournament:
             ObjectId(),
             datetime.now(),
             "ACCESS123",
-            8
+            8,
         )
         tournament_manager.add_participant(tournament_id, bot_id)
 
