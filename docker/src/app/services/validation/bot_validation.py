@@ -8,6 +8,7 @@ from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getit
 from RestrictedPython.Guards import (
     safer_getattr,
     guarded_iter_unpack_sequence,
+    guarded_unpack_sequence,
 )
 from src.app.services.validation.runtime_validation import run_with_timer
 
@@ -110,6 +111,37 @@ class GameValidatorDynamic(BaseValidator):
                 "range": range,
                 "reversed": reversed,
                 "sum": sum,
+                "enumerate": enumerate,
+                "len": len,
+                "abs": abs,
+                "str": str,
+                "int": int,
+                "float": float,
+                "bool": bool,
+                "complex": complex,
+                "sorted": sorted,
+                "zip": zip,
+                "map": map,
+                "id": id,
+                "type": type,
+                "isinstance": isinstance,
+                "issubclass": issubclass,
+                "callable": callable,
+                "input": input,
+                "open": open,
+                "eval": eval,
+                "exec": exec,
+                "ord": ord,
+                "chr": chr,
+                "divmod": divmod,
+                "pow": pow,
+                "round": round,
+                "format": format,
+                "slice": slice,
+                "next": next,
+                "property": property,
+                "staticmethod": staticmethod,
+                "classmethod": classmethod,
             }
         )
 
@@ -127,6 +159,8 @@ class GameValidatorDynamic(BaseValidator):
                 "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
                 "_getattr_": safer_getattr,
                 "_write_": lambda value: value,
+                "_unpack_sequence_": guarded_unpack_sequence,
+                "iter": iter,
             }
 
             exec(byte_code, exec_env)
@@ -180,6 +214,7 @@ class GameValidatorDynamic(BaseValidator):
             "numpy",
             "src.bots.example_bots.example_bot",
             "abc",
+            "typing",
         }
         if name not in allowed_modules and not name.startswith("two_player_games"):
             raise ImportError(f"Import of '{name}' is not allowed")
