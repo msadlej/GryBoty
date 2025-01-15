@@ -105,11 +105,10 @@ class TestUser:
         assert "user2" in usernames
 
 
-@pytest.mark.skip(reason="Not implemented")
 class TestBot:
     def test_create_bot(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
         assert bot_id is not None
         bot = bot_manager.get_bot_by_id(bot_id)
         assert bot["name"] == "testbot"
@@ -118,17 +117,11 @@ class TestBot:
         assert bot["games_played"] == 0
         assert bot["wins"] == 0
         assert bot["losses"] == 0
-
-    def test_add_code_path(self, bot_manager: Bot):
-        game_type_id = ObjectId()
-        bot_id = bot_manager.create_bot("testbot", game_type_id)
-        bot_manager.add_code_path(bot_id, "/path/to/code")
-        bot = bot_manager.get_bot_by_id(bot_id)
-        assert bot["code_path"] == "/path/to/code"
+        assert bot["code"] == b"print('Hello, World!')"
 
     def test_update_stats(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
         bot_manager.update_stats(bot_id, True)
         bot = bot_manager.get_bot_by_id(bot_id)
         assert bot["games_played"] == 1
@@ -143,22 +136,22 @@ class TestBot:
 
     def test_update_name(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
         bot_manager.update_name(bot_id, "newname")
         bot = bot_manager.get_bot_by_id(bot_id)
         assert bot["name"] == "newname"
 
     def test_validate_bot(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
         bot_manager.validate_bot(bot_id)
         bot = bot_manager.get_bot_by_id(bot_id)
         assert bot["is_validated"] is True
 
     def test_get_bots_by_game_type(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        _ = bot_manager.create_bot("bot1", game_type_id)
-        _ = bot_manager.create_bot("bot2", game_type_id)
+        _ = bot_manager.create_bot("bot1", game_type_id, b"print('Hello, World!')")
+        _ = bot_manager.create_bot("bot2", game_type_id, b"print('Hello, World!')")
         bots = bot_manager.get_bots_by_game_type(game_type_id)
         assert len(bots) == 2
         bot_names = [bot["name"] for bot in bots]
@@ -167,8 +160,8 @@ class TestBot:
 
     def test_get_validated_bots(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        bot_id1 = bot_manager.create_bot("bot1", game_type_id)
-        _ = bot_manager.create_bot("bot2", game_type_id)
+        bot_id1 = bot_manager.create_bot("bot1", game_type_id, b"print('Hello, World!')")
+        _ = bot_manager.create_bot("bot2", game_type_id, b"print('Hello, World!')")
         bot_manager.validate_bot(bot_id1)
         validated_bots = bot_manager.get_validated_bots()
         assert len(validated_bots) == 1
@@ -176,7 +169,7 @@ class TestBot:
 
     def test_get_bot_stats(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        bot_id = bot_manager.create_bot("testbot", game_type_id)
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
         bot_manager.update_stats(bot_id, True)
         bot_manager.update_stats(bot_id, False)
         stats = bot_manager.get_bot_stats(bot_id)
@@ -186,8 +179,8 @@ class TestBot:
 
     def test_get_all_bots(self, bot_manager: Bot):
         game_type_id = ObjectId()
-        _ = bot_manager.create_bot("bot1", game_type_id)
-        _ = bot_manager.create_bot("bot2", game_type_id)
+        _ = bot_manager.create_bot("bot1", game_type_id, b"print('Hello, World!')")
+        _ = bot_manager.create_bot("bot2", game_type_id, b"print('Hello, World!')")
         bots = bot_manager.get_all_bots()
         assert len(bots) == 2
         bot_names = [bot["name"] for bot in bots]
