@@ -1,6 +1,7 @@
 import unittest
 from fastapi.testclient import TestClient
 from main import app  # Replace with your actual app module
+import io
 
 client = TestClient(app)
 
@@ -12,21 +13,20 @@ class TestRunMatch(unittest.TestCase):
         bot2_path = "docker/src/bots/example_bots/testing_bots/bot_2.py"
 
         with open(bot1_path, "rb") as f1, open(bot2_path, "rb") as f2:
-            response = client.post(
-                "/run-match",
-                data={"game": game_name},
-                files={
-                    "file1": f1,
-                    "file2": f2,
-                },
-            )
-        mock_file_name_1 = "bot_1.py"
-        mock_file_name_2 = "bot_2.py"
+            bot_1 = io.BytesIO(f1.read())
+            bot_2 = io.BytesIO(f2.read())
+
+        response = client.post(
+            "/run-match",
+            data={"game": game_name},
+            files={"file1": bot_1, "file2": bot_2},
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert "winner" in data
         assert "states" in data
-        self.assertIn(data["winner"], [mock_file_name_1, mock_file_name_2, None])
+        self.assertIn(data["winner"], [0, 1, None])
         assert len(data["states"]) > 100
 
 
