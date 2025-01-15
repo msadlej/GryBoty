@@ -23,8 +23,7 @@ async def run_match(
         runner = BotRunner(game, bot_1_str, bot_2_str, filename1, filename2)
         winner, states = runner.run_game()
 
-        result_json = json.dumps(states)
-        return {"winner": winner, "states": result_json}
+        return {"winner": winner, "states": states}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
