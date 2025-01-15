@@ -19,14 +19,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=[
-        "Content-Type", 
+        "Content-Type",
         "Authorization",
         "X-Requested-With",
         "Accept",
         "Origin",
-        "X-XSRF-TOKEN"
+        "X-XSRF-TOKEN",
     ],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
 
