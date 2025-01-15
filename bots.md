@@ -12,7 +12,8 @@ Aby dodać bota do systemu, należy przestrzegać kilku zasad i wymagań. Poniż
    - `collections`
    - `numpy`
    - `src.bots.example_bots.example_bot` (Abstrakcyjna klasa Bot, Wymagane)
-   - `abc` 
+   - `abc`
+   - `typing` 
    
 2. **Importy dotyczące gry**:
    Twój bot może importować elementy związane z grą poprzez `two_player_game`, takie jak:
@@ -20,9 +21,9 @@ Aby dodać bota do systemu, należy przestrzegać kilku zasad i wymagań. Poniż
    - `two_player_games.state` (dla stanu gry)
 
 3. **Zasady nazewnictwa**:
-   - Nie możesz używać operatorów takich jak `+=`.
+   - Nie możesz używać operatorów takich jak `+=`, `-=`.
    - Unikaj używania `_` w nazwach atrybutów. **Nie używaj super().__init__()**. 
-   - **__init__ jest dozwolone, jednak nie dla klasy, która implementuje bota (dziedziczy po Bot)**
+   - **__init__ jest dozwolone, jednak unikaj stosowania dla klasy, która implementuje bota (dziedziczy po Bot)**
 
 4. **Dziedziczenie po klasie `Bot`**:
    - Twój bot musi dziedziczyć po klasie `Bot`, która jest podstawową klasą bota w systemie.
@@ -33,7 +34,7 @@ Aby dodać bota do systemu, należy przestrzegać kilku zasad i wymagań. Poniż
    - Metoda `get_move` przyjmuje dwa parametry: `self` (instancję bota) oraz `state` (obiekt reprezentujący stan gry).
    
 6. **Limit czasu**:
-   - Bot nie może przekroczyć 2 sekund na wykonanie ruchu.
+   - Bot nie może przekroczyć **2 sekund** na wykonanie ruchu.
 
 ### Przykład Poprawnego Bota
 
@@ -69,3 +70,48 @@ class Bot_1(Bot):
         move = random.choice(moves)  # Randomly select a move from available moves
         
         return move  # Return the selected move
+```
+
+Szablon bardziej rozbudowanego bota, bazującego na na algortymie minimax:
+
+```python
+from src.bots.example_bots.example_bot import Bot
+from two_player_games.move import Move
+from two_player_games.state import State
+from two_player_games.state import Player
+from typing import Optional, List, Dict, Tuple
+
+
+class Heuristic:
+    def get_heuristic(self, state: State) -> int:
+        # Calculate heuristic based on state
+        pass
+
+
+class MiniMax:
+    def __init__(self, depth_limit: int):
+        self.depth_limit = depth_limit
+
+    def get_best_move(self, state: State, is_maximizing_player: bool) -> Move:
+        # Some logic here
+        pass
+
+    def minimax(
+        self,
+        state: State,
+        depth: int,
+        is_maximizing_player: bool,
+        alpha: float,
+        beta: float,
+    ) -> float:
+        # Perform minimax algorithm
+        pass
+
+
+class MyBot(Bot):
+    minimax = MiniMax(depth_limit=3)
+
+    def get_move(self, state: State) -> Move:
+        return self.minimax.get_best_move(state, is_maximizing_player=True)
+
+```
