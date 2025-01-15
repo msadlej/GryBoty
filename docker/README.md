@@ -3,6 +3,10 @@
 ```bash
 docker compose-up --build
 ```
+or
+```bash
+docker-compose up --build
+```
 
 # Dostęp
 API działa na porcie `8080` i udostępnia dwa endpointy:
