@@ -100,7 +100,7 @@ export const LoginScreen = ({ onNavigate }) => {
       onNavigate('dashboard');
     } catch (err) {
       console.error('Login failed:', err);
-      setError('Nieprawidłowy login lub hasło - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nieprawidłowy login lub hasło'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ export const RegisterScreen = ({ onNavigate }) => {
       await register(formData.username, formData.password);
       onNavigate('login');
     } catch (err) {
-      setError('Nie udało się zarejestrować użytkownika - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się zarejestrować użytkownika'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     } finally {
       setLoading(false);
     }
@@ -241,7 +241,7 @@ export const SettingsScreen = ({ onNavigate }) => {
         const response = await api.get('/users/me/');
         setUsername(response.data.username);
       } catch (err) {
-        setError('Nie udało się pobrać danych użytkownika - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych użytkownika'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
       }
     };
 
@@ -420,7 +420,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
         console.log('API Response.data:', response.data);
         setTournaments(response.data);
       } catch (err) {
-        setError('Nie udało się pobrać turniejów - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać turniejów'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
         setTournaments([]);
       } finally {
         setLoading(false);
@@ -510,7 +510,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       await api.post('/tournaments/', formData);
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się utworzyć turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się utworzyć turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
@@ -592,7 +592,7 @@ export const BotsListScreen = ({ onNavigate }) => {
         setBots(response.data);
         setLoading(false);
       } catch (err) {
-        setError('Nie udało się pobrać botów - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać botów'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
         setLoading(false);
       }
     };
@@ -603,10 +603,10 @@ export const BotsListScreen = ({ onNavigate }) => {
   const handleDeleteBot = async (botId, e) => {
     e.stopPropagation();
     try {
-      await api.delete(`/bots/${botId}`);
+      await api.delete(`/bots/${botId}/`);
       setBots(bots.filter(bot => bot.id !== botId));
     } catch (err) {
-      setError('Nie udało się usunąć bota - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się usunąć bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
@@ -627,7 +627,7 @@ export const BotsListScreen = ({ onNavigate }) => {
           <div 
             key={bot.id} 
             className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
-            onClick={() => onNavigate('bot-details', { id: bot.id })}
+            onClick={() => onNavigate('bot-details', { botId: bot._id })}
           >
             <div className="hover:underline">{bot.name}</div>
             <div>{bot.game}</div>
@@ -694,7 +694,7 @@ export const AddBotScreen = ({ onNavigate }) => {
       await botService.uploadBot(formDataToSend);
       onNavigate('bots');
     } catch (err) {
-      setError('Nie udało się dodać bota - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się dodać bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     } finally {
       setLoading(false);
     }
@@ -826,24 +826,22 @@ export const AddBotScreen = ({ onNavigate }) => {
   );
 };
 
-export const BotDetailsScreen = ({ onNavigate }) => {
+export const BotDetailsScreen = ({ onNavigate, botId }) => {
   const [bot, setBot] = useState(null);
-  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchBotData = async () => {
       try {
-        const botId = new URLSearchParams(window.location.search).get('id');
-        const [botData, matchesData] = await Promise.all([
-          botService.getBotDetails(botId),
-          botService.getBotMatches(botId)
-        ]);
-        setBot(botData);
-        setMatches(matchesData);
+        console.log('Bot id: ' + botId);
+        
+        const botData = await api.get(`/bots/${botId}/`);
+        console.log('Bot data:', botData.data);
+        setBot(botData.data);
       } catch (err) {
-        setError('Nie udało się pobrać danych bota - ' + err.response.status + ': ' + err.response.data.detail);
+        console.log('Error:', err);
+        setError('Nie udało się pobrać danych bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
       } finally {
         setLoading(false);
       }
@@ -857,7 +855,7 @@ export const BotDetailsScreen = ({ onNavigate }) => {
       await botService.deleteBot(bot.id);
       onNavigate('bots');
     } catch (err) {
-      setError('Nie udało się usunąć bota - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się usunąć bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
@@ -875,22 +873,6 @@ export const BotDetailsScreen = ({ onNavigate }) => {
           <div className="text-xl font-light">Liczba gier: {bot.totalGames}</div>
           <div className="text-xl font-light">Liczba wygranych: {bot.wins}</div>
           <div className="text-xl font-light">Procent wygranych: {((bot.wins / bot.totalGames) * 100).toFixed(1)}%</div>
-        </div>
-        <div className="space-y-4">
-          <h2 className="text-3xl font-light mb-6">Historia turniejów:</h2>
-          {matches.map((match) => (
-            <div 
-              key={match.id} 
-              className="bg-button-bg p-4 rounded flex justify-between cursor-pointer hover:bg-button-hover transition-colors"
-              onClick={() => onNavigate('tournament-match', { 
-                tournamentId: match.tournamentId,
-                matchId: match.id 
-              })}
-            >
-              <div className="hover:underline">{match.tournamentName}</div>
-              <div>{new Date(match.date).toLocaleString()}</div>
-            </div>
-          ))}
         </div>
         <button 
           onClick={handleDeleteBot}
@@ -916,7 +898,7 @@ export const JoinTournamentScreen = ({ onNavigate }) => {
         gameType: response.data.gameType 
       });
     } catch (err) {
-      setError('Nie udało się dołączyć do turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się dołączyć do turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
@@ -972,7 +954,7 @@ export const SelectBotScreen = ({ onNavigate }) => {
           setSelectedBotId(botsResponse.data[0].id);
         }
       } catch (err) {
-        setError('Nie udało się pobrać danych - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
       } finally {
         setLoading(false);
       }
@@ -993,7 +975,7 @@ export const SelectBotScreen = ({ onNavigate }) => {
       });
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się dołączyć do turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się dołączyć do turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
@@ -1068,7 +1050,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
         const data = await api.get(`/tournaments/${tournamentId}/`);
         setTournament(data.data);
       } catch (err) {
-        setError('Nie udało się pobrać danych turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
       } finally {
         setLoading(false);
       }
@@ -1083,19 +1065,19 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
       await api.put(`/tournaments/${tournament.id}/`, tournament);
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się zaktualizować turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się zaktualizować turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
   const handleRemoveParticipant = async (participantId) => {
     try {
-      await api.delete(`/tournaments/${tournament.id}/participants/${participantId}`);
+      await api.delete(`/tournaments/${tournament.id}/participants/${participantId}/`);
       setTournament({
         ...tournament,
         participants: tournament.participants.filter(p => p.id !== participantId)
       });
     } catch (err) {
-      setError('Nie udało się usunąć uczestnika - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się usunąć uczestnika'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     }
   };
 
@@ -1164,10 +1146,10 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
             type="button"
             onClick={async () => {
               try {
-                await api.delete(`/tournaments/${tournament.id}`);
+                await api.delete(`/tournaments/${tournament.id}/`);
                 onNavigate('tournaments');
               } catch (err) {
-                setError('Nie udało się anulować turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+                setError('Nie udało się anulować turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
               }
             }}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
@@ -1181,7 +1163,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
                 await api.post(`/tournaments/${tournament.id}/start/`);
                 onNavigate('tournament-tree', { tournamentId: tournament.id });
               } catch (err) {
-                setError('Nie udało się rozpocząć turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+                setError('Nie udało się rozpocząć turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
               }
             }}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
@@ -1209,7 +1191,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
         setMatch(response.data);
       } catch (err) {
         console.error('Error fetching match:', err);
-        setError('Nie udało się pobrać danych meczu - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych meczu'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
       } finally {
         setLoading(false);
       }
@@ -1230,7 +1212,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
       setMatch(response.data);
     } catch (err) {
       console.error('Error running match:', err);
-      setError('Nie udało się uruchomić meczu - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się uruchomić meczu'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
     } finally {
       setIsRunning(false);
     }
@@ -1308,7 +1290,7 @@ export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         console.log('Matches data:', matchesData);
       } catch (err) {
         console.error('Error fetching tournament:', err);
-        setError('Nie udało się pobrać danych turnieju - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
       } finally {
         setLoading(false);
       }
