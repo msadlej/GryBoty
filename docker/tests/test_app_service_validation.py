@@ -1,9 +1,7 @@
 import unittest
 from src.app.services.validation.bot_validation import BotValidationManager
-from src.app.services.validation.bot_validation import BotValidationManager
 from src.app.services.validation.bot_validation import InvalidAttributeError
 from src.app.services.validation.runtime_validation import TimeExceededException
-from src.app.services.validation.bot_validation import BotValidationManager
 
 
 class TestGameDynamicBehavior(unittest.TestCase):
@@ -327,7 +325,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         )
 
     def test_validate_successful_extended(self):
-        bot_str = "docker/mini_max_bot.py"
+        bot_str = "docker/src/bots/example_bots/testing_bots/mini_max_bot.py"
         game_str = "connect_four"
         bot_str = self.get_str(bot_str)
         # Initialize Validator
@@ -340,7 +338,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         self.assertEqual(result, True)
 
     def test_validate_successful_wrong_game(self):
-        bot_str = "docker/mini_max_bot.py"
+        bot_str = "docker/src/bots/example_bots/testing_bots/mini_max_bot.py"
         game_str = "morris"
         bot_str = self.get_str(bot_str)
         # Initialize Validator

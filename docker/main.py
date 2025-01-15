@@ -1,6 +1,5 @@
 from src.app.services.validation.bot_validation import BotValidationManager
 from src.app.services.run_game.bot_runner import BotRunner
-import json
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
 
 app = FastAPI()
