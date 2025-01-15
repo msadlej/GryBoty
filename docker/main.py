@@ -2,7 +2,6 @@ from src.app.services.validation.bot_validation import BotValidationManager
 from src.app.services.run_game.bot_runner import BotRunner
 import json
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
-from typing import Optional
 
 app = FastAPI()
 
@@ -15,10 +14,10 @@ async def run_match(
 ):
     try:
 
-        filename1 = file1.filename
-        filename2 = file2.filename  # test for the same names TODO
+        filename1 = 0
+        filename2 = 1
 
-        bot_1_str = file1.file.read().decode()  # TODO think if its needed
+        bot_1_str = file1.file.read().decode()
         bot_2_str = file2.file.read().decode()
 
         runner = BotRunner(game, bot_1_str, bot_2_str, filename1, filename2)

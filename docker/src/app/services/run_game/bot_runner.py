@@ -6,7 +6,7 @@ from copy import deepcopy
 class BotRunner:
 
     def __init__(
-        self, game_name: str, bot_1: str, bot_2: str, bot_1_name: str, bot_2_name
+        self, game_name: str, bot_1: str, bot_2: str, bot_1_name: str, bot_2_name: str
     ):
         self._initialize_game(game_name)
         self._initialize_bots(bot_1, bot_2)
