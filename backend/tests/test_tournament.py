@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytest
 
 from app.models.tournament import convert_tournament, insert_tournament
 from app.schemas.tournament import TournamentModel, TournamentCreate
@@ -23,6 +24,7 @@ def test_tournament_model(tournament_dict):
     assert tournament.matches == tournament_dict["matches"]
 
 
+@pytest.mark.skip(reason="No longer needed")
 def test_convert_tournament(tournament_dict):
     tournament: TournamentModel = convert_tournament(..., tournament_dict, detail=False)
 

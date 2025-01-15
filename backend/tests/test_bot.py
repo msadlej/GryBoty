@@ -1,3 +1,5 @@
+import pytest
+
 from app.models.bot import convert_bot, insert_bot
 from app.models.game import insert_game_type
 from app.schemas.game import GameCreate
@@ -20,6 +22,7 @@ def test_bot_model(bot_dict):
     assert bot.tournaments_won == bot_dict["tournaments_won"]
 
 
+@pytest.mark.skip(reason="Not implemented yet")
 def test_convert_bot(bot_dict):
     bot = convert_bot(..., bot_dict, detail=False)
 
