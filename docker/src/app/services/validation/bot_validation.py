@@ -12,6 +12,7 @@ from RestrictedPython.Guards import (
 )
 from src.app.services.validation.runtime_validation import run_with_timer
 
+
 EXEC_TIME_LIMIT_SEC = 2
 
 
@@ -184,16 +185,24 @@ class GameValidatorDynamic(BaseValidator):
 
     @run_with_timer(max_execution_time=EXEC_TIME_LIMIT_SEC)
     def _run_game(self, bot_player):
-        while not self.game.is_finished():
-            current_player = self.game.get_current_player()
-            state_copy = deepcopy(self.game.state)
+        try:
+            while not self.game.is_finished():
+                current_player = self.game.get_current_player()
+                state_copy = deepcopy(self.game.state)
 
-            move = current_player.get_move(state_copy)
-            if current_player == bot_player:
-                self._validate_move_type(move)
+                move = current_player.get_move(state_copy)
+                if current_player == bot_player:
+                    self._validate_move_type(move)
 
-            self.game.make_move(move)
-            return True
+                self.game.make_move(move)
+                return True
+        except TypeError as e:
+            if str(e).startswith("'NoneType' object is not subscriptable"):
+                raise TypeError(
+                    f"{e}; Check your implementation whether it matches the given game"
+                )
+            else:
+                raise TypeError(e)
 
     def _validate_move_type(self, move):
         if not (
