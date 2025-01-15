@@ -870,9 +870,9 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
       <div className="w-full max-w-[80%] space-y-8">
         <div className="space-y-4">
           <h2 className="text-3xl font-light mb-6">Statystyki:</h2>
-          <div className="text-xl font-light">Liczba gier: {bot.totalGames}</div>
+          <div className="text-xl font-light">Liczba gier: {bot.games_played}</div>
           <div className="text-xl font-light">Liczba wygranych: {bot.wins}</div>
-          <div className="text-xl font-light">Procent wygranych: {((bot.wins / bot.totalGames) * 100).toFixed(1)}%</div>
+          <div className="text-xl font-light">Procent wygranych: {bot.games_played === 0 ? "" : ((bot.wins / bot.games_played) * 100).toFixed(1) + "%"}</div> 
         </div>
         <button 
           onClick={handleDeleteBot}
