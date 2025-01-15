@@ -2,8 +2,14 @@
 requires = ["fastapi[standard]", "passlib[bcrypt]", "pydantic-settings", "pyjwt", "pymongo", "pyobjectid", "setuptools", "wheel", "pytest", "pytest-cov", "mypy", "flake8", "mongomock"]
 build-backend = "setuptools.build_meta"
 
+[tool.coverage.run]
+omit = [
+    "src/app/utils/docker.py",
+    "src/database/example.py"
+]
+
 [tool.pytest.ini_options]
-addopts = "--cov=src"
+addopts = "--cov=src --cov-report=term-missing"
 testpaths = [
     "tests",
 ]

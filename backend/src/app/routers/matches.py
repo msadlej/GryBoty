@@ -4,11 +4,13 @@ from pyobjectID import PyObjectId
 from app.utils.database import get_db_connection
 from app.dependencies import UserDependency
 from app.schemas.match import MatchModel
-from app.utils.docker import run_game
 from app.schemas.bot import BotModel
+import app.utils.connection as conn
 from app.models.tournament import (
     check_tournament_creator,
     check_tournament_access,
+    get_tournament_by_id,
+    convert_tournament,
     get_matches_by_tournament,
 )
 from app.models.match import (
@@ -102,6 +104,14 @@ async def run_match(
                 detail="User does not have access to run this match.",
             )
 
+        tournament_dict = get_tournament_by_id(db, tournament_id)
+        tournament = convert_tournament(db, tournament_dict, detail=True)
+        if tournament.game_type is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Game type not found for tournament: {tournament_id}.",
+            )
+
         match_dict = get_match_by_id(db, match_id)
         match = convert_match(db, match_dict, detail=True)
         if match.players is None:
@@ -111,14 +121,14 @@ async def run_match(
             )
 
         bot_1, bot_2 = match.players.values()
-        docker_logs = run_game(bot_1.code_path, bot_2.code_path)
-        if docker_logs is None:
+        response = conn.run_match(tournament.game_type.name, bot_1.code, bot_2.code)
+        if "error" in response.keys():
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error running Docker commands",
             )
 
-        moves, winner, loser = process_logs(docker_logs, bot_1, bot_2)
+        moves, winner, loser = process_logs(response, bot_1, bot_2)
         if winner is None or loser is None:
             raise HTTPException(
                 status_code=status.HTTP_200_OK,

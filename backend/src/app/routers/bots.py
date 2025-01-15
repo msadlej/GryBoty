@@ -34,7 +34,7 @@ async def create_bot(
     code: UploadFile = File(...),
 ):
     with get_db_connection() as db:
-        new_bot = insert_bot(db, current_user, name, game_type)
+        new_bot = insert_bot(db, current_user, name, game_type, code.file.read())
 
     return new_bot
 

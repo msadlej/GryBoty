@@ -100,7 +100,7 @@ def update_match(
 
 
 def process_logs(
-    docker_logs: dict[str, Any],
+    logs: dict[str, Any],
     bot_1: BotModel,
     bot_2: BotModel,
 ) -> tuple[list[str], BotModel, BotModel] | tuple[list[str], None, None]:
@@ -109,14 +109,12 @@ def process_logs(
     Returns None if the match ended in a draw.
     """
 
-    moves: list[str] = docker_logs["moves"]
-    winner_code: str | None = docker_logs["winner"]
-    if winner_code is None:
-        return moves, None, None
+    moves: list[str] = logs["states"]
+    winner: int | None = logs["winner"]
 
-    if winner_code == bot_1.code_path:
+    if winner == 0:
         return moves, bot_1, bot_2
-    elif winner_code == bot_2.code_path:
+    elif winner == 1:
         return moves, bot_2, bot_1
 
     return moves, None, None

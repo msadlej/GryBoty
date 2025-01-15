@@ -27,7 +27,7 @@ def bot_dict(game_dict):
         "_id": ObjectId(),
         "name": "Test Bot",
         "game_type": GameModel(**game_dict),
-        "code_path": "path/to/bot.py",
+        "code": b"print('Hello, World!')",
         "is_validated": True,
         "games_played": 4,
         "wins": 3,
