@@ -98,13 +98,16 @@ def convert_tournament(
     """
 
     game_type = tournament_dict.pop("game_type")
+    tournament_dict["game_type"] = get_game_type_by_id(db, game_type)
+
     creator = tournament_dict.pop("creator")
+    user_dict = get_user_by_id(db, creator)
+    tournament_dict["creator"] = convert_user(db, user_dict)
+
     participant_ids = tournament_dict.pop("participants")
     match_ids = tournament_dict.pop("matches")
     if not detail:
         return TournamentModel(**tournament_dict)
-
-    user_dict = get_user_by_id(db, creator)
 
     participants = []
     for bot_id in participant_ids:
@@ -115,9 +118,6 @@ def convert_tournament(
     for match_id in match_ids:
         match_dict = get_match_by_id(db, match_id)
         matches.append(convert_match(db, match_dict))
-
-    tournament_dict["game_type"] = get_game_type_by_id(db, game_type)
-    tournament_dict["creator"] = convert_user(db, user_dict)
 
     tournament_dict["participants"] = participants
     tournament_dict["matches"] = matches

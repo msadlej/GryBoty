@@ -39,17 +39,12 @@ def get_bot_by_id(db: MongoDB, bot_id: ObjectId) -> dict[str, Any]:
     return bot
 
 
-def convert_bot(
-    db: MongoDB, bot_dict: dict[str, Any], detail: bool = False
-) -> BotModel:
+def convert_bot(db: MongoDB, bot_dict: dict[str, Any]) -> BotModel:
     """
     Converts a dictionary to a BotModel object.
     """
 
     game_type = bot_dict.pop("game_type")
-    if not detail:
-        return BotModel(**bot_dict)
-
     bot_dict["game_type"] = get_game_type_by_id(db, game_type)
 
     return BotModel(**bot_dict)
@@ -112,7 +107,7 @@ def insert_bot(
     bots_collection.validate_bot(bot_id)
 
     bot_dict = get_bot_by_id(db, bot_id)
-    return convert_bot(db, bot_dict, detail=True)
+    return convert_bot(db, bot_dict)
 
 
 def update_bot(db, bot_id: ObjectId, bot_data: BotUpdate) -> BotModel:

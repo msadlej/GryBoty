@@ -70,6 +70,6 @@ async def read_bot_by_id(
             )
 
         bot_dict = get_bot_by_id(db, bot_id)
-        bot = convert_bot(db, bot_dict, detail=True)
+        bot = convert_bot(db, bot_dict)
 
     return bot

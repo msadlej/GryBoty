@@ -12,6 +12,14 @@ class MatchModel(BaseModel):
 
     id: PyObjectId = Field(alias="_id")
     game_num: int
-    players: dict[str, BotModel] | None = None
+    players: dict[str, BotModel]
     moves: list[str] | None = None
     winner: BotModel | None = None
+
+
+class MatchCreate(BaseModel):
+    """Represents a match creation request"""
+
+    game_num: int
+    bot_1: PyObjectId
+    bot_2: PyObjectId
