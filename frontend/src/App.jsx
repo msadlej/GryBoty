@@ -657,25 +657,23 @@ export const AddBotScreen = ({ onNavigate }) => {
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  // const [games, setGames] = useState([]);
+  const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = React.useRef(null);
 
-  // useEffect(() => {
-  //   const fetchGames = async () => {
-  //     try {
-  //       const response = await api.get('/games/');
-  //       setGames(response.data);
-  //     } catch (err) {
-  //       setError('Nie udało się pobrać listy gier');
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await api.get('/games/');
+        setGames(response.data);
+      } catch (err) {
+        setError('Nie udało się pobrać listy gier');
+      }
+    };
 
-  //   fetchGames();
-  // }, []);
-
-  const games = ["Kółko i krzyżyk", "Czwórki", "Warcaby"];
+    fetchGames();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -775,7 +773,7 @@ export const AddBotScreen = ({ onNavigate }) => {
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           >
             {games.map(game => (
-              <option key={game} value={game}>{game}</option>
+              <option key={game} value={game}>{game.name}</option>
             ))}
           </select>
         </div>
