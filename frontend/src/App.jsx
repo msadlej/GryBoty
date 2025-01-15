@@ -100,7 +100,7 @@ export const LoginScreen = ({ onNavigate }) => {
       onNavigate('dashboard');
     } catch (err) {
       console.error('Login failed:', err);
-      setError('Nieprawidłowy login lub hasło'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nieprawidłowy login lub hasło');
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ export const RegisterScreen = ({ onNavigate }) => {
       await register(formData.username, formData.password);
       onNavigate('login');
     } catch (err) {
-      setError('Nie udało się zarejestrować użytkownika'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się zarejestrować użytkownika');
     } finally {
       setLoading(false);
     }
@@ -241,7 +241,7 @@ export const SettingsScreen = ({ onNavigate }) => {
         const response = await api.get('/users/me/');
         setUsername(response.data.username);
       } catch (err) {
-        setError('Nie udało się pobrać danych użytkownika'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych użytkownika');
       }
     };
 
@@ -420,7 +420,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
         console.log('API Response.data:', response.data);
         setTournaments(response.data);
       } catch (err) {
-        setError('Nie udało się pobrać turniejów'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać turniejów');
         setTournaments([]);
       } finally {
         setLoading(false);
@@ -510,7 +510,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       await api.post('/tournaments/', formData);
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się utworzyć turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się utworzyć turnieju');
     }
   };
 
@@ -592,7 +592,7 @@ export const BotsListScreen = ({ onNavigate }) => {
         setBots(response.data);
         setLoading(false);
       } catch (err) {
-        setError('Nie udało się pobrać botów'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać botów');
         setLoading(false);
       }
     };
@@ -606,7 +606,7 @@ export const BotsListScreen = ({ onNavigate }) => {
       await api.delete(`/bots/${botId}/`);
       setBots(bots.filter(bot => bot.id !== botId));
     } catch (err) {
-      setError('Nie udało się usunąć bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się usunąć bota');
     }
   };
 
@@ -649,11 +649,10 @@ export const BotsListScreen = ({ onNavigate }) => {
     </div>
   );
 };
-
 export const AddBotScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: '',
-    game: '',
+    game: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -667,6 +666,9 @@ export const AddBotScreen = ({ onNavigate }) => {
       try {
         const response = await api.get('/games/');
         setGames(response.data);
+        if (response.data.length > 0) {
+          setFormData(prev => ({...prev, game: response.data[0]}));
+        }
       } catch (err) {
         setError('Nie udało się pobrać listy gier');
       }
@@ -677,22 +679,36 @@ export const AddBotScreen = ({ onNavigate }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.name.trim().length < 3 || formData.name.trim().length > 16) {
+      setError('Nazwa musi mieć od 3 do 16 znaków');
+      return;
+    }
+    if (!formData.game) {
+      setError('Wybierz grę');
+      return;
+    }
     if (!selectedFile) {
       setError('Proszę wybrać plik');
       return;
     }
 
+    const formDataToSend = new FormData();
+    formDataToSend.append('code', selectedFile);
+    formDataToSend.append('name', formData.name.trim());
+    formDataToSend.append('game_type', formData.game._id);
+
     setLoading(true);
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('file', selectedFile);
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('game', formData.game);
-
-      await botService.uploadBot(formDataToSend);
+      await api.post('/bots/', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
       onNavigate('bots');
     } catch (err) {
-      setError('Nie udało się dodać bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      console.error('Add bot error:', err);
+      setError('Nie udało się dodać bota - ' + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
@@ -763,6 +779,7 @@ export const AddBotScreen = ({ onNavigate }) => {
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
             placeholder="Nazwa twojego bota"
+            required
           />
         </div>
         <div>
@@ -771,6 +788,7 @@ export const AddBotScreen = ({ onNavigate }) => {
             value={formData.game}
             onChange={(e) => setFormData({...formData, game: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            required
           >
             {games.map(game => (
               <option key={game} value={game}>{game.name}</option>
@@ -787,7 +805,9 @@ export const AddBotScreen = ({ onNavigate }) => {
         />
 
         <div
-          className={dropzoneStyle}
+          className={`w-full h-48 border-2 border-dashed rounded flex flex-col items-center justify-center cursor-pointer transition-colors
+            ${isDragging ? 'border-white bg-button-hover' : 'border-button-bg bg-button-bg hover:bg-button-hover'}
+            ${selectedFile ? 'bg-button-hover' : ''}`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -813,9 +833,9 @@ export const AddBotScreen = ({ onNavigate }) => {
 
         <button 
           type="submit"
-          disabled={loading || !selectedFile}
+          disabled={loading}
           className={`w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light
-            ${(loading || !selectedFile) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Dodawanie...' : 'Dodaj'}
         </button>
@@ -839,7 +859,7 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
         setBot(botData.data);
       } catch (err) {
         console.log('Error:', err);
-        setError('Nie udało się pobrać danych bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych bota');
       } finally {
         setLoading(false);
       }
@@ -848,14 +868,14 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
     fetchBotData();
   }, []);
 
-  const handleDeleteBot = async () => {
-    try {
-      await botService.deleteBot(bot.id);
-      onNavigate('bots');
-    } catch (err) {
-      setError('Nie udało się usunąć bota'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
-    }
-  };
+  // const handleDeleteBot = async () => {
+  //   try {
+  //     await botService.deleteBot(bot.id);
+  //     onNavigate('bots');
+  //   } catch (err) {
+  //     setError('Nie udało się usunąć bota');
+  //   }
+  // };
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!bot) return <div className="text-center">Nie znaleziono bota</div>;
@@ -872,12 +892,12 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
           <div className="text-xl font-light">Liczba wygranych: {bot.wins}</div>
           <div className="text-xl font-light">Procent wygranych: {bot.games_played === 0 ? "" : ((bot.wins / bot.games_played) * 100).toFixed(1) + "%"}</div> 
         </div>
-        <button 
+        {/* <button 
           onClick={handleDeleteBot}
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
         >
           Usuń bota
-        </button>
+        </button> */}
       </div>
     </div>
   );
@@ -896,7 +916,7 @@ export const JoinTournamentScreen = ({ onNavigate }) => {
         gameType: response.data.gameType 
       });
     } catch (err) {
-      setError('Nie udało się dołączyć do turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się dołączyć do turnieju');
     }
   };
 
@@ -952,7 +972,7 @@ export const SelectBotScreen = ({ onNavigate }) => {
           setSelectedBotId(botsResponse.data[0].id);
         }
       } catch (err) {
-        setError('Nie udało się pobrać danych'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych');
       } finally {
         setLoading(false);
       }
@@ -973,7 +993,7 @@ export const SelectBotScreen = ({ onNavigate }) => {
       });
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się dołączyć do turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się dołączyć do turnieju');
     }
   };
 
@@ -1048,7 +1068,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
         const data = await api.get(`/tournaments/${tournamentId}/`);
         setTournament(data.data);
       } catch (err) {
-        setError('Nie udało się pobrać danych turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych turnieju');
       } finally {
         setLoading(false);
       }
@@ -1063,7 +1083,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
       await api.put(`/tournaments/${tournament.id}/`, tournament);
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się zaktualizować turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się zaktualizować turnieju');
     }
   };
 
@@ -1075,7 +1095,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
         participants: tournament.participants.filter(p => p.id !== participantId)
       });
     } catch (err) {
-      setError('Nie udało się usunąć uczestnika'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się usunąć uczestnika');
     }
   };
 
@@ -1147,7 +1167,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
                 await api.delete(`/tournaments/${tournament.id}/`);
                 onNavigate('tournaments');
               } catch (err) {
-                setError('Nie udało się anulować turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+                setError('Nie udało się anulować turnieju');
               }
             }}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
@@ -1161,7 +1181,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
                 await api.post(`/tournaments/${tournament.id}/start/`);
                 onNavigate('tournament-tree', { tournamentId: tournament.id });
               } catch (err) {
-                setError('Nie udało się rozpocząć turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+                setError('Nie udało się rozpocząć turnieju');
               }
             }}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
@@ -1189,7 +1209,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
         setMatch(response.data);
       } catch (err) {
         console.error('Error fetching match:', err);
-        setError('Nie udało się pobrać danych meczu'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych meczu');
       } finally {
         setLoading(false);
       }
@@ -1210,7 +1230,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
       setMatch(response.data);
     } catch (err) {
       console.error('Error running match:', err);
-      setError('Nie udało się uruchomić meczu'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+      setError('Nie udało się uruchomić meczu');
     } finally {
       setIsRunning(false);
     }
@@ -1288,7 +1308,7 @@ export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         console.log('Matches data:', matchesData);
       } catch (err) {
         console.error('Error fetching tournament:', err);
-        setError('Nie udało się pobrać danych turnieju'); setError(error + ' - ' + err.response.status + ': ' + err.response.data.detail);
+        setError('Nie udało się pobrać danych turnieju');
       } finally {
         setLoading(false);
       }

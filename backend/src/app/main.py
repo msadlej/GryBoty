@@ -12,12 +12,21 @@ app.include_router(bots.router, tags=["bots"])
 app.include_router(tournaments.router, tags=["tournaments"])
 app.include_router(matches.router, tags=["matches"])
 app.include_router(games.router, tags=["games"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Content-Type", 
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "X-XSRF-TOKEN"
+    ],
+    expose_headers=["*"]
 )
 
 
