@@ -1,9 +1,7 @@
 import unittest
 from src.app.services.validation.bot_validation import BotValidationManager
-from src.app.services.validation.bot_validation import BotValidationManager
 from src.app.services.validation.bot_validation import InvalidAttributeError
 from src.app.services.validation.runtime_validation import TimeExceededException
-from src.app.services.validation.bot_validation import BotValidationManager
 
 
 class TestGameDynamicBehavior(unittest.TestCase):
@@ -47,9 +45,7 @@ class TestGameDynamicBehavior(unittest.TestCase):
         )
 
     def test_invalid_move_return_type_none(self):
-        bot_str = (
-            "docker/tests/sample_bots/game_match/invalid_move_type_none.py"
-        )
+        bot_str = "docker/tests/sample_bots/game_match/invalid_move_type_none.py"
         game_str = "nim"
         bot_str = self.get_str(bot_str)
         # Initialize Validator
@@ -90,9 +86,7 @@ class TestGameDynamicBehavior(unittest.TestCase):
         self.assertIn("Bot does not meet runtime limits.", str(context.exception))
 
     def test_unauthorized_behavior(self):
-        bot_str = (
-            "docker/tests/sample_bots/unsafe_behaviour/unauthorized_access.py"
-        )
+        bot_str = "docker/tests/sample_bots/unsafe_behaviour/unauthorized_access.py"
         game_str = "nim"
         bot_str = self.get_str(bot_str)
         # Initialize Validator
@@ -315,9 +309,7 @@ class TestGameMatchingValidator(unittest.TestCase):
         )
 
     def test_invalid_get_move_signature_wrong_arg_self(self):
-        bot_str = (
-            "docker/tests/sample_bots/game_match/invalid_get_move_name_self.py"
-        )
+        bot_str = "docker/tests/sample_bots/game_match/invalid_get_move_name_self.py"
         game_str = "pick"
         bot_str = self.get_str(bot_str)
         # Initialize Validator
@@ -329,6 +321,35 @@ class TestGameMatchingValidator(unittest.TestCase):
         # Assertions
         self.assertIn(
             "'get_move' method in Bot_1 must accept exactly one argument 'state'.",
+            str(context.exception),
+        )
+
+    def test_validate_successful_extended(self):
+        bot_str = "docker/src/bots/example_bots/testing_bots/mini_max_bot.py"
+        game_str = "connect_four"
+        bot_str = self.get_str(bot_str)
+        # Initialize Validator
+        validator = BotValidationManager(bot_str, game_str)
+
+        # Perform Validation
+        result = validator.validate()
+
+        # Assertions
+        self.assertEqual(result, True)
+
+    def test_validate_successful_wrong_game(self):
+        bot_str = "docker/src/bots/example_bots/testing_bots/mini_max_bot.py"
+        game_str = "morris"
+        bot_str = self.get_str(bot_str)
+        # Initialize Validator
+        validator = BotValidationManager(bot_str, game_str)
+
+        # Perform Validation
+        with self.assertRaises(TypeError) as context:
+            validator.validate()
+        # Assertions
+        self.assertIn(
+            "'NoneType' object is not subscriptable; Check your implementation whether it matches the given game",
             str(context.exception),
         )
 

@@ -2,21 +2,18 @@ from src.bots.example_bots.example_bot import Bot
 from two_player_games.move import Move
 from two_player_games.state import State
 from two_player_games.state import Player
-from two_player_games.games.connect_four import ConnectFour
 from typing import Optional, List, Dict, Tuple
-from src.bots.example_bots.testing_bots.bot_1 import Bot_1
-from copy import deepcopy
 
 
 class Heuristic:
     def get_heuristic(self, state: State) -> int:
         player_values = {"max": 0, "min": 0}
         self.state = state
-        fields = state.fields[1:]
-        self._evaluate_lines(fields, player_values)
-        return self._final_heuristic(player_values)
+        fields = self.state.fields[1:]
+        self.evaluate_lines(fields, player_values)
+        return self.final_heuristic(player_values)
 
-    def _evaluate_lines(
+    def evaluate_lines(
         self, fields: List[List[Player]], player_values: Dict[str, int]
     ) -> None:
         directions = [
@@ -52,7 +49,12 @@ class Heuristic:
             value = self.calculate_heuristics(count)
             player_values[
                 "max" if player == self.state.get_current_player() else "min"
-            ] += value
+            ] = (
+                player_values[
+                    "max" if player == self.state.get_current_player() else "min"
+                ]
+                + value
+            )
 
     def get_number_vertical(
         self,
@@ -103,10 +105,10 @@ class Heuristic:
                     self.update_player_values(score, player_values)
 
     def calculate_heuristics(self, number_in_line: int) -> int:
-        heuristics = {2: 5, 3: 10, 4: 100}
+        heuristics = {2: 2, 3: 5, 4: 100}
         return heuristics.get(number_in_line, 0)
 
-    def _final_heuristic(self, player_values: Dict[str, int]) -> int:
+    def final_heuristic(self, player_values: Dict[str, int]) -> int:
         return player_values["max"] - player_values["min"]
 
 
@@ -120,7 +122,7 @@ class MiniMax:
 
         for move in state.get_moves():
             new_state = state.make_move(move)
-            value = self._minimax(
+            value = self.minimax(
                 new_state,
                 self.depth_limit - 1,
                 not is_maximizing_player,
@@ -136,7 +138,7 @@ class MiniMax:
 
         return best_move
 
-    def _minimax(
+    def minimax(
         self,
         state: State,
         depth: int,
@@ -151,7 +153,7 @@ class MiniMax:
             max_eval = float("-inf")
             for move in state.get_moves():
                 new_state = state.make_move(move)
-                eval = self._minimax(new_state, depth - 1, False, alpha, beta)
+                eval = self.minimax(new_state, depth - 1, False, alpha, beta)
                 max_eval = max(max_eval, eval)
                 alpha = max(alpha, eval)
                 if beta <= alpha:
@@ -161,7 +163,7 @@ class MiniMax:
             min_eval = float("inf")
             for move in state.get_moves():
                 new_state = state.make_move(move)
-                eval = self._minimax(new_state, depth - 1, True, alpha, beta)
+                eval = self.minimax(new_state, depth - 1, True, alpha, beta)
                 min_eval = min(min_eval, eval)
                 beta = min(beta, eval)
                 if beta <= alpha:
@@ -174,26 +176,3 @@ class MyBot(Bot):
 
     def get_move(self, state: State) -> Move:
         return self.minimax.get_best_move(state, is_maximizing_player=True)
-
-
-bot_1 = MyBot("1")
-bot_2 = MyBot("2")
-winners = {bot_1: 0, bot_2: 0, None: 0}
-for _ in range(10):
-    bot_1 = MyBot("1")
-    bot_2 = MyBot("2")
-    winners = {bot_1: 0, bot_2: 0, None: 0}    
-    game = ConnectFour(first_player=bot_1, second_player=bot_2)
-    moves = []
-
-    while not game.is_finished():
-        current_player = game.get_current_player()
-        state_copy = deepcopy(game.state)
-        move = current_player.get_move(state_copy)
-        moves.append(str(game.state))
-        game.make_move(move)
-
-    winner = game.get_winner()
-    winners[winner] += 1
-
-print(winners)

@@ -8,8 +8,10 @@ from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getit
 from RestrictedPython.Guards import (
     safer_getattr,
     guarded_iter_unpack_sequence,
+    guarded_unpack_sequence,
 )
 from src.app.services.validation.runtime_validation import run_with_timer
+
 
 EXEC_TIME_LIMIT_SEC = 2
 
@@ -110,6 +112,37 @@ class GameValidatorDynamic(BaseValidator):
                 "range": range,
                 "reversed": reversed,
                 "sum": sum,
+                "enumerate": enumerate,
+                "len": len,
+                "abs": abs,
+                "str": str,
+                "int": int,
+                "float": float,
+                "bool": bool,
+                "complex": complex,
+                "sorted": sorted,
+                "zip": zip,
+                "map": map,
+                "id": id,
+                "type": type,
+                "isinstance": isinstance,
+                "issubclass": issubclass,
+                "callable": callable,
+                "input": input,
+                "open": open,
+                "eval": eval,
+                "exec": exec,
+                "ord": ord,
+                "chr": chr,
+                "divmod": divmod,
+                "pow": pow,
+                "round": round,
+                "format": format,
+                "slice": slice,
+                "next": next,
+                "property": property,
+                "staticmethod": staticmethod,
+                "classmethod": classmethod,
             }
         )
 
@@ -127,6 +160,8 @@ class GameValidatorDynamic(BaseValidator):
                 "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
                 "_getattr_": safer_getattr,
                 "_write_": lambda value: value,
+                "_unpack_sequence_": guarded_unpack_sequence,
+                "iter": iter,
             }
 
             exec(byte_code, exec_env)
@@ -150,16 +185,24 @@ class GameValidatorDynamic(BaseValidator):
 
     @run_with_timer(max_execution_time=EXEC_TIME_LIMIT_SEC)
     def _run_game(self, bot_player):
-        while not self.game.is_finished():
-            current_player = self.game.get_current_player()
-            state_copy = deepcopy(self.game.state)
+        try:
+            while not self.game.is_finished():
+                current_player = self.game.get_current_player()
+                state_copy = deepcopy(self.game.state)
 
-            move = current_player.get_move(state_copy)
-            if current_player == bot_player:
-                self._validate_move_type(move)
+                move = current_player.get_move(state_copy)
+                if current_player == bot_player:
+                    self._validate_move_type(move)
 
-            self.game.make_move(move)
-            return True
+                self.game.make_move(move)
+                return True
+        except TypeError as e:
+            if str(e).startswith("'NoneType' object is not subscriptable"):
+                raise TypeError(
+                    f"{e}; Check your implementation whether it matches the given game"
+                )
+            else:
+                raise TypeError(e)
 
     def _validate_move_type(self, move):
         if not (
@@ -180,6 +223,7 @@ class GameValidatorDynamic(BaseValidator):
             "numpy",
             "src.bots.example_bots.example_bot",
             "abc",
+            "typing",
         }
         if name not in allowed_modules and not name.startswith("two_player_games"):
             raise ImportError(f"Import of '{name}' is not allowed")
