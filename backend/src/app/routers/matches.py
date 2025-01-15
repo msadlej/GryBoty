@@ -122,7 +122,7 @@ async def run_match(
 
         bot_1, bot_2 = match.players.values()
         response = conn.run_match(tournament.game_type.name, bot_1.code, bot_2.code)
-        if response["error"]:
+        if "error" in response.keys():
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error running Docker commands",
