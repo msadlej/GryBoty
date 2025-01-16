@@ -1068,7 +1068,7 @@ export const SelectBotScreen = ({ onNavigate, tournamentCode }) => {
   );
 };
 
-export const ManageTournamentScreen = ({ onNavigate }) => {
+export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1076,7 +1076,6 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
   useEffect(() => {
     const fetchTournament = async () => {
       try {
-        const tournamentId = new URLSearchParams(window.location.search).get('id');
         const data = await api.get(`/tournaments/${tournamentId}/`);
         setTournament(data.data);
       } catch (err) {
@@ -1101,7 +1100,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
 
   const handleRemoveParticipant = async (participantId) => {
     try {
-      await api.delete(`/tournaments/${tournament.id}/participants/${participantId}/`);
+      await api.delete(`/tournaments/${tournament.id}/bots/${participantId}/`);
       setTournament({
         ...tournament,
         participants: tournament.participants.filter(p => p.id !== participantId)
@@ -1142,7 +1141,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Czas rozpoczęcia:</label>
           <input 
             type="datetime-local"
-            value={tournament.startTime}
+            value={tournament.start_date}
             onChange={(e) => setTournament({...tournament, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
@@ -1151,7 +1150,7 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
           <label className="text-2xl font-light">Limit graczy:</label>
           <input 
             type="number"
-            value={tournament.playerLimit}
+            value={tournament.max_participants}
             onChange={(e) => setTournament({...tournament, playerLimit: parseInt(e.target.value)})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
           />
@@ -1159,8 +1158,8 @@ export const ManageTournamentScreen = ({ onNavigate }) => {
         <div className="space-y-4">
           <label className="text-2xl font-light">Uczestnicy:</label>
           {tournament.participants.map((participant) => (
-            <div key={participant.id} className="flex justify-between items-center bg-button-bg p-4 rounded">
-              <span className="text-xl font-light">{participant.username}</span>
+            <div key={participant._id} className="flex justify-between items-center bg-button-bg p-4 rounded">
+              <span className="text-xl font-light">{participant.name}</span>
               <button 
                 type="button"
                 onClick={() => handleRemoveParticipant(participant.id)}
