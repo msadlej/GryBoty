@@ -9,7 +9,6 @@ from app.models.bot import (
     check_bot_access,
     get_bot_by_id,
     get_bots_by_user_id,
-    get_bots_by_game_type,
 )
 
 
@@ -22,17 +21,6 @@ async def read_own_bots(
 ):
     with get_db_connection() as db:
         bot = get_bots_by_user_id(db, current_user.id)
-
-    return bot
-
-
-@router.get("/{game_type_id}", response_model=list[BotModel])
-async def read_own_bots_by_game_type(
-    current_user: UserDependency,
-    game_type_id: PyObjectId,
-):
-    with get_db_connection() as db:
-        bot = get_bots_by_game_type(db, current_user.id, game_type_id)
 
     return bot
 
