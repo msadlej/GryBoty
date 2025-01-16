@@ -57,19 +57,6 @@ const login = async (username, password) => {
   }
 };
 
-const register = async (username, password) => {
-  try {
-    const response = await api.post('/users/register/', {
-      username,
-      password,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Register error:', error.response?.data);
-    throw error;
-  }
-};
-
 export const logout = () => {
   localStorage.removeItem('token');
 };
@@ -167,6 +154,25 @@ export const RegisterScreen = ({ onNavigate }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const register = async (username, password) => {
+    try {
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('password', password);
+      
+      const response = await api.post('/register/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Register error:', error.response?.data);
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1205,13 +1211,22 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [user, setUser] = useState(null);
+  const [tournament, setTournament] = useState(null);
 
   useEffect(() => {
+    const fetchTournament = async () => {
+      try {
+        const response = await api.get(`/tournaments/${tournamentId}/`);
+        setTournament(response.data);
+      } catch (err) {
+        console.error('Error fetching tournament:', err);
+        setError('Nie udało się pobrać danych turnieju');
+      }
+    };
     const fetchMatch = async () => {
       try {
-        console.log('Fetching match with params:', { tournamentId, matchId });
         const response = await api.get(`/tournaments/${tournamentId}/matches/${matchId}/`);
-        console.log('Match response:', response);
         setMatch(response.data);
       } catch (err) {
         console.error('Error fetching match:', err);
@@ -1221,9 +1236,18 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
       }
     };
 
-    console.log("t-id: " + tournamentId + " m-id: " + matchId)
+    const fetchUserData = async () => {
+      try {
+        const response = await api.get('/users/me/');
+        setUser(response.data);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
 
     if (tournamentId && matchId) {
+      fetchUserData();
+      fetchTournament();
       fetchMatch();
     }
   }, [tournamentId, matchId]);
@@ -1244,6 +1268,14 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!match) return <div className="text-center">Nie znaleziono meczu</div>;
+  if (!tournament || !user) return <div className="text-center">Ładowanie danych...</div>;
+
+  const isCreator = tournament?.creator?._id === user?._id;
+  const showRunButton = isCreator && !match.winner;
+
+  const formattedMoves = match.moves?.map(move => {
+    return move;
+  }).join('\n\n') || '';
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
@@ -1251,12 +1283,12 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
       <h1 className="text-5xl mb-12 font-light">
         Mecz {match.game_num}: {match.players.bot1.name} vs {match.players.bot2.name}
       </h1>
-      <div className="w-full max-w-[80%] space-y-6">
+      <div className="w-full max-w-[80%] space-y-6 flex-grow flex flex-col">
         <div className="text-2xl font-light text-center mb-12">
           Stan: {match.winner ? `Zwycięzca: ${match.winner.name}` : 'Mecz w toku'}
         </div>
         
-        {!match.winner && (
+        {showRunButton && (
           <button
             onClick={handleRunMatch}
             disabled={isRunning}
@@ -1273,10 +1305,10 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
         )}
 
         <h3 className="text-2xl font-light mb-4">Historia ruchów:</h3>
-        <div className="h-64 bg-button-bg rounded p-4 overflow-auto">
+        <div className="flex-grow bg-button-bg rounded p-4 overflow-auto min-h-[500px]">
           {match.moves && match.moves.length > 0 ? (
-            <pre className="font-mono text-sm">
-              {JSON.stringify(match.moves, null, 2)}
+            <pre className="font-mono text-sm whitespace-pre-wrap">
+              {formattedMoves}
             </pre>
           ) : (
             <div className="text-center">Brak historii ruchów</div>
