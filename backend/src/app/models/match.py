@@ -3,9 +3,9 @@ from bson import ObjectId
 from typing import Any
 
 from database.main import MongoDB, Bot, Match, Tournament
-from app.models.bot import get_bot_by_id, convert_bot
 from app.schemas.match import MatchModel, MatchCreate
 from app.schemas.tournament import TournamentModel
+from app.models.bot import get_bot_by_id
 from app.schemas.bot import BotModel
 import app.utils.connection as conn
 
@@ -38,13 +38,11 @@ def convert_match(
     players = match_dict.pop("players")
     match_dict["players"] = {}
     for key, bot_id in players.items():
-        bot = get_bot_by_id(db, bot_id)
-        match_dict["players"][key] = convert_bot(db, bot)
+        match_dict["players"][key] = get_bot_by_id(db, bot_id)
 
     winner_id = match_dict.pop("winner")
     if winner_id is not None:
-        winner = get_bot_by_id(db, winner_id)
-        match_dict["winner"] = convert_bot(db, winner)
+        match_dict["winner"] = get_bot_by_id(db, winner_id)
 
     if not detail:
         match_dict.pop("moves")
@@ -81,11 +79,6 @@ def process_match(
 
     bot_1, bot_2 = match.players.values()
     response = conn.run_match(tournament.game_type.name, bot_1.code, bot_2.code)
-    if "error" in response.keys():
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error running Docker commands",
-        )
     if response["winner"] is None:
         raise HTTPException(
             status_code=status.HTTP_200_OK,
@@ -109,12 +102,9 @@ def process_match(
     bots_collection.update_stats(winner.id, won=True)
     bots_collection.update_stats(loser.id, won=False)
 
-    winner_dict = get_bot_by_id(db, winner.id)
-    loser_dict = get_bot_by_id(db, loser.id)
-
     return {
-        "winner": convert_bot(db, winner_dict),
-        "loser": convert_bot(db, loser_dict),
+        "winner": get_bot_by_id(db, winner.id),
+        "loser": get_bot_by_id(db, loser.id),
     }
 
 

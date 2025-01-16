@@ -4,8 +4,8 @@ from typing import Any
 import random
 import string
 
-from app.models.bot import get_bot_by_id, convert_bot, get_bots_by_user_id
 from app.schemas.tournament import TournamentModel, TournamentCreate, TournamentUpdate
+from app.models.bot import get_bot_by_id, get_bots_by_user_id
 from app.models.match import get_match_by_id, convert_match
 from app.models.user import get_user_by_id, convert_user
 from app.schemas.user import AccountType, UserModel
@@ -111,8 +111,8 @@ def convert_tournament(
 
     participants = []
     for bot_id in participant_ids:
-        bot_dict = get_bot_by_id(db, bot_id)
-        participants.append(convert_bot(db, bot_dict))
+        bot = get_bot_by_id(db, bot_id)
+        participants.append(bot)
 
     matches = []
     for match_id in match_ids:
@@ -132,11 +132,7 @@ def get_bots_by_tournament(db: MongoDB, tournament_id: ObjectId) -> list[BotMode
 
     tournament = get_tournament_by_id(db, tournament_id)
 
-    return [
-        convert_bot(db, bot_dict)
-        for bot_id in tournament["participants"]
-        if (bot_dict := get_bot_by_id(db, bot_id))
-    ]
+    return [get_bot_by_id(db, bot_id) for bot_id in tournament["participants"]]
 
 
 def get_matches_by_tournament(db: MongoDB, tournament_id: ObjectId) -> list[MatchModel]:
@@ -256,13 +252,27 @@ def add_tournament_participant(
     Returns the updated tournament.
     """
 
+    tournament_dict = get_tournament_by_id(db, tournament_id)
+    tournament = convert_tournament(db, tournament_dict)
+    bot = get_bot_by_id(db, bot_id)
+    if bot.game_type != tournament.game_type:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Bot: {bot_id} does not match the game type of the tournament.",
+        )
+    if not bot.is_validated:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Bot: {bot_id} is not validated.",
+        )
+
     tournaments_collection = Tournament(db)
     success = tournaments_collection.add_participant(tournament_id, bot_id)
 
     if not success:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Tournament is already full.",
+            detail=f"Tournament: {tournament_id} is already full.",
         )
 
     tournament_dict = get_tournament_by_id(db, tournament_id)

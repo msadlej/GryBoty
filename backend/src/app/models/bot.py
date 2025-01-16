@@ -21,7 +21,7 @@ def check_bot_access(db: MongoDB, current_user: UserModel, bot_id: ObjectId) -> 
     return any(bot.id == bot_id for bot in current_user.bots) or is_admin
 
 
-def get_bot_by_id(db: MongoDB, bot_id: ObjectId) -> dict[str, Any]:
+def get_bot_by_id(db: MongoDB, bot_id: ObjectId) -> BotModel:
     """
     Retrieves a bot from the database by its ID.
     Raises an error if the bot does not exist.
@@ -36,7 +36,7 @@ def get_bot_by_id(db: MongoDB, bot_id: ObjectId) -> dict[str, Any]:
             detail=f"Bot: {bot_id} not found.",
         )
 
-    return bot
+    return convert_bot(db, bot)
 
 
 def convert_bot(db: MongoDB, bot_dict: dict[str, Any]) -> BotModel:
@@ -61,11 +61,19 @@ def get_bots_by_user_id(db: MongoDB, user_id: ObjectId) -> list[BotModel]:
     if user is None:
         return []
 
-    return [
-        convert_bot(db, bot_dict)
-        for bot_id in user["bots"]
-        if (bot_dict := get_bot_by_id(db, bot_id))
-    ]
+    return [get_bot_by_id(db, bot_id) for bot_id in user["bots"]]
+
+
+def get_bots_by_game_type(
+    db: MongoDB, user_id: ObjectId, game_type_id: ObjectId
+) -> list[BotModel]:
+    """
+    Retrieves all bots from the database that belong to a specific user and game type.
+    """
+
+    bots = get_bots_by_user_id(db, user_id)
+
+    return [bot for bot in bots if bot.game_type.id == game_type_id]
 
 
 def get_all_bots(db: MongoDB) -> list[BotModel]:
@@ -106,8 +114,7 @@ def insert_bot(
 
     bots_collection.validate_bot(bot_id)
 
-    bot_dict = get_bot_by_id(db, bot_id)
-    return convert_bot(db, bot_dict)
+    return get_bot_by_id(db, bot_id)
 
 
 def update_bot(db, bot_id: ObjectId, bot_data: BotUpdate) -> BotModel:
@@ -121,5 +128,4 @@ def update_bot(db, bot_id: ObjectId, bot_data: BotUpdate) -> BotModel:
     if bot_data.name is not None:
         bots_collection.update_name(bot_id, bot_data.name)
 
-    bot_dict = get_bot_by_id(db, bot_id)
-    return convert_bot(db, bot_dict)
+    return get_bot_by_id(db, bot_id)

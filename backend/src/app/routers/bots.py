@@ -8,8 +8,8 @@ from app.dependencies import UserDependency
 from app.models.bot import (
     check_bot_access,
     get_bot_by_id,
-    convert_bot,
     get_bots_by_user_id,
+    get_bots_by_game_type,
 )
 
 
@@ -26,15 +26,26 @@ async def read_own_bots(
     return bot
 
 
+@router.get("/{game_type_id}", response_model=list[BotModel])
+async def read_own_bots_by_game_type(
+    current_user: UserDependency,
+    game_type_id: PyObjectId,
+):
+    with get_db_connection() as db:
+        bot = get_bots_by_game_type(db, current_user.id, game_type_id)
+
+    return bot
+
+
 @router.post("/", response_model=BotModel)
 async def create_bot(
     current_user: UserDependency,
     name: str = Form(min_length=3, max_length=16),
-    game_type: PyObjectId = Form(...),
+    game_type_id: PyObjectId = Form(...),
     code: UploadFile = File(...),
 ):
     with get_db_connection() as db:
-        new_bot = insert_bot(db, current_user, name, game_type, code.file.read())
+        new_bot = insert_bot(db, current_user, name, game_type_id, code.file.read())
 
     return new_bot
 
@@ -69,7 +80,6 @@ async def read_bot_by_id(
                 detail=f"Bot: {bot_id} not found.",
             )
 
-        bot_dict = get_bot_by_id(db, bot_id)
-        bot = convert_bot(db, bot_dict)
+        bot = get_bot_by_id(db, bot_id)
 
     return bot
