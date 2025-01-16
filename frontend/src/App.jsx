@@ -468,7 +468,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
           >
             <div className="hover:underline">{tournament.name}</div>
             <div>{new Date(tournament.start_date).toLocaleString()}</div>
-            <div>{tournament.creator}</div>
+            <div>{tournament.creator.username}</div>
           </div>
         ))}
         <div className="flex justify-between mt-8">
