@@ -499,31 +499,106 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
     startTime: '',
     playerLimit: ''
   });
-  // const [games, setGames] = useState([]);
+  const [games, setGames] = useState([]);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchGames = async () => {
-  //     try {
-  //       const response = await api.get('/tournaments/');
-  //       setGames(response.data);
-  //     } catch (err) {
-  //       setError('Nie udało się pobrać listy gier');
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await api.get('/games/');
+        setGames(response.data);
+        if (response.data.length > 0) {
+          setFormData(prev => ({ ...prev, game: response.data[0].id }));
+        }
+      } catch (err) {
+        setError('Nie udało się pobrać listy gier');
+        console.error('Error fetching games:', err);
+      }
+    };
 
-  //   fetchGames();
-  // }, []);
+    fetchGames();
+  }, []);
 
-  const games = ["Kółko i krzyżyk", "Czwórki", "Warcaby"];
+  const validateForm = () => {
+    const trimmedName = formData.name.trim();
+    const trimmedDesc = formData.description.trim();
+    
+    if (!trimmedName) return 'Nazwa turnieju jest wymagana';
+    if (trimmedName.length < 5) return 'Nazwa turnieju musi mieć co najmniej 5 znaków';
+    if (trimmedName.length > 32) return 'Nazwa turnieju może mieć maksymalnie 32 znaki';
+    
+    if (!trimmedDesc) return 'Opis turnieju jest wymagany';
+    if (trimmedDesc.length > 128) return 'Opis turnieju może mieć maksymalnie 128 znaków';
+    
+    if (!formData.game) return 'Wybór gry jest wymagany';
+    if (!formData.startTime) return 'Czas rozpoczęcia jest wymagany';
+    
+    const players = parseInt(formData.playerLimit);
+    if (!players || players < 2) return 'Limit graczy musi być co najmniej 2';
+    
+    return null;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      await api.post('/tournaments/', formData);
+      const joinFormData = new FormData();
+      joinFormData.append('name', formData.name.trim());
+      joinFormData.append('description', formData.description.trim());
+      joinFormData.append('game_type', formData.game);
+      // Validate and format the date
+      const date = new Date(formData.startTime);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date format');
+      }
+      
+      // Format date to match Django's expected format: YYYY-MM-DD HH:MM:SS
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+      joinFormData.append('start_date', formattedDate);
+      joinFormData.append('max_participants', parseInt(formData.playerLimit));
+      
+      // Debug log to inspect the form data
+      for (let pair of joinFormData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      const response = await api.post('/tournaments/', joinFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+        crossDomain: true,
+      });
+
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się utworzyć turnieju');
+      let errorMessage = 'Nie udało się utworzyć turnieju';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Błąd serwera - spróbuj ponownie później';
+        console.error('Server error response:', err.response?.data);
+      } else if (err.message === 'Invalid date format') {
+        errorMessage = 'Nieprawidłowy format daty';
+      }
+      setError(errorMessage);
+      console.error('Create tournament error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        error: err
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -540,15 +615,16 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            required
           />
         </div>
         <div>
           <label className="text-2xl font-light">Opis:</label>
-          <input 
-            type="text"
+          <textarea 
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
-            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light min-h-[100px]"
+            required
           />
         </div>
         <div>
@@ -557,10 +633,11 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
             value={formData.game}
             onChange={(e) => setFormData({...formData, game: e.target.value})}
+            required
           >
+            <option value="">Wybierz grę</option>
             {games.map(game => (
-              // <option key={game.id} value={game.id}>{game.name}</option>
-              <option key={game}>{game}</option>
+              <option key={game.id} value={game._id}>{game.name}</option>
             ))}
           </select>
         </div>
@@ -571,6 +648,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             value={formData.startTime}
             onChange={(e) => setFormData({...formData, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            required
           />
         </div>
         <div>
@@ -580,13 +658,16 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             value={formData.playerLimit}
             onChange={(e) => setFormData({...formData, playerLimit: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min="2"
+            required
           />
         </div>
         <button 
           type="submit"
-          className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
+          disabled={isSubmitting}
+          className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Stwórz
+          {isSubmitting ? 'Tworzenie...' : 'Stwórz'}
         </button>
       </form>
     </div>
