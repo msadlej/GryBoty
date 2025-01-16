@@ -451,6 +451,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
       <BackButton onNavigate={onNavigate} />
       <h1 className="text-5xl mb-12 font-light">Turnieje</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
+      {tournaments.length === 0 ? (<div className="text-center">Brak turniejów</div>) : (
       <div className="w-full max-w-[80%] space-y-6">
         <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
           <div>Nazwa</div>
@@ -468,7 +469,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
           >
             <div className="hover:underline">{tournament.name}</div>
             <div>{new Date(tournament.start_date).toLocaleString()}</div>
-            <div>{tournament.creator}</div>
+            <div>{tournament.creator.username}</div>
           </div>
         ))}
         <div className="flex justify-between mt-8">
@@ -485,7 +486,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
             Stwórz turniej
           </button>
         </div>
-      </div>
+      </div>)}
     </div>
   );
 };
@@ -1461,7 +1462,10 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       </div>
       <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
       {error && <div className="text-red-500 mb-4">{error}</div>}
-      
+
+      {bracketMatches.length === 0 ? (
+        <div className="text-center">Brak meczów do wyświetlenia</div>
+      ) : (      
       <div className="w-full max-w-[90%] h-[600px]">
         <SingleEliminationBracket
           matches={bracketMatches}
@@ -1525,6 +1529,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
           )}
         />
       </div>
+      )}
 
       {tournament.creator._id === user._id && (
         <div className="flex flex-col items-center gap-4 mt-12">

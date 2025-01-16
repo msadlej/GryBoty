@@ -1,5 +1,7 @@
 # Frontend
 ## Instalation
+You need node.js and npm installed. 
+
 In `frontend` directory:
 `npm install`
 `npm install axios`
