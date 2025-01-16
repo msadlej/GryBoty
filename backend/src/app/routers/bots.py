@@ -26,17 +26,6 @@ async def read_own_bots(
     return bot
 
 
-@router.get("/{game_type_id}", response_model=list[BotModel])
-async def read_own_bots_by_game_type(
-    current_user: UserDependency,
-    game_type_id: PyObjectId,
-):
-    with get_db_connection() as db:
-        bot = get_bots_by_game_type(db, current_user.id, game_type_id)
-
-    return bot
-
-
 @router.post("/", response_model=BotModel)
 async def create_bot(
     current_user: UserDependency,

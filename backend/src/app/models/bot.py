@@ -64,18 +64,6 @@ def get_bots_by_user_id(db: MongoDB, user_id: ObjectId) -> list[BotModel]:
     return [get_bot_by_id(db, bot_id) for bot_id in user["bots"]]
 
 
-def get_bots_by_game_type(
-    db: MongoDB, user_id: ObjectId, game_type_id: ObjectId
-) -> list[BotModel]:
-    """
-    Retrieves all bots from the database that belong to a specific user and game type.
-    """
-
-    bots = get_bots_by_user_id(db, user_id)
-
-    return [bot for bot in bots if bot.game_type.id == game_type_id]
-
-
 def get_all_bots(db: MongoDB) -> list[BotModel]:
     """
     Retrieves all bots from the database.
