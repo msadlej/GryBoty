@@ -9,7 +9,6 @@ from app.models.bot import (
     check_bot_access,
     get_bot_by_id,
     get_bots_by_user_id,
-    get_bots_by_game_type,
 )
 
 

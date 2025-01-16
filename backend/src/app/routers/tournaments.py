@@ -43,10 +43,30 @@ async def create_tournament(
     return new_tournament
 
 
-@router.put("/", response_model=TournamentModel)
+@router.get("/join/{access_code}/", response_model=TournamentModel)
+async def read_tournament_by_access_code(
+    current_user: UserDependency,
+    access_code: str,
+):
+    with get_db_connection() as db:
+        tournament_id = get_tournament_id_by_access_code(db, access_code)
+
+        if tournament_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Access code: {access_code} not found.",
+            )
+
+        tournament_dict = get_tournament_by_id(db, tournament_id)
+        tournament = convert_tournament(db, tournament_dict, detail=True)
+
+    return tournament
+
+
+@router.put("/join/{access_code}/", response_model=TournamentModel)
 async def join_tournament(
     current_user: UserDependency,
-    access_code: str = Form(...),
+    access_code: str,
     bot_id: PyObjectId = Form(...),
 ):
     with get_db_connection() as db:
