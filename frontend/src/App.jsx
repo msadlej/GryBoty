@@ -1349,19 +1349,19 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
 
   const theme = createTheme({
     textColor: { main: '#ffffff', highlighted: '#ffffff', dark: '#ffffff' },
-    matchBackground: { winning: '#2d8654', losing: '#c82333', default: '#1e1e1e' },
+    matchBackground: { winning: '#000069', losing: '#004200', default: '#002137' },
     score: {
-      background: { winning: '#2d8654', losing: '#c82333', default: '#1e1e1e' },
+      background: { winning: '#000069', losing: '#004200', default: '#002137' },
       text: { winning: '#ffffff', losing: '#ffffff', default: '#ffffff' }
     },
     border: {
-      color: '#444444',
-      highlightedColor: '#888888'
+      color: '#002137',
+      highlightedColor: '#000069'
     },
-    roundHeader: { backgroundColor: '#2d2d2d', textColor: '#ffffff' },
-    connectorColor: '#444444',
-    connectorColorHighlight: '#888888',
-    svgBackground: '#151515'
+    roundHeader: { backgroundColor: '#002137', textColor: '#ffffff' },
+    connectorColor: '#002137',
+    connectorColorHighlight: '#000069',
+    svgBackground: '#000000'
   });
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
@@ -1370,7 +1370,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const bracketMatches = transformMatchesToBracketFormat(matches);
 
   return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-black text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournaments" />
       <h1 className="text-5xl mb-4 font-light">Turniej: {tournament.name}</h1>
       <div className="text-2xl font-light mb-2">
@@ -1382,7 +1382,6 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       <div className="w-full max-w-[90%] h-[600px]">
         <SingleEliminationBracket
           matches={bracketMatches}
-          matchComponent={Match}
           theme={theme}
           options={{
             style: {
@@ -1409,6 +1408,38 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
               matchId: match.id 
             });
           }}
+          matchComponent={({ match, onMatchClick, ...props }) => (
+            <div style={{ position: 'relative' }}>
+              <Match
+                {...props}
+                match={match}
+                style={{
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease-in-out',
+                  ':hover': {
+                    transform: 'scale(1.05)'
+                  }
+                }}
+              />
+              <div
+                onClick={() => {
+                  onNavigate('tournament-match', {
+                    tournamentId: tournamentId,
+                    matchId: match.id
+                  });
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+              />
+            </div>
+          )}
         />
       </div>
 
