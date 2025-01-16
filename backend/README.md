@@ -51,6 +51,7 @@ To run the backend, use the following command:
 ```bash
 make run
 ```
+Go to localhost:8000/docs to see the API documentation.
 
 
 ## Testing
