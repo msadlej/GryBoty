@@ -3,7 +3,7 @@ from bson import ObjectId
 from typing import Any
 
 from app.schemas.user import AccountType, UserModel, UserUpdate
-from app.models.bot import get_bot_by_id, convert_bot
+from app.models.bot import get_bot_by_id
 from database.main import MongoDB, User
 
 
@@ -52,11 +52,7 @@ def convert_user(
     if not detail:
         return UserModel(**user_dict)
 
-    user_dict["bots"] = [
-        convert_bot(db, bot_dict)
-        for bot_id in bots
-        if (bot_dict := get_bot_by_id(db, bot_id))
-    ]
+    user_dict["bots"] = [get_bot_by_id(db, bot_id) for bot_id in bots]
 
     return UserModel(**user_dict)
 
