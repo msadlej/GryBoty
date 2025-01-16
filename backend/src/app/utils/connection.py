@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from typing import Any
 import requests
 
@@ -5,7 +6,7 @@ import requests
 def validate_bot(game_name: str, code: bytes) -> bool:
     """
     Validates a bot for a specific game.
-    Returns True if the bot is valid, False otherwise.
+    Returns True if the bot is valid, otherwise raises an HTTPException with error details.
     """
 
     files = {"file": code}
@@ -21,13 +22,15 @@ def validate_bot(game_name: str, code: bytes) -> bool:
     elif response.status_code == 400:
         response_data = response.json()
         error_details = response_data.get("detail", [])
-        print(f"Validation failed: {error_details}")
 
-        return False
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=error_details
+        )
     else:
-        print(f"Unexpected error: {response.status_code}")
-
-        return False
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {response.status_code}",
+        )
 
 
 def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, Any]:
@@ -48,10 +51,12 @@ def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, A
     elif response.status_code == 400:
         response_data = response.json()
         error_message = response_data.get("detail", "Unknown error")
-        print(f"Match failed: {error_message}")
 
-        return {"error": error_message}
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=error_message
+        )
     else:
-        print(f"Unexpected error: {response.status_code}")
-
-        return {"error": f"Unexpected error: {response.status_code}"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {response.status_code}",
+        )
