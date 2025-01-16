@@ -1292,6 +1292,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -1316,8 +1317,18 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         setLoading(false);
       }
     };
+
+    const fetchUserData = async () => {
+      try {
+        const response = await api.get('/users/me/');
+        setUser(response.data);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
     
     fetchTournamentData();
+    fetchUserData();
   }, [tournamentId]);
 
   const transformMatchesToBracketFormat = (matches) => {
@@ -1363,6 +1374,46 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     connectorColorHighlight: '#000069',
     svgBackground: '#000000'
   });
+
+  const [isStarting, setIsStarting] = useState(false);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+
+  const startTournament = async () => {
+    setIsStarting(true);
+    
+    try {
+      const sortedMatches = [...matches].sort((a, b) => a.game_num - b.game_num);
+      
+      for (let i = 0; i < sortedMatches.length; i++) {
+        setCurrentMatchIndex(i);
+        const match = sortedMatches[i];
+
+        if (match.winner) continue;
+        
+        await api.put(`/tournaments/${tournamentId}/matches/${match._id}/run/`);
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const updatedMatchResponse = await api.get(`/tournaments/${tournamentId}/matches/${match._id}/`);
+        const updatedMatch = updatedMatchResponse.data;
+        
+        setMatches(prevMatches => {
+          const newMatches = [...prevMatches];
+          const matchIndex = newMatches.findIndex(m => m._id === match._id);
+          if (matchIndex !== -1) {
+            newMatches[matchIndex] = updatedMatch;
+          }
+          return newMatches;
+        });
+      }
+    } catch (error) {
+      console.error('Error running tournament:', error);
+      setError('Wystąpił błąd podczas uruchamiania turnieju');
+    } finally {
+      setIsStarting(false);
+      setCurrentMatchIndex(0);
+    }
+  };
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
@@ -1443,11 +1494,19 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         />
       </div>
 
-      {tournament.creator === localStorage.getItem('userId') && (
-        <div className="flex justify-center mt-12">
+      {tournament.creator._id === user._id && (
+        <div className="flex flex-col items-center gap-4 mt-12">
+          <button
+            onClick={startTournament}
+            disabled={isStarting}
+            className={`bg-[#000069] text-white px-12 py-4 rounded hover:bg-[#000089] text-xl font-light transition-colors
+              ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {isStarting ? `Uruchamianie meczu ${currentMatchIndex + 1} z ${matches.length}...` : 'Rozpocznij turniej'}
+          </button>
           <button
             onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
-            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+            className="bg-[#002137] text-white px-12 py-4 rounded hover:bg-[#003147] text-xl font-light transition-colors"
           >
             Zarządzaj
           </button>
@@ -1456,6 +1515,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     </div>
   );
 };
+
 
 
 const App = () => {
