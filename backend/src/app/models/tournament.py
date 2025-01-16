@@ -260,6 +260,11 @@ def add_tournament_participant(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Bot: {bot_id} does not match the game type of the tournament.",
         )
+    if not bot.is_validated:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Bot: {bot_id} is not validated.",
+        )
 
     tournaments_collection = Tournament(db)
     success = tournaments_collection.add_participant(tournament_id, bot_id)
