@@ -923,10 +923,9 @@ export const JoinTournamentScreen = ({ onNavigate }) => {
   const handleJoin = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/tournaments/join/', { accessCode });
+      const response = await api.get(`/tournaments/join/${accessCode}`);
       onNavigate('select-bot', { 
-        tournamentId: response.data.tournamentId,
-        gameType: response.data.gameType 
+        tournamentCode: accessCode
       });
     } catch (err) {
       setError('Nie udało się dołączyć do turnieju');
@@ -959,7 +958,7 @@ export const JoinTournamentScreen = ({ onNavigate }) => {
   );
 };
 
-export const SelectBotScreen = ({ onNavigate }) => {
+export const SelectBotScreen = ({ onNavigate, tournamentCode }) => {
   const [tournamentInfo, setTournamentInfo] = useState(null);
   const [availableBots, setAvailableBots] = useState([]);
   const [selectedBotId, setSelectedBotId] = useState('');
@@ -969,20 +968,14 @@ export const SelectBotScreen = ({ onNavigate }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const tournamentId = params.get('tournamentId');
-        const gameType = params.get('gameType');
-
-        const tournamentResponse = await api.get(`/tournaments/${tournamentId}/`);
+        const tournamentResponse = await api.get(`/tournaments/join/${tournamentCode}/`);
         setTournamentInfo(tournamentResponse.data);
 
-        const botsResponse = await api.get(`/bots/`, {
-          params: { gameType }
-        });
+        const botsResponse = await api.get(`/bots/`);
         setAvailableBots(botsResponse.data);
         
         if (botsResponse.data.length > 0) {
-          setSelectedBotId(botsResponse.data[0].id);
+          setSelectedBotId(botsResponse.data[0]._id);
         }
       } catch (err) {
         setError('Nie udało się pobrać danych');
@@ -1001,8 +994,14 @@ export const SelectBotScreen = ({ onNavigate }) => {
     }
 
     try {
-      await api.post(`/tournaments/${tournamentInfo.id}/participants/`, {
-        botId: selectedBotId
+      console.log('Joining tournament with bot:', selectedBotId);
+      const formData = new FormData();
+      formData.append('bot_id', selectedBotId);
+      
+      const response = await api.put(`/tournaments/join/${tournamentCode}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       onNavigate('tournaments');
     } catch (err) {
@@ -1027,7 +1026,7 @@ export const SelectBotScreen = ({ onNavigate }) => {
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
         <div className="text-2xl font-light mb-8">
-          Gra: {tournamentInfo?.game}
+          Gra: {tournamentInfo?.name}
         </div>
         
         {availableBots.length > 0 ? (
