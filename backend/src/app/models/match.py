@@ -2,10 +2,12 @@ from fastapi import HTTPException, status
 from bson import ObjectId
 from typing import Any
 
+from database.main import MongoDB, Bot, Match, Tournament
 from app.models.bot import get_bot_by_id, convert_bot
-from database.main import MongoDB, Bot, Match
-from app.schemas.match import MatchModel
+from app.schemas.match import MatchModel, MatchCreate
+from app.schemas.tournament import TournamentModel
 from app.schemas.bot import BotModel
+import app.utils.connection as conn
 
 
 def get_match_by_id(db: MongoDB, match_id: ObjectId) -> dict[str, Any]:
@@ -34,19 +36,19 @@ def convert_match(
     """
 
     players = match_dict.pop("players")
-    winner_id = match_dict.pop("winner")
-    if not detail:
-        match_dict.pop("moves")
-        return MatchModel(**match_dict)
-
     match_dict["players"] = {}
     for key, bot_id in players.items():
         bot = get_bot_by_id(db, bot_id)
         match_dict["players"][key] = convert_bot(db, bot)
 
+    winner_id = match_dict.pop("winner")
     if winner_id is not None:
         winner = get_bot_by_id(db, winner_id)
         match_dict["winner"] = convert_bot(db, winner)
+
+    if not detail:
+        match_dict.pop("moves")
+        return MatchModel(**match_dict)
 
     return MatchModel(**match_dict)
 
@@ -68,27 +70,44 @@ def get_bots_by_match_id(db: MongoDB, match_id: ObjectId) -> dict[str, BotModel]
     return match.players
 
 
-def update_match(
-    db: MongoDB,
-    match: MatchModel,
-    winner: BotModel,
-    loser: BotModel,
-    moves: list[str],
+def process_match(
+    db: MongoDB, tournament: TournamentModel, match: MatchModel
 ) -> dict[str, BotModel]:
     """
+    Runs the match on docker.
     Updates the database with the results of a match.
     Returns the winner and loser bots with updated stats.
-    Returns None if the bots do not exist.
     """
 
+    bot_1, bot_2 = match.players.values()
+    response = conn.run_match(tournament.game_type.name, bot_1.code, bot_2.code)
+    if "error" in response.keys():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error running Docker commands",
+        )
+    if response["winner"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_200_OK,
+            detail=f"Match: {match.id} ended in a draw.",
+        )  # TODO: Replay match after a draw
+
+    moves: list[str] = response["states"]
+    if response["winner"] == 0:
+        winner = bot_1
+        loser = bot_2
+    else:
+        winner = bot_2
+        loser = bot_1
+
     matches_collection = Match(db)
-    matches_collection.set_winner(ObjectId(match.id), ObjectId(winner.id))
+    matches_collection.set_winner(match.id, winner.id)
     for move in moves:
-        matches_collection.add_move(ObjectId(match.id), move)
+        matches_collection.add_move(match.id, move)
 
     bots_collection = Bot(db)
-    bots_collection.update_stats(ObjectId(winner.id), won=True)
-    bots_collection.update_stats(ObjectId(loser.id), won=False)
+    bots_collection.update_stats(winner.id, won=True)
+    bots_collection.update_stats(loser.id, won=False)
 
     winner_dict = get_bot_by_id(db, winner.id)
     loser_dict = get_bot_by_id(db, loser.id)
@@ -99,22 +118,23 @@ def update_match(
     }
 
 
-def process_logs(
-    logs: dict[str, Any],
-    bot_1: BotModel,
-    bot_2: BotModel,
-) -> tuple[list[str], BotModel, BotModel] | tuple[list[str], None, None]:
+def insert_match(
+    db: MongoDB,
+    tournament_id: ObjectId,
+    match_data: MatchCreate,
+) -> MatchModel:
     """
-    Processes the logs from a match and returns the moves, the winner and loser bots.
-    Returns None if the match ended in a draw.
+    Creates a new match in the database.
+    Returns the created match.
     """
 
-    moves: list[str] = logs["states"]
-    winner: int | None = logs["winner"]
+    matches_collection = Match(db)
+    match_id = matches_collection.create_match(
+        match_data.game_num, match_data.bot_1, match_data.bot_2
+    )
 
-    if winner == 0:
-        return moves, bot_1, bot_2
-    elif winner == 1:
-        return moves, bot_2, bot_1
+    tournaments_collection = Tournament(db)
+    tournaments_collection.add_match(tournament_id, match_id)
 
-    return moves, None, None
+    match_dict = get_match_by_id(db, match_id)
+    return convert_match(db, match_dict, detail=True)

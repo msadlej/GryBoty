@@ -11,11 +11,8 @@ def validate_bot(game_name: str, code: bytes) -> bool:
     files = {"file": code}
     data = {"game": game_name}
     url = "http://localhost:8080/validate"
-
-    # Send the POST request with the file
     response = requests.post(url, data=data, files=files)
 
-    # Parse the response
     if response.status_code == 200:
         response_data = response.json()
         result: bool = response_data.get("success", False)
@@ -42,11 +39,8 @@ def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, A
     files = {"file1": bot1_code, "file2": bot2_code}
     data = {"game": game_name}
     url = "http://localhost:8080/run-match"
-
-    # Send the POST request with the files
     response = requests.post(url, data=data, files=files)
 
-    # Parse the response
     if response.status_code == 200:
         result: dict[str, Any] = response.json()
 

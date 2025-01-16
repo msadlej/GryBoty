@@ -17,8 +17,8 @@ class TournamentModel(BaseModel):
     id: PyObjectId = Field(alias="_id")
     name: str
     description: str
-    game_type: GameModel | None = None
-    creator: UserModel | None = None
+    game_type: GameModel
+    creator: UserModel
     start_date: datetime
     access_code: str
     max_participants: int

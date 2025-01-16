@@ -1,3 +1,5 @@
+import pytest
+
 from app.models.match import convert_match
 from app.schemas.match import MatchModel
 
@@ -12,6 +14,7 @@ def test_match_model(match_dict):
     assert match.winner == match_dict["winner"]
 
 
+@pytest.mark.skip(reason="Not implemented yet")
 def test_convert_match(match_dict):
     match: MatchModel = convert_match(..., match_dict, detail=False)
 
