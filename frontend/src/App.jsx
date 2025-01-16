@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+  SingleEliminationBracket,
+  Match,
+  SVGViewer,
+  createTheme
+} from '@g-loot/react-tournament-brackets';
 
 const API_URL = 'http://localhost:8000';
 
@@ -1281,8 +1287,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
   );
 };
 
-export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
-  console.log('TournamentTreeScreen props:', { onNavigate, tournamentId });
+const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1295,17 +1300,15 @@ export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         const tournamentResponse = await api.get(`/tournaments/${tournamentId}/`);
         const tournamentData = tournamentResponse.data;
         const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
+        
         for (let i = 0; i < matchesResponse.data.length; i++) {
           const matchResponse = await api.get(`/tournaments/${tournamentId}/matches/${matchesResponse.data[i]._id}/`);
           matchesResponse.data[i] = matchResponse.data;
         }
+        
         const matchesData = matchesResponse.data;
-
-
         setTournament(tournamentData);
         setMatches(matchesData);
-        console.log('Tournament data:', tournamentData);
-        console.log('Matches data:', matchesData);
       } catch (err) {
         console.error('Error fetching tournament:', err);
         setError('Nie udało się pobrać danych turnieju');
@@ -1313,26 +1316,58 @@ export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         setLoading(false);
       }
     };
-
+    
     fetchTournamentData();
   }, [tournamentId]);
 
-  const TournamentNode = ({ match }) => (
-    <div 
-      className="bg-button-bg px-8 py-2 rounded cursor-pointer hover:bg-button-hover transition-colors"
-      onClick={() => onNavigate('tournament-match', { tournamentId: tournamentId, matchId: match._id })}
-    >
-      <div className="text-center hover:underline">
-        Mecz {match.game_num}: {match.players.bot1.name} vs {match.players.bot2.name}
-        {match.winner && <span className="ml-2">(Zwycięzca: {match.winner.name})</span>}
-      </div>
-    </div>
-  );
+  const transformMatchesToBracketFormat = (matches) => {
+    return matches.map(match => ({
+      id: match._id,
+      name: `Match ${match.game_num}`,
+      nextMatchId: null, // will need to be calculated
+      tournamentRoundText: `Round ${Math.ceil(match.game_num / 2)}`,
+      startTime: match.start_date,
+      state: match.winner ? "DONE" : "SCHEDULED",
+      participants: [
+        {
+          id: match.players.bot1._id,
+          name: match.players.bot1.name,
+          resultText: match.winner?.name === match.players.bot1.name ? "Won" : null,
+          isWinner: match.winner?.name === match.players.bot1.name,
+          status: match.winner ? "PLAYED" : "NO_SHOW",
+        },
+        {
+          id: match.players.bot2._id,
+          name: match.players.bot2.name,
+          resultText: match.winner?.name === match.players.bot2.name ? "Won" : null,
+          isWinner: match.winner?.name === match.players.bot2.name,
+          status: match.winner ? "PLAYED" : "NO_SHOW",
+        }
+      ]
+    }));
+  };
 
-  
+  const theme = createTheme({
+    textColor: { main: '#ffffff', highlighted: '#ffffff', dark: '#ffffff' },
+    matchBackground: { winning: '#2d8654', losing: '#c82333', default: '#1e1e1e' },
+    score: {
+      background: { winning: '#2d8654', losing: '#c82333', default: '#1e1e1e' },
+      text: { winning: '#ffffff', losing: '#ffffff', default: '#ffffff' }
+    },
+    border: {
+      color: '#444444',
+      highlightedColor: '#888888'
+    },
+    roundHeader: { backgroundColor: '#2d2d2d', textColor: '#ffffff' },
+    connectorColor: '#444444',
+    connectorColorHighlight: '#888888',
+    svgBackground: '#151515'
+  });
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
+
+  const bracketMatches = transformMatchesToBracketFormat(matches);
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
@@ -1343,27 +1378,53 @@ export const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       </div>
       <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
       {error && <div className="text-red-500 mb-4">{error}</div>}
-      <div className="w-full max-w-[80%] space-y-6">
-        <div className="flex flex-col items-center space-y-12">
-          {matches.map((match) => (
-            <TournamentNode key={match._id} match={match} />
-          ))}
-        </div>
-        {tournament.creator === localStorage.getItem('userId') && (
-          <div className="flex justify-center mt-12">
-            <button 
-              onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
-              className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+      
+      <div className="w-full max-w-[90%] h-[600px]">
+        <SingleEliminationBracket
+          matches={bracketMatches}
+          matchComponent={Match}
+          theme={theme}
+          options={{
+            style: {
+              roundHeader: {
+                backgroundColor: '#2d2d2d',
+                fontColor: '#ffffff',
+              },
+              connectorColor: '#444444',
+              connectorColorHighlight: '#888888'
+            }
+          }}
+          svgWrapper={({ children, ...props }) => (
+            <SVGViewer 
+              width={window.innerWidth * 0.9}
+              height={500}
+              {...props}
             >
-              Zarządzaj
-            </button>
-          </div>
-        )}
+              {children}
+            </SVGViewer>
+          )}
+          onMatchClick={(match) => {
+            onNavigate('tournament-match', { 
+              tournamentId: tournamentId, 
+              matchId: match.id 
+            });
+          }}
+        />
       </div>
+
+      {tournament.creator === localStorage.getItem('userId') && (
+        <div className="flex justify-center mt-12">
+          <button
+            onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
+            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+          >
+            Zarządzaj
+          </button>
+        </div>
+      )}
     </div>
   );
 };
-
 
 
 const App = () => {
