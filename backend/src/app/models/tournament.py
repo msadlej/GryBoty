@@ -190,12 +190,16 @@ def insert_tournament(
         )
 
     access_code = generate_access_code()
+    i = 0
+    while get_tournament_id_by_access_code(db, access_code) is not None:
+        if i > 9:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate unique access code.",
+            )
 
-    if get_tournament_id_by_access_code(db, access_code) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Access code: {access_code} already exists.",
-        )
+        access_code = generate_access_code()
+        i += 1
 
     tournaments_collection = Tournament(db)
     tournament_id = tournaments_collection.create_tournament(
@@ -221,6 +225,14 @@ def update_tournament(
     """
 
     tournaments_collection = Tournament(db)
+    tournament_dict = get_tournament_by_id(db, tournament_id)
+    tournament = convert_tournament(db, tournament_dict)
+    # TODO: Check if the tournament is finished.
+    # if tournament.winner is not None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail=f"Tournament: {tournament_id} is already finished.",
+    #     )
 
     if tournament_data.name is not None:
         tournaments_collection.update_name(tournament_id, tournament_data.name)
@@ -240,6 +252,9 @@ def update_tournament(
             tournament_id, tournament_data.max_participants
         )
 
+    # if tournament_data.winner_id is not None:
+    #     tournaments_collection.update_winner(tournament_id, tournament_data.winner_id)
+
     tournament_dict = get_tournament_by_id(db, tournament_id)
     return convert_tournament(db, tournament_dict, detail=True)
 
@@ -253,7 +268,7 @@ def add_tournament_participant(
     """
 
     tournament_dict = get_tournament_by_id(db, tournament_id)
-    tournament = convert_tournament(db, tournament_dict)
+    tournament = convert_tournament(db, tournament_dict, detail=True)
     bot = get_bot_by_id(db, bot_id)
     if bot.game_type != tournament.game_type:
         raise HTTPException(
@@ -265,6 +280,19 @@ def add_tournament_participant(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Bot: {bot_id} is not validated.",
         )
+
+    # TODO: Check if the creator of the bot already has a bot in the tournament.
+    # if any(bot.creator == participant.creator for participant in tournament.participants):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail=f"User: {bot.creator} already has a bot in the tournament"
+    #     )
+    # TODO: Check if the tournament is finished.
+    # if tournament.winner is not None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail=f"Tournament: {tournament_id} is already finished.",
+    #     )
 
     tournaments_collection = Tournament(db)
     success = tournaments_collection.add_participant(tournament_id, bot_id)

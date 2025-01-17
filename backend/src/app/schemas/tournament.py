@@ -3,7 +3,7 @@ from pyobjectID import PyObjectId
 from datetime import datetime
 
 from app.schemas.match import MatchModel
-from app.schemas.game import GameModel
+from app.schemas.game import GameTypeModel
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
 
@@ -17,13 +17,14 @@ class TournamentModel(BaseModel):
     id: PyObjectId = Field(alias="_id")
     name: str
     description: str
-    game_type: GameModel
+    game_type: GameTypeModel
     creator: UserModel
     start_date: datetime
     access_code: str
     max_participants: int
     participants: list[BotModel] | None = None
     matches: list[MatchModel] | None = None
+    # winner: BotModel | None = None
 
 
 class TournamentCreate(BaseModel):
@@ -32,7 +33,7 @@ class TournamentCreate(BaseModel):
     name: str = Field(min_length=5, max_length=32)
     description: str = Field(max_length=128)
     game_type: PyObjectId
-    start_date: datetime
+    start_date: datetime = Field(gt=datetime.now())
     max_participants: int = Field(ge=2)
 
 
@@ -41,5 +42,6 @@ class TournamentUpdate(BaseModel):
 
     name: str | None = Field(min_length=5, max_length=32, default=None)
     description: str | None = Field(max_length=128, default=None)
-    start_date: datetime | None = None
+    start_date: datetime | None = Field(gt=datetime.now(), default=None)
     max_participants: int | None = Field(ge=2, default=None)
+    # winner_id: PyObjectId | None = None
