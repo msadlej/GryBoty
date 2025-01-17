@@ -9,18 +9,6 @@ from database.main import MongoDB, User, Bot
 import app.utils.connection as conn
 
 
-def check_bot_access(db: MongoDB, current_user: UserModel, bot_id: ObjectId) -> bool:
-    """
-    Checks if the current user has access to a specific bot.
-    """
-
-    if current_user.bots is None:
-        current_user.bots = get_bots_by_user_id(db, current_user.id)
-
-    is_admin: bool = current_user.account_type is AccountType.ADMIN
-    return any(bot.id == bot_id for bot in current_user.bots) or is_admin
-
-
 def get_bot_by_id(db: MongoDB, bot_id: ObjectId) -> BotModel:
     """
     Retrieves a bot from the database by its ID.
@@ -37,6 +25,19 @@ def get_bot_by_id(db: MongoDB, bot_id: ObjectId) -> BotModel:
         )
 
     return convert_bot(db, bot)
+
+
+def check_bot_access(db: MongoDB, current_user: UserModel, bot_id: ObjectId) -> bool:
+    """
+    Checks if the current user has access to a specific bot.
+    """
+
+    bot = get_bot_by_id(db, bot_id)
+
+    is_admin: bool = current_user.account_type is AccountType.ADMIN
+    is_creator: bool = bot.creator == current_user
+
+    return is_admin or is_creator
 
 
 def convert_bot(db: MongoDB, bot_dict: dict[str, Any]) -> BotModel:
@@ -117,3 +118,12 @@ def update_bot(db, bot_id: ObjectId, bot_data: BotUpdate) -> BotModel:
         bots_collection.update_name(bot_id, bot_data.name)
 
     return get_bot_by_id(db, bot_id)
+
+
+def delete_bot(db: MongoDB, bot_id: ObjectId) -> None:
+    """
+    Deletes a bot from the database.
+    """
+
+    bots_collection = Bot(db)
+    bots_collection.delete_bot(bot_id)

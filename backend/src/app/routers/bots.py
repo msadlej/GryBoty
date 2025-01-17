@@ -9,6 +9,7 @@ from app.models.bot import (
     check_bot_access,
     get_bot_by_id,
     get_bots_by_user_id,
+    delete_bot,
 )
 
 
@@ -38,6 +39,23 @@ async def create_bot(
     return new_bot
 
 
+@router.get("/{bot_id}/", response_model=BotModel)
+async def read_bot_by_id(
+    current_user: UserDependency,
+    bot_id: PyObjectId,
+):
+    with get_db_connection() as db:
+        if not check_bot_access(db, current_user, bot_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
+
+        bot = get_bot_by_id(db, bot_id)
+
+    return bot
+
+
 @router.put("/{bot_id}/", response_model=BotModel)
 async def edit_bot_by_id(
     current_user: UserDependency,
@@ -56,8 +74,8 @@ async def edit_bot_by_id(
     return updated_bot
 
 
-@router.get("/{bot_id}/", response_model=BotModel)
-async def read_bot_by_id(
+@router.delete("/{bot_id}/")
+async def delete_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,
 ):
@@ -68,6 +86,4 @@ async def read_bot_by_id(
                 detail=f"Bot: {bot_id} not found.",
             )
 
-        bot = get_bot_by_id(db, bot_id)
-
-    return bot
+        delete_bot(db, bot_id)
