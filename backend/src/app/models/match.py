@@ -79,11 +79,17 @@ def process_match(
 
     bot_1, bot_2 = match.players.values()
     response = conn.run_match(tournament.game_type.name, bot_1.code, bot_2.code)
-    if response["winner"] is None:
-        raise HTTPException(
-            status_code=status.HTTP_200_OK,
-            detail=f"Match: {match.id} ended in a draw.",
-        )  # TODO: Replay match after a draw
+    i = 0
+
+    while response["winner"] is None:
+        response = conn.run_match(tournament.game_type.name, bot_1.code, bot_2.code)
+        i += 1
+
+        if i > 9:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Match: {match.id} ended in a draw.",
+            )
 
     moves: list[str] = response["states"]
     if response["winner"] == 0:
