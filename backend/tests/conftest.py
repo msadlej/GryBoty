@@ -6,7 +6,7 @@ import pytest
 
 from app.utils.authentication import get_password_hash
 from app.schemas.match import MatchModel
-from app.schemas.game import GameModel
+from app.schemas.game import GameTypeModel
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
 from database.main import MongoDB
@@ -26,7 +26,7 @@ def bot_dict(game_dict):
     return {
         "_id": ObjectId(),
         "name": "Test Bot",
-        "game_type": GameModel(**game_dict),
+        "game_type": GameTypeModel(**game_dict),
         "code": b"print('Hello, World!')",
         "is_validated": True,
         "games_played": 4,
@@ -65,7 +65,7 @@ def tournament_dict(game_dict, bot_dict, user_dict, match_dict):
         "_id": ObjectId(),
         "name": "Test Tournament",
         "description": "Test Description",
-        "game_type": GameModel(**game_dict),
+        "game_type": GameTypeModel(**game_dict),
         "creator": UserModel(**user_dict),
         "start_date": datetime(2024, 12, 24),
         "access_code": "12345",

@@ -6,7 +6,7 @@ from app.schemas.tournament import TournamentModel, TournamentCreate
 from app.schemas.user import AccountType, UserUpdate
 from app.models.user import insert_user, update_user
 from app.models.game import insert_game_type
-from app.schemas.game import GameCreate
+from app.schemas.game import GameTypeCreate
 
 
 def test_tournament_model(tournament_dict):
@@ -39,7 +39,7 @@ def test_insert_tournament(db_connection):
     user_data = UserUpdate(account_type=AccountType.PREMIUM)
     user = update_user(db_connection, user["_id"], user_data)
 
-    game_create = GameCreate(name="Chess", description="A strategic board game")
+    game_create = GameTypeCreate(name="Chess", description="A strategic board game")
     game = insert_game_type(db_connection, game_create)
 
     tournament_data = TournamentCreate(

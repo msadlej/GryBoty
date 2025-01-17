@@ -2,7 +2,7 @@ import pytest
 
 from app.models.bot import convert_bot, insert_bot
 from app.models.game import insert_game_type
-from app.schemas.game import GameCreate
+from app.schemas.game import GameTypeCreate
 from app.schemas.user import UserModel
 from app.schemas.bot import BotModel
 
@@ -30,7 +30,7 @@ def test_convert_bot(bot_dict):
 
 
 def test_insert_bot(db_connection, user_dict, monkeypatch):
-    game_create = GameCreate(name="Chess", description="A strategic board game")
+    game_create = GameTypeCreate(name="Chess", description="A strategic board game")
     game = insert_game_type(db_connection, game_create)
     user = UserModel(**user_dict)
 
