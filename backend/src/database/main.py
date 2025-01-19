@@ -170,6 +170,7 @@ class Tournament:
             "max_participants": max_participants,
             "participants": [],
             "matches": [],
+            "winner": None,
         }
         result = self.collection.insert_one(tournament_data)
         return result.inserted_id
@@ -246,6 +247,30 @@ class Tournament:
 
     def get_all_tournaments(self) -> List[Dict]:
         return list(self.collection.find())
+
+    def set_winner(self, tournament_id: ObjectId, bot_id: ObjectId) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id},
+            {"$set": {"winner": bot_id}}
+        )
+
+    def get_winner(self, tournament_id: ObjectId) -> Optional[ObjectId]:
+        tournament = self.get_tournament_by_id(tournament_id)
+        return tournament.get("winner") if tournament else None
+
+    def remove_participant(self, tournament_id: ObjectId, bot_id: ObjectId) -> bool:
+        tournament = self.collection.find_one({"_id": tournament_id})
+        if tournament and bot_id in tournament["participants"]:
+            self.collection.update_one(
+                {"_id": tournament_id},
+                {"$pull": {"participants": bot_id}}
+            )
+            self.db.bots.update_one(
+                {"_id": bot_id},
+                {"$inc": {"total_tournaments": -1}}
+            )
+            return True
+        return False
 
 
 class Match:

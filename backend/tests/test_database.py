@@ -487,6 +487,85 @@ class TestTournament:
         assert len(tournaments) == 1
         assert tournaments[0]["name"] == "Test Tournament"
 
+    def test_set_winner(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+        tournament_manager.set_winner(tournament_id, bot_id)
+
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["winner"] == bot_id
+
+    def test_get_winner(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+        tournament_manager.set_winner(tournament_id, bot_id)
+
+        winner_id = tournament_manager.get_winner(tournament_id)
+        assert winner_id == bot_id
+
+    def test_get_winner_no_winner(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        winner_id = tournament_manager.get_winner(tournament_id)
+        assert winner_id is None
+
+    def test_remove_participant(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+        tournament_manager.add_participant(tournament_id, bot_id)
+
+        success = tournament_manager.remove_participant(tournament_id, bot_id)
+        assert success is True
+
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert bot_id not in tournament["participants"]
+
+    def test_remove_nonexistent_participant(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+
+        success = tournament_manager.remove_participant(tournament_id, bot_id)
+        assert success is False
+
 
 class TestMatch:
     def test_create_match(self, match_manager: Match):
