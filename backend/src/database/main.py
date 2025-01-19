@@ -74,6 +74,7 @@ class Bot:
     def __init__(self, db: MongoDB):
         self.db = db.db
         self.collection = db.db.bots
+        self.users_collection = db.db.users
 
     def create_bot(self, name: str, game_type: ObjectId, code: bytes) -> ObjectId:
         bot_data = {
@@ -123,6 +124,9 @@ class Bot:
 
     def get_all_bots(self) -> List[Dict]:
         return list(self.collection.find())
+
+    def get_owner(self, bot_id: ObjectId) -> Optional[Dict]:
+        return self.users_collection.find_one({"bots": bot_id})
 
 
 class GameType:

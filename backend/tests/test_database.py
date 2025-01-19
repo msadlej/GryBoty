@@ -187,6 +187,27 @@ class TestBot:
         assert "bot1" in bot_names
         assert "bot2" in bot_names
 
+    def test_get_owner(self, bot_manager: Bot, user_manager: User):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
+
+        user_id = user_manager.create_user(
+            username="testuser",
+            password_hash="hashedpassword123",
+            account_type="standard"
+        )
+
+        user_manager.add_bot(user_id, bot_id)
+        owner = bot_manager.get_owner(bot_id)
+        assert owner is not None
+        assert owner["username"] == "testuser"
+        assert owner["_id"] == user_id
+        assert bot_id in owner["bots"]
+
+        non_existent_bot_id = ObjectId()
+        owner = bot_manager.get_owner(non_existent_bot_id)
+        assert owner is None
+
 
 class TestGameType:
     def test_create_game_type(self, game_type_manager: GameType):
