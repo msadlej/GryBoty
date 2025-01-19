@@ -128,6 +128,52 @@ class Bot:
     def get_owner(self, bot_id: ObjectId) -> Optional[Dict]:
         return self.users_collection.find_one({"bots": bot_id})
 
+    def delete_bot(self, bot_id: ObjectId) -> bool:
+        bot = self.get_bot_by_id(bot_id)
+        if not bot:
+            return False
+
+        self.users_collection.update_many(
+            {"bots": bot_id},
+            {"$pull": {"bots": bot_id}}
+        )
+
+        tournaments = self.db.tournaments.find({"participants": bot_id})
+        for tournament in tournaments:
+            if tournament.get("winner") == bot_id:
+                self.db.tournaments.update_one(
+                    {"_id": tournament["_id"]},
+                    {"$set": {"winner": None}}
+                )
+            self.db.tournaments.update_one(
+                {"_id": tournament["_id"]},
+                {"$pull": {"participants": bot_id}}
+            )
+
+        matches = self.db.matches.find({
+            "$or": [
+                {"players.bot1": bot_id},
+                {"players.bot2": bot_id}
+            ]
+        })
+
+        match_ids = [match["_id"] for match in matches]
+        self.db.tournaments.update_many(
+            {"matches": {"$in": match_ids}},
+            {"$pull": {"matches": {"$in": match_ids}}}
+        )
+
+        self.db.matches.delete_many({
+            "$or": [
+                {"players.bot1": bot_id},
+                {"players.bot2": bot_id}
+            ]
+        })
+
+        self.collection.delete_one({"_id": bot_id})
+
+        return True
+
 
 class GameType:
     def __init__(self, db: MongoDB):
