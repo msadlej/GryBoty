@@ -88,6 +88,13 @@ class DBTournament:
 
         return any((is_admin, is_creator, is_participant))
 
+    def is_finished(self) -> bool:
+        """
+        Checks if the tournament is finished.
+        """
+
+        return self.winner is not None or self.start_date < datetime.now()
+
     def get_participants(self) -> list[Bot]:
         """
         Retrieves all bots from the database that participate in the tournament.
@@ -101,7 +108,7 @@ class DBTournament:
         Updates the tournament in the database.
         """
 
-        if self.winner is not None:
+        if self.is_finished():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Tournament: {self.id} is already finished.",
@@ -131,6 +138,12 @@ class DBTournament:
         Adds a bot to the tournament.
         """
 
+        if self.is_finished():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tournament: {self.id} is already finished.",
+            )
+
         db_bot = DBBot(self._db, id=bot_id)
         if db_bot.game_type != self.game_type:
             raise HTTPException(
@@ -148,11 +161,6 @@ class DBTournament:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"User: {db_owner.id} already has a bot in the tournament",
-            )
-        if self.winner is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Tournament: {self.id} is already finished.",
             )
 
         success = self._collection.add_participant(self.id, bot_id)
