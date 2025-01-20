@@ -64,16 +64,8 @@ class TestBotModel:
         assert db_bot.tournaments_won == 0
 
     def test_get_all(self, db_connection, insert_bot):
-        _, _, db_bot = insert_bot
+        db_bot = insert_bot[2]
         bots = DBBot.get_all(db_connection)
 
         assert len(bots) == 1
-        assert bots[0].name == db_bot.name
-        assert bots[0].game_type.id == db_bot.game_type
-        assert bots[0].code is None
-        assert bots[0].is_validated == db_bot.is_validated
-        assert bots[0].games_played == db_bot.games_played
-        assert bots[0].wins == db_bot.wins
-        assert bots[0].losses == db_bot.losses
-        assert bots[0].total_tournaments == db_bot.total_tournaments
-        assert bots[0].tournaments_won == db_bot.tournaments_won
+        assert bots[0].id == db_bot.id

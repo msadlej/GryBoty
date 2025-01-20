@@ -65,3 +65,10 @@ class TestUserModel:
         assert db_user.account_type == "standard"
         assert db_user.bots == []
         assert not db_user.is_banned
+
+    def test_get_all(self, insert_user, db_connection):
+        db_user = insert_user
+        users = DBUser.get_all(db_connection)
+
+        assert len(users) == 1
+        assert users[0].id == db_user.id

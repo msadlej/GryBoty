@@ -7,7 +7,11 @@ import pytest
 
 from app.schemas.game_type import GameType, GameTypeCreate
 from app.utils.authentication import get_password_hash
+from app.schemas.tournament import TournamentCreate
+from app.models.tournament import DBTournament
 from app.models.game_type import DBGameType
+from app.schemas.match import MatchCreate
+from app.models.match import DBMatch
 from app.models.user import DBUser
 from database.main import MongoDB
 from app.schemas.user import User
@@ -57,25 +61,27 @@ def bot_dict(game_type_dict, user_dict):
 def match_dict(bot_dict):
     return {
         "_id": ObjectId(),
-        "game_num": 1,
+        "game_num": 0,
         "players": (Bot(**bot_dict), Bot(**bot_dict)),
-        "moves": ["move1", "move2"],
-        "winner": Bot(**bot_dict),
+        "moves": [],
+        "winner": None,
     }
 
 
 @pytest.fixture
-def tournament_dict(game_type_dict, user_dict, bot_dict):
+def tournament_dict(game_type_dict, user_dict):
     return {
         "_id": ObjectId(),
         "name": "Test Tournament",
         "description": "Test Description",
         "game_type": GameType(**game_type_dict),
         "creator": User(**user_dict),
-        "start_date": datetime(2024, 12, 24),
+        "start_date": datetime(2025, 12, 24),
         "access_code": "0A1B2C",
         "max_participants": 4,
-        "winner": Bot(**bot_dict),
+        "participants": [],
+        "matches": [],
+        "winner": None,
     }
 
 
@@ -151,3 +157,50 @@ def insert_bot(monkeypatch, insert_game_type, insert_user, db_connection, bot_di
     )
 
     return db_game_type, db_user, db_bot
+
+
+@pytest.fixture
+def insert_tournament(insert_game_type, insert_user, db_connection, tournament_dict):
+    db_game_type = insert_game_type
+    db_user = insert_user
+
+    tournament_data = TournamentCreate(
+        **tournament_dict,
+        game_type_id=db_game_type.id,
+    )
+    db_tournament = DBTournament.insert(
+        db_connection, db_user.to_schema(), tournament_data
+    )
+
+    return db_game_type, db_user, db_tournament
+
+
+@pytest.fixture
+def insert_match(monkeypatch, insert_tournament, db_connection, bot_dict):
+    monkeypatch.setattr("app.models.bot.conn.validate_bot", lambda x, y: True)
+
+    db_game_type, db_creator, db_tournament = insert_tournament
+    db_user = DBUser.insert(db_connection, "participant", "password_hash")
+
+    db_bot_0 = DBBot.insert(
+        db_connection,
+        db_creator.to_schema(),
+        bot_dict["name"],
+        db_game_type.id,
+        bot_dict["code"],
+    )
+    db_bot_1 = DBBot.insert(
+        db_connection,
+        db_user.to_schema(),
+        bot_dict["name"],
+        db_game_type.id,
+        bot_dict["code"],
+    )
+
+    db_tournament.add_participant(db_bot_0.id)
+    db_tournament.add_participant(db_bot_1.id)
+
+    match_data = MatchCreate(game_num=0, player_ids=(db_bot_0.id, db_bot_1.id))
+    db_match = DBMatch.insert(db_connection, db_tournament.id, match_data)
+
+    return db_game_type, db_user, db_tournament, db_bot_0, db_bot_1, db_match

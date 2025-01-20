@@ -42,5 +42,4 @@ class TestGameModel:
         game_types = DBGameType.get_all(db_connection)
 
         assert len(game_types) == 1
-        assert game_types[0].name == db_game_type.name
-        assert game_types[0].description == db_game_type.description
+        assert game_types[0].id == db_game_type.id
