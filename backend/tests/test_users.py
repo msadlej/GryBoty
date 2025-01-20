@@ -56,3 +56,12 @@ class TestUserModel:
         user = User(**user_dict)
 
         assert db_user.to_schema() == user
+
+    def test_insert(self, insert_user, user_dict):
+        db_user = insert_user
+
+        assert db_user.username == user_dict["username"]
+        assert db_user.password_hash == user_dict["password_hash"]
+        assert db_user.account_type == "standard"
+        assert db_user.bots == []
+        assert not db_user.is_banned

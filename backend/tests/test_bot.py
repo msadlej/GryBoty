@@ -1,9 +1,6 @@
 from fastapi import HTTPException
 import pytest
 
-from app.schemas.game_type import GameTypeCreate
-from app.models.game_type import DBGameType
-from app.models.user import DBUser
 from app.models.bot import DBBot
 from app.schemas.bot import Bot
 
@@ -22,24 +19,6 @@ def test_bot_schema(bot_dict):
     assert bot.total_tournaments == bot_dict["total_tournaments"]
     assert bot.tournaments_won == bot_dict["tournaments_won"]
     assert bot.owner == bot_dict["owner"]
-
-
-@pytest.fixture
-def insert_bot(monkeypatch, db_connection, bot_dict, game_type_dict):
-    monkeypatch.setattr("app.models.bot.conn.validate_bot", lambda x, y: True)
-
-    game_type_data = GameTypeCreate(**game_type_dict)
-    db_game_type = DBGameType.insert(db_connection, game_type_data)
-    db_user = DBUser.insert(db_connection, "username", "password")
-    db_bot = DBBot.insert(
-        db_connection,
-        db_user.to_schema(),
-        bot_dict["name"],
-        db_game_type.id,
-        bot_dict["code"],
-    )
-
-    return db_game_type, db_user, db_bot
 
 
 class TestBotModel:

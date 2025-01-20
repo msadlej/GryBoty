@@ -5,10 +5,13 @@ from typing import Any
 import mongomock
 import pytest
 
+from app.schemas.game_type import GameType, GameTypeCreate
 from app.utils.authentication import get_password_hash
-from app.schemas.game_type import GameType
+from app.models.game_type import DBGameType
+from app.models.user import DBUser
 from database.main import MongoDB
 from app.schemas.user import User
+from app.models.bot import DBBot
 from app.schemas.bot import Bot
 
 
@@ -114,3 +117,37 @@ def mock_get_db_connection(connection_string: str = "mongodb://localhost:27017/"
 def db_connection():
     with mock_get_db_connection() as db:
         yield db
+
+
+@pytest.fixture
+def insert_game_type(db_connection, game_type_dict):
+    game_type = GameTypeCreate(**game_type_dict)
+    db_game_type = DBGameType.insert(db_connection, game_type)
+
+    return db_game_type
+
+
+@pytest.fixture
+def insert_user(db_connection, user_dict):
+    db_user = DBUser.insert(
+        db_connection, user_dict["username"], user_dict["password_hash"]
+    )
+
+    return db_user
+
+
+@pytest.fixture
+def insert_bot(monkeypatch, insert_game_type, insert_user, db_connection, bot_dict):
+    monkeypatch.setattr("app.models.bot.conn.validate_bot", lambda x, y: True)
+
+    db_game_type = insert_game_type
+    db_user = insert_user
+    db_bot = DBBot.insert(
+        db_connection,
+        db_user.to_schema(),
+        bot_dict["name"],
+        db_game_type.id,
+        bot_dict["code"],
+    )
+
+    return db_game_type, db_user, db_bot
