@@ -1,307 +1,290 @@
 from fastapi import HTTPException, status
+from typing import overload, Any
+from datetime import datetime
 from bson import ObjectId
-from typing import Any
 import random
 import string
 
-from app.schemas.tournament import TournamentModel, TournamentCreate, TournamentUpdate
-from app.models.bot import get_bot_by_id, get_bots_by_user_id
-from app.models.match import get_match_by_id, convert_match
-from app.models.user import get_user_by_id, convert_user
-from app.schemas.user import AccountType, UserModel
-from app.models.game import get_game_type_by_id
-from database.main import MongoDB, Tournament
-from app.schemas.match import MatchModel
-from app.schemas.bot import BotModel
+from app.schemas.tournament import Tournament, TournamentCreate, TournamentUpdate
+from database.main import MongoDB, Tournament as TournamentCollection
+from app.schemas.user import AccountType, User
+from app.models.game_type import DBGameType
+from app.models.user import DBUser
+from app.models.bot import DBBot
+from app.schemas.bot import Bot
 
 
-def generate_access_code(length: int = 6) -> str:
-    """
-    Generates a random access code with digits and capital letters.
-    """
+class DBTournament:
+    @overload
+    def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 
-    characters = string.ascii_uppercase + string.digits
-    return "".join(random.choice(characters) for _ in range(length))
+    @overload
+    def __init__(self, db: MongoDB, /, *, data: dict[str, Any]) -> None: ...
 
+    def __init__(
+        self,
+        db: MongoDB,
+        /,
+        *,
+        id: ObjectId | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> None:
+        self._db = db
+        self._collection = TournamentCollection(db)
 
-def check_tournament_creator(
-    db: MongoDB, current_user: UserModel, tournament_id: ObjectId
-) -> bool:
-    """
-    Checks if the user is the creator of the tournament or an admin.
-    """
+        if id is not None:
+            self._from_id(id)
+        elif data is not None:
+            self._from_data(data)
+        else:
+            raise ValueError("DBTournament must be initialized with either id or data.")
 
-    tournament = get_tournament_by_id(db, tournament_id)
+    def _from_data(self, data: dict[str, Any]) -> None:
+        self.id: ObjectId = data["_id"]
+        self.name: str = data["name"]
+        self.description: str = data["description"]
+        self.game_type: ObjectId = data["game_type"]
+        self.creator: ObjectId = data["creator"]
+        self.start_date: datetime = data["start_date"]
+        self.access_code: str = data["access_code"]
+        self.max_participants: int = data["max_participants"]
+        self.participants: list[ObjectId] = data["participants"]
+        self.matches: list[ObjectId] = data["matches"]
+        # self.winner: ObjectId | None = data["winner"]
 
-    is_admin: bool = current_user.account_type is AccountType.ADMIN
-    is_creator: bool = current_user.id == tournament["creator"]
+    def _from_id(self, tournament_id: ObjectId) -> None:
+        data = self._collection.get_tournament_by_id(tournament_id)
 
-    return is_creator or is_admin
-
-
-def check_tournament_access(
-    db: MongoDB, current_user: UserModel, tournament_id: ObjectId
-) -> bool:
-    """
-    Checks if the user has access to the tournament.
-    """
-
-    tournament = get_tournament_by_id(db, tournament_id)
-
-    if current_user.bots is None:
-        current_user.bots = get_bots_by_user_id(db, current_user.id)
-
-    is_admin: bool = current_user.account_type is AccountType.ADMIN
-    is_creator: bool = current_user.id == tournament["creator"]
-    is_participant: bool = any(
-        bot.id in tournament["participants"] for bot in current_user.bots
-    )
-
-    return any((is_admin, is_creator, is_participant))
-
-
-def get_tournament_by_id(db, tournament_id: ObjectId) -> dict[str, Any]:
-    """
-    Retrieves a tournament from the database by its ID.
-    Raises an error if the tournament does not exist.
-    """
-
-    tournaments_collection = Tournament(db)
-    tournament = tournaments_collection.get_tournament_by_id(tournament_id)
-
-    if tournament is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tournament: {tournament_id} not found.",
-        )
-
-    return tournament
-
-
-def get_tournament_id_by_access_code(db: MongoDB, access_code: str) -> ObjectId | None:
-    """
-    Retrieves a tournament ID from the database by its access code.
-    Returns None if the access code does not exist.
-    """
-
-    tournaments_collection = Tournament(db)
-    tournament = tournaments_collection.get_tournament_by_access_code(access_code)
-
-    return tournament["_id"] if tournament else None
-
-
-def convert_tournament(
-    db: MongoDB, tournament_dict: dict[str, Any], detail: bool = False
-) -> TournamentModel:
-    """
-    Converts a tournament dictionary to a TournamentModel.
-    """
-
-    game_type = tournament_dict.pop("game_type")
-    tournament_dict["game_type"] = get_game_type_by_id(db, game_type)
-
-    creator = tournament_dict.pop("creator")
-    user_dict = get_user_by_id(db, creator)
-    tournament_dict["creator"] = convert_user(db, user_dict)
-
-    participant_ids = tournament_dict.pop("participants")
-    match_ids = tournament_dict.pop("matches")
-    if not detail:
-        return TournamentModel(**tournament_dict)
-
-    participants = []
-    for bot_id in participant_ids:
-        bot = get_bot_by_id(db, bot_id)
-        participants.append(bot)
-
-    matches = []
-    for match_id in match_ids:
-        match_dict = get_match_by_id(db, match_id)
-        matches.append(convert_match(db, match_dict))
-
-    tournament_dict["participants"] = participants
-    tournament_dict["matches"] = matches
-
-    return TournamentModel(**tournament_dict)
-
-
-def get_bots_by_tournament(db: MongoDB, tournament_id: ObjectId) -> list[BotModel]:
-    """
-    Retrieves all bots from the database that participate in a specific tournament.
-    """
-
-    tournament = get_tournament_by_id(db, tournament_id)
-
-    return [get_bot_by_id(db, bot_id) for bot_id in tournament["participants"]]
-
-
-def get_matches_by_tournament(db: MongoDB, tournament_id: ObjectId) -> list[MatchModel]:
-    """
-    Retrieves all matches from the database that belong to a specific tournament.
-    """
-
-    tournament = get_tournament_by_id(db, tournament_id)
-
-    return [
-        convert_match(db, match_dict)
-        for match_id in tournament["matches"]
-        if (match_dict := get_match_by_id(db, match_id))
-    ]
-
-
-def get_tournaments_by_user_id(db: MongoDB, user_id: ObjectId) -> list[TournamentModel]:
-    """
-    Retrieves all tournaments that the user has created or is participating in.
-    """
-
-    tournaments_collection = Tournament(db)
-    tournaments = tournaments_collection.get_tournaments_by_creator(user_id)
-
-    bots = get_bots_by_user_id(db, user_id)
-    for bot in bots:
-        tournaments.extend(tournaments_collection.get_tournaments_by_bot_id(bot.id))
-
-    return [convert_tournament(db, tournament) for tournament in tournaments]
-
-
-def get_all_tournaments(db: MongoDB) -> list[TournamentModel]:
-    """
-    Retrieves all tournaments from the database.
-    """
-
-    tournaments_collection = Tournament(db)
-    tournaments = tournaments_collection.get_all_tournaments()
-
-    return [convert_tournament(db, tournament) for tournament in tournaments]
-
-
-def insert_tournament(
-    db: MongoDB, current_premium_user: UserModel, tournament: TournamentCreate
-) -> TournamentModel:
-    """
-    Inserts a new tournament into the database.
-    Returns the created tournament.
-    """
-
-    if get_game_type_by_id(db, tournament.game_type) is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Game type: {tournament.game_type} not found.",
-        )
-
-    access_code = generate_access_code()
-    i = 0
-    while get_tournament_id_by_access_code(db, access_code) is not None:
-        if i > 9:
+        if data is None:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to generate unique access code.",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
             )
 
-        access_code = generate_access_code()
-        i += 1
+        self._from_data(data)
 
-    tournaments_collection = Tournament(db)
-    tournament_id = tournaments_collection.create_tournament(
-        tournament.name,
-        tournament.description,
-        tournament.game_type,
-        current_premium_user.id,
-        tournament.start_date,
-        access_code,
-        tournament.max_participants,
-    )
+    def check_creator(self, user: User) -> bool:
+        """
+        Checks if the user is the creator of the tournament or an admin.
+        """
 
-    tournament_dict = get_tournament_by_id(db, tournament_id)
-    return convert_tournament(db, tournament_dict, detail=True)
+        is_admin: bool = user.account_type is AccountType.ADMIN
+        is_creator: bool = user.id == self.creator
 
+        return is_creator or is_admin
 
-def update_tournament(
-    db: MongoDB, tournament_id: ObjectId, tournament_data: TournamentUpdate
-) -> TournamentModel:
-    """
-    Updates an existing tournament in the database.
-    Returns the updated tournament.
-    """
+    def check_access(self, user: User) -> bool:
+        """
+        Checks if the user has access to the tournament.
+        """
 
-    tournaments_collection = Tournament(db)
-    tournament_dict = get_tournament_by_id(db, tournament_id)
-    tournament = convert_tournament(db, tournament_dict)
-    # TODO: Check if the tournament is finished.
-    # if tournament.winner is not None:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_409_CONFLICT,
-    #         detail=f"Tournament: {tournament_id} is already finished.",
-    #     )
+        db_user = DBUser(self._db, id=user.id)
 
-    if tournament_data.name is not None:
-        tournaments_collection.update_name(tournament_id, tournament_data.name)
-
-    if tournament_data.description is not None:
-        tournaments_collection.update_description(
-            tournament_id, tournament_data.description
+        is_admin: bool = user.account_type is AccountType.ADMIN
+        is_creator: bool = user.id == self.creator
+        is_participant: bool = any(
+            bot_id in self.participants for bot_id in db_user.bots
         )
 
-    if tournament_data.start_date is not None:
-        tournaments_collection.update_start_date(
-            tournament_id, tournament_data.start_date
+        return any((is_admin, is_creator, is_participant))
+
+    def get_participants(self) -> list[Bot]:
+        """
+        Retrieves all bots from the database that participate in the tournament.
+        """
+
+        db_bots = [DBBot(self._db, id=bot_id) for bot_id in self.participants]
+        return [db_bot.to_schema() for db_bot in db_bots]
+
+    def update(self, tournament_data: TournamentUpdate) -> None:
+        """
+        Updates the tournament in the database.
+        """
+
+        # TODO: Check if the tournament is finished
+        # if self.winner is not None:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_409_CONFLICT,
+        #         detail=f"Tournament: {tournament_id} is already finished.",
+        #     )
+
+        if tournament_data.name is not None:
+            self._collection.update_name(self.id, tournament_data.name)
+
+        if tournament_data.description is not None:
+            self._collection.update_description(self.id, tournament_data.description)
+
+        if tournament_data.start_date is not None:
+            self._collection.update_start_date(self.id, tournament_data.start_date)
+
+        if tournament_data.max_participants is not None:
+            self._collection.update_max_participants(
+                self.id, tournament_data.max_participants
+            )
+
+        # TODO: Implement in db
+        # if tournament_data.winner_id is not None:
+        #     self._collection.update_winner(self.id, tournament_data.winner_id)
+
+        self._from_id(self.id)
+
+    def add_participant(self, bot_id: ObjectId) -> None:
+        """
+        Adds a bot to the tournament.
+        """
+
+        db_bot = DBBot(self._db, id=bot_id)
+        if db_bot.game_type != self.game_type:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Bot: {bot_id} does not match the game type of the tournament.",
+            )
+        if not db_bot.is_validated:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Bot: {bot_id} is not validated.",
+            )
+
+        # TODO: Check if the creator of the bot already has a bot in the tournament.
+        # if any(bot.creator == participant.creator for participant in tournament.participants):
+        #     raise HTTPException(
+        #         status_code=status.HTTP_409_CONFLICT,
+        #         detail=f"User: {bot.creator} already has a bot in the tournament"
+        #     )
+        # TODO: Check if the tournament is finished.
+        # if tournament.winner is not None:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_409_CONFLICT,
+        #         detail=f"Tournament: {tournament_id} is already finished.",
+        #     )
+
+        success = self._collection.add_participant(self.id, bot_id)
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tournament: {self.id} is already full.",
+            )
+
+        self._from_id(self.id)
+
+    def add_match(self, match_id: ObjectId) -> None:
+        """
+        Adds a match to the tournament.
+        """
+
+        self._collection.add_match(self.id, match_id)
+        self._from_id(self.id)
+
+    def to_schema(self) -> Tournament:
+        """
+        Converts the model to a Tournament schema.
+        """
+
+        db_game_type = DBGameType(self._db, id=self.game_type)
+        game_type = db_game_type.to_schema()
+
+        db_creator = DBUser(self._db, id=self.creator)
+        creator = db_creator.to_schema()
+
+        # winner = tournament_dict.pop("winner")
+
+        return Tournament(
+            _id=self.id,
+            name=self.name,
+            description=self.description,
+            game_type=game_type,
+            creator=creator,
+            start_date=self.start_date,
+            access_code=self.access_code,
+            max_participants=self.max_participants,
         )
 
-    if tournament_data.max_participants is not None:
-        tournaments_collection.update_max_participants(
-            tournament_id, tournament_data.max_participants
+    @classmethod
+    def insert(
+        cls, db: MongoDB, creator: User, tournament: TournamentCreate
+    ) -> "DBTournament":
+        """
+        Inserts a new tournament into the database.
+        Returns the created tournament.
+        """
+
+        _ = DBGameType(db, id=tournament.game_type)
+
+        access_code = cls._generate_access_code()
+        i = 0
+        while cls.get_id_by_access_code(db, access_code) is not None:
+            access_code = cls._generate_access_code()
+            i += 1
+
+            if i > 9:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate unique access code.",
+                )
+
+        collection = TournamentCollection(db)
+        tournament_id = collection.create_tournament(
+            tournament.name,
+            tournament.description,
+            tournament.game_type,
+            creator.id,
+            tournament.start_date,
+            access_code,
+            tournament.max_participants,
         )
 
-    # if tournament_data.winner_id is not None:
-    #     tournaments_collection.update_winner(tournament_id, tournament_data.winner_id)
+        return cls(db, id=tournament_id)
 
-    tournament_dict = get_tournament_by_id(db, tournament_id)
-    return convert_tournament(db, tournament_dict, detail=True)
+    @staticmethod
+    def get_by_user_id(db: MongoDB, user_id: ObjectId) -> list[Tournament]:
+        """
+        Retrieves all tournaments that the user has created or is participating in.
+        """
 
+        collection = TournamentCollection(db)
+        tournaments = collection.get_tournaments_by_creator(user_id)
 
-def add_tournament_participant(
-    db: MongoDB, tournament_id: ObjectId, bot_id: ObjectId
-) -> TournamentModel:
-    """
-    Adds a bot to a tournament.
-    Returns the updated tournament.
-    """
+        bots = DBBot.get_by_user_id(db, user_id)
+        for bot in bots:
+            tournaments.extend(collection.get_tournaments_by_bot_id(bot.id))
 
-    tournament_dict = get_tournament_by_id(db, tournament_id)
-    tournament = convert_tournament(db, tournament_dict, detail=True)
-    bot = get_bot_by_id(db, bot_id)
-    if bot.game_type != tournament.game_type:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Bot: {bot_id} does not match the game type of the tournament.",
-        )
-    if not bot.is_validated:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Bot: {bot_id} is not validated.",
-        )
+        db_tournaments = [
+            DBTournament(db, data=tournament) for tournament in tournaments
+        ]
+        return [tournament.to_schema() for tournament in db_tournaments]
 
-    # TODO: Check if the creator of the bot already has a bot in the tournament.
-    # if any(bot.creator == participant.creator for participant in tournament.participants):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_409_CONFLICT,
-    #         detail=f"User: {bot.creator} already has a bot in the tournament"
-    #     )
-    # TODO: Check if the tournament is finished.
-    # if tournament.winner is not None:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_409_CONFLICT,
-    #         detail=f"Tournament: {tournament_id} is already finished.",
-    #     )
+    @staticmethod
+    def get_id_by_access_code(db: MongoDB, access_code: str) -> ObjectId | None:
+        """
+        Retrieves a tournament ID from the database by its access code.
+        Returns None if the access code does not exist.
+        """
 
-    tournaments_collection = Tournament(db)
-    success = tournaments_collection.add_participant(tournament_id, bot_id)
+        collection = TournamentCollection(db)
+        tournament = collection.get_tournament_by_access_code(access_code)
 
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Tournament: {tournament_id} is already full.",
-        )
+        return tournament["_id"] if tournament else None
 
-    tournament_dict = get_tournament_by_id(db, tournament_id)
-    return convert_tournament(db, tournament_dict, detail=True)
+    @staticmethod
+    def get_all(db: MongoDB) -> list[Tournament]:
+        """
+        Retrieves all tournaments from the database.
+        """
+
+        collection = TournamentCollection(db)
+        tournaments = collection.get_all_tournaments()
+        db_tournaments = [
+            DBTournament(db, data=tournament) for tournament in tournaments
+        ]
+
+        return [db_tournament.to_schema() for db_tournament in db_tournaments]
+
+    @staticmethod
+    def _generate_access_code(length: int = 6) -> str:
+        """
+        Generates a random access code with digits and capital letters.
+        """
+
+        characters = string.ascii_uppercase + string.digits
+        return "".join(random.choice(characters) for _ in range(length))

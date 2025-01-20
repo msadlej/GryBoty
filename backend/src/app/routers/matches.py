@@ -2,23 +2,11 @@ from fastapi import APIRouter, HTTPException, status, Form
 from pyobjectID import PyObjectId
 
 from app.dependencies import UserDependency, PremiumDependency
-from app.schemas.match import MatchModel, MatchCreate
 from app.utils.database import get_db_connection
-from app.schemas.bot import BotModel
-from app.models.tournament import (
-    check_tournament_creator,
-    check_tournament_access,
-    get_tournament_by_id,
-    convert_tournament,
-    get_matches_by_tournament,
-)
-from app.models.match import (
-    get_match_by_id,
-    convert_match,
-    get_bots_by_match_id,
-    process_match,
-    insert_match,
-)
+from app.schemas.match import Match, MatchCreate
+from app.models.tournament import DBTournament
+from app.models.match import DBMatch
+from app.schemas.bot import Bot
 
 
 router = APIRouter(prefix="/tournaments/{tournament_id}/matches")
@@ -26,27 +14,28 @@ router = APIRouter(prefix="/tournaments/{tournament_id}/matches")
 
 @router.get(
     "/",
-    response_model=list[MatchModel],
+    response_model=list[Match],
 )
 async def read_matches_by_tournament_id(
     current_user: UserDependency,
     tournament_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        if not check_tournament_access(db, current_user, tournament_id):
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_access(current_user):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tournament: {tournament_id} not found.",
             )
 
-        matches = get_matches_by_tournament(db, tournament_id)
+        matches = DBMatch.get_by_tournament_id(db, tournament_id)
 
     return matches
 
 
 @router.post(
     "/",
-    response_model=MatchModel,
+    response_model=Match,
 )
 async def create_match(
     current_user: PremiumDependency,
@@ -54,20 +43,21 @@ async def create_match(
     match_data: MatchCreate = Form(...),
 ):
     with get_db_connection() as db:
-        if not check_tournament_creator(db, current_user, tournament_id):
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_creator(current_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User does not have access to create a match.",
+                detail=f"User does not have access to create a match in tournament: {tournament_id}.",
             )
 
-        match = insert_match(db, tournament_id, match_data)
+        match = DBMatch.insert(db, tournament_id, match_data)
 
     return match
 
 
 @router.get(
     "/{match_id}/",
-    response_model=MatchModel,
+    response_model=Match,
 )
 async def read_match_by_id(
     current_user: UserDependency,
@@ -75,21 +65,22 @@ async def read_match_by_id(
     match_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        if not check_tournament_access(db, current_user, tournament_id):
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_access(current_user):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Match: {match_id} not found.",
+                detail=f"Tournament: {tournament_id} not found.",
             )
 
-        match_dict = get_match_by_id(db, match_id)
-        match = convert_match(db, match_dict, detail=True)
+        db_match = DBMatch(db, id=match_id)
+        match = db_match.to_schema()
 
     return match
 
 
 @router.get(
     "/{match_id}/bots/",
-    response_model=dict[str, BotModel],
+    response_model=tuple[Bot, Bot],
 )
 async def read_bots_by_match_id(
     current_user: UserDependency,
@@ -97,20 +88,22 @@ async def read_bots_by_match_id(
     match_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        if not check_tournament_access(db, current_user, tournament_id):
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_access(current_user):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Match: {match_id} not found.",
+                detail=f"Tournament: {tournament_id} not found.",
             )
 
-        bots = get_bots_by_match_id(db, match_id)
+        db_match = DBMatch(db, id=match_id)
+        bots = db_match.get_players()
 
     return bots
 
 
 @router.put(
     "/{match_id}/run/",
-    response_model=dict[str, BotModel],
+    response_model=dict[str, Bot],
 )
 async def run_match(
     current_user: UserDependency,
@@ -118,18 +111,14 @@ async def run_match(
     match_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        if not check_tournament_creator(db, current_user, tournament_id):
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_creator(current_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User does not have access to run this match.",
+                detail=f"User does not have access to run match: {match_id}.",
             )
 
-        tournament_dict = get_tournament_by_id(db, tournament_id)
-        tournament = convert_tournament(db, tournament_dict, detail=True)
-
-        match_dict = get_match_by_id(db, match_id)
-        match = convert_match(db, match_dict, detail=True)
-
-        result = process_match(db, tournament, match)
+        db_match = DBMatch(db, id=match_id)
+        result = db_match.run()
 
     return result

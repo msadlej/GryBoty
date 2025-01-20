@@ -2,28 +2,24 @@ from pydantic import BaseModel, Field
 from pyobjectID import PyObjectId
 from datetime import datetime
 
-from app.schemas.match import MatchModel
-from app.schemas.game import GameTypeModel
-from app.schemas.user import UserModel
-from app.schemas.bot import BotModel
+from app.schemas.game_type import GameType
+from app.schemas.user import User
 
 
 BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
 
 
-class TournamentModel(BaseModel):
+class Tournament(BaseModel):
     """Represents a tournament"""
 
     id: PyObjectId = Field(alias="_id")
     name: str
     description: str
-    game_type: GameTypeModel
-    creator: UserModel
+    game_type: GameType
+    creator: User
     start_date: datetime
     access_code: str
     max_participants: int
-    participants: list[BotModel] | None = None
-    matches: list[MatchModel] | None = None
     # winner: BotModel | None = None
 
 

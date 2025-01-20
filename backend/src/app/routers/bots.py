@@ -1,32 +1,26 @@
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from pyobjectID import PyObjectId
 
-from app.models.bot import insert_bot, update_bot
 from app.utils.database import get_db_connection
-from app.schemas.bot import BotModel, BotUpdate
 from app.dependencies import UserDependency
-from app.models.bot import (
-    check_bot_access,
-    get_bot_by_id,
-    get_bots_by_user_id,
-    delete_bot,
-)
+from app.schemas.bot import Bot, BotUpdate
+from app.models.bot import DBBot
 
 
 router = APIRouter(prefix="/bots")
 
 
-@router.get("/", response_model=list[BotModel])
+@router.get("/", response_model=list[Bot])
 async def read_own_bots(
     current_user: UserDependency,
 ):
     with get_db_connection() as db:
-        bot = get_bots_by_user_id(db, current_user.id)
+        bots = DBBot.get_by_user_id(db, current_user.id)
 
-    return bot
+    return bots
 
 
-@router.post("/", response_model=BotModel)
+@router.post("/", response_model=Bot)
 async def create_bot(
     current_user: UserDependency,
     name: str = Form(min_length=3, max_length=16),
@@ -34,56 +28,65 @@ async def create_bot(
     code: UploadFile = File(...),
 ):
     with get_db_connection() as db:
-        new_bot = insert_bot(db, current_user, name, game_type_id, code.file.read())
+        db_bot = DBBot.insert(db, current_user, name, game_type_id, code.file.read())
+        new_bot = db_bot.to_schema()
 
     return new_bot
 
 
-@router.get("/{bot_id}/", response_model=BotModel)
+@router.get("/{bot_id}/", response_model=Bot)
 async def read_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        if not check_bot_access(db, current_user, bot_id):
+        db_bot = DBBot(db, id=bot_id)
+
+        if not db_bot.check_access(current_user):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Bot: {bot_id} not found.",
             )
 
-        bot = get_bot_by_id(db, bot_id)
+        bot = db_bot.to_schema()
 
     return bot
 
 
-@router.put("/{bot_id}/", response_model=BotModel)
+@router.put("/{bot_id}/", response_model=Bot)
 async def edit_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,
     bot_data: BotUpdate = Form(...),
 ):
     with get_db_connection() as db:
-        if not check_bot_access(db, current_user, bot_id):
+        db_bot = DBBot(db, id=bot_id)
+
+        if not db_bot.check_access(current_user):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Bot: {bot_id} not found.",
             )
 
-        updated_bot = update_bot(db, bot_id, bot_data)
+        db_bot.update(bot_data)
+        updated_bot = db_bot.to_schema()
 
     return updated_bot
 
 
-@router.delete("/{bot_id}/")
-async def delete_bot_by_id(
-    current_user: UserDependency,
-    bot_id: PyObjectId,
-):
-    with get_db_connection() as db:
-        if not check_bot_access(db, current_user, bot_id):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Bot: {bot_id} not found.",
-            )
+# TODO: Implement in db
+# @router.delete("/{bot_id}/")
+# async def delete_bot_by_id(
+#     current_user: UserDependency,
+#     bot_id: PyObjectId,
+# ):
+#     with get_db_connection() as db:
+#         db_bot = DBBot(db, id=bot_id)
 
-        delete_bot(db, bot_id)
+#         if not db_bot.check_access(current_user):
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=f"Bot: {bot_id} not found.",
+#             )
+
+#         db_bot.delete()

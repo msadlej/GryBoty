@@ -1,19 +1,18 @@
 from pydantic import BaseModel, Field
 from pyobjectID import PyObjectId
 
-from app.schemas.game import GameTypeModel
-from app.schemas.user import UserModel
+from app.schemas.game_type import GameType
 
 
 BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
 
 
-class BotModel(BaseModel):
+class Bot(BaseModel):
     """Represents a bot"""
 
     id: PyObjectId = Field(alias="_id")
     name: str
-    game_type: GameTypeModel
+    game_type: GameType
     code: bytes
     is_validated: bool
     games_played: int
@@ -21,7 +20,7 @@ class BotModel(BaseModel):
     losses: int
     total_tournaments: int
     tournaments_won: int
-    # creator: UserModel
+    # creator: User
 
 
 class BotUpdate(BaseModel):
