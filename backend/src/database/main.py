@@ -74,6 +74,7 @@ class Bot:
     def __init__(self, db: MongoDB):
         self.db = db.db
         self.collection = db.db.bots
+        self.users_collection = db.db.users
 
     def create_bot(self, name: str, game_type: ObjectId, code: bytes) -> ObjectId:
         bot_data = {
@@ -124,6 +125,55 @@ class Bot:
     def get_all_bots(self) -> List[Dict]:
         return list(self.collection.find())
 
+    def get_owner(self, bot_id: ObjectId) -> Optional[Dict]:
+        return self.users_collection.find_one({"bots": bot_id})
+
+    def delete_bot(self, bot_id: ObjectId) -> bool:
+        bot = self.get_bot_by_id(bot_id)
+        if not bot:
+            return False
+
+        self.users_collection.update_many(
+            {"bots": bot_id},
+            {"$pull": {"bots": bot_id}}
+        )
+
+        tournaments = self.db.tournaments.find({"participants": bot_id})
+        for tournament in tournaments:
+            if tournament.get("winner") == bot_id:
+                self.db.tournaments.update_one(
+                    {"_id": tournament["_id"]},
+                    {"$set": {"winner": None}}
+                )
+            self.db.tournaments.update_one(
+                {"_id": tournament["_id"]},
+                {"$pull": {"participants": bot_id}}
+            )
+
+        matches = self.db.matches.find({
+            "$or": [
+                {"players.bot1": bot_id},
+                {"players.bot2": bot_id}
+            ]
+        })
+
+        match_ids = [match["_id"] for match in matches]
+        self.db.tournaments.update_many(
+            {"matches": {"$in": match_ids}},
+            {"$pull": {"matches": {"$in": match_ids}}}
+        )
+
+        self.db.matches.delete_many({
+            "$or": [
+                {"players.bot1": bot_id},
+                {"players.bot2": bot_id}
+            ]
+        })
+
+        self.collection.delete_one({"_id": bot_id})
+
+        return True
+
 
 class GameType:
     def __init__(self, db: MongoDB):
@@ -170,6 +220,7 @@ class Tournament:
             "max_participants": max_participants,
             "participants": [],
             "matches": [],
+            "winner": None,
         }
         result = self.collection.insert_one(tournament_data)
         return result.inserted_id
@@ -246,6 +297,30 @@ class Tournament:
 
     def get_all_tournaments(self) -> List[Dict]:
         return list(self.collection.find())
+
+    def set_winner(self, tournament_id: ObjectId, bot_id: ObjectId) -> None:
+        self.collection.update_one(
+            {"_id": tournament_id},
+            {"$set": {"winner": bot_id}}
+        )
+
+    def get_winner(self, tournament_id: ObjectId) -> Optional[ObjectId]:
+        tournament = self.get_tournament_by_id(tournament_id)
+        return tournament.get("winner") if tournament else None
+
+    def remove_participant(self, tournament_id: ObjectId, bot_id: ObjectId) -> bool:
+        tournament = self.collection.find_one({"_id": tournament_id})
+        if tournament and bot_id in tournament["participants"]:
+            self.collection.update_one(
+                {"_id": tournament_id},
+                {"$pull": {"participants": bot_id}}
+            )
+            self.db.bots.update_one(
+                {"_id": bot_id},
+                {"$inc": {"total_tournaments": -1}}
+            )
+            return True
+        return False
 
 
 class Match:

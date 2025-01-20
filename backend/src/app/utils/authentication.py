@@ -1,17 +1,12 @@
-from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
+from fastapi import HTTPException, status
 from typing import Any
 import jwt
 
-from app.schemas.user import UserModel, UserCreate, PasswordUpdate
+from app.schemas.user import User, UserCreate, PasswordUpdate
+from app.models.user import DBUser
 from database.main import MongoDB
 from app.config import settings
-from app.models.user import (
-    get_user_by_username,
-    convert_user,
-    insert_user,
-    update_user_password,
-)
 
 
 pwd_context = settings.pwd_context
@@ -35,17 +30,21 @@ def get_password_hash(password: str) -> str:
     return hashed_password
 
 
-def authenticate_user(db: MongoDB, username: str, password: str) -> UserModel | None:
+def authenticate_user(db: MongoDB, username: str, password: str) -> User | None:
     """
     Authenticate the user with the password.
     Returns None if the user is not found or the password is incorrect.
     """
 
-    user = get_user_by_username(db, username)
-    if user is None or not verify_password(password, user["password_hash"]):
+    user_id = DBUser.get_id_by_username(db, username)
+    if user_id is None:
         return None
 
-    return convert_user(db, user)
+    db_user = DBUser(db, id=user_id)
+    if not verify_password(password, db_user.password_hash):
+        return None
+
+    return db_user.to_schema()
 
 
 def create_access_token(
@@ -68,21 +67,21 @@ def create_access_token(
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def create_user(db: MongoDB, user_data: UserCreate) -> UserModel:
+def create_user(db: MongoDB, user_data: UserCreate) -> User:
     """
     Create a new user.
     Returns the new user.
     """
 
     hashed_password = get_password_hash(user_data.password)
-    user_dict = insert_user(db, user_data.username, hashed_password)
+    db_user = DBUser.insert(db, user_data.username, hashed_password)
 
-    return convert_user(db, user_dict)
+    return db_user.to_schema()
 
 
 def change_user_password(
-    db: MongoDB, current_user: UserModel, password_data: PasswordUpdate
-) -> UserModel:
+    db: MongoDB, current_user: User, password_data: PasswordUpdate
+) -> User:
     """
     Updates a user's password.
     Returns the updated user.
@@ -96,6 +95,7 @@ def change_user_password(
         )
 
     hashed_password = get_password_hash(password_data.new_password)
-    user_dict = update_user_password(db, current_user.id, hashed_password)
+    db_user = DBUser(db, id=current_user.id)
+    db_user.update_password(hashed_password)
 
-    return convert_user(db, user_dict)
+    return db_user.to_schema()

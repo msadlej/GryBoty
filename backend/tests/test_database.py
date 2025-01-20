@@ -2,7 +2,7 @@ import pytest
 import mongomock
 from bson import ObjectId
 from typing import Generator
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from database.main import MongoDB, User, Bot, GameType, Tournament, Match
 
@@ -186,6 +186,72 @@ class TestBot:
         bot_names = [bot["name"] for bot in bots]
         assert "bot1" in bot_names
         assert "bot2" in bot_names
+
+    def test_get_owner(self, bot_manager: Bot, user_manager: User):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
+
+        user_id = user_manager.create_user(
+            username="testuser",
+            password_hash="hashedpassword123",
+            account_type="standard"
+        )
+
+        user_manager.add_bot(user_id, bot_id)
+        owner = bot_manager.get_owner(bot_id)
+        assert owner is not None
+        assert owner["username"] == "testuser"
+        assert owner["_id"] == user_id
+        assert bot_id in owner["bots"]
+
+        non_existent_bot_id = ObjectId()
+        owner = bot_manager.get_owner(non_existent_bot_id)
+        assert owner is None
+
+    def test_delete_bot_all_dependencies(self, bot_manager: Bot, user_manager: User, tournament_manager: Tournament, match_manager: Match):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
+        opponent_id = bot_manager.create_bot("opponent", game_type_id, b"print('Hello, World!')")
+
+        user_id = user_manager.create_user("testuser", "hashedpassword123", "standard")
+        user_manager.add_bot(user_id, bot_id)
+
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            game_type_id,
+            user_id,
+            datetime.now() + timedelta(days=1),
+            "ACCESS123",
+            10
+        )
+        tournament_manager.add_participant(tournament_id, bot_id)
+        tournament_manager.add_participant(tournament_id, opponent_id)
+        match_id1 = match_manager.create_match(1, bot_id, opponent_id)
+        match_id2 = match_manager.create_match(2, opponent_id, bot_id)
+        tournament_manager.add_match(tournament_id, match_id1)
+        tournament_manager.add_match(tournament_id, match_id2)
+        tournament_manager.set_winner(tournament_id, bot_id)
+
+        result = bot_manager.delete_bot(bot_id)
+        assert result is True
+        assert bot_manager.get_bot_by_id(bot_id) is None
+
+        user = user_manager.get_user_by_id(user_id)
+        assert bot_id not in user["bots"]
+
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert bot_id not in tournament["participants"]
+        assert tournament["winner"] is None
+
+        matches = match_manager.get_matches_by_bot(bot_id)
+        assert len(matches) == 0
+
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert match_id1 not in tournament["matches"]
+        assert match_id2 not in tournament["matches"]
+
+        assert bot_manager.get_bot_by_id(opponent_id) is not None
 
 
 class TestGameType:
@@ -486,6 +552,85 @@ class TestTournament:
         tournaments = tournament_manager.get_tournaments_by_bot_id(bot_id)
         assert len(tournaments) == 1
         assert tournaments[0]["name"] == "Test Tournament"
+
+    def test_set_winner(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+        tournament_manager.set_winner(tournament_id, bot_id)
+
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert tournament["winner"] == bot_id
+
+    def test_get_winner(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+        tournament_manager.set_winner(tournament_id, bot_id)
+
+        winner_id = tournament_manager.get_winner(tournament_id)
+        assert winner_id == bot_id
+
+    def test_get_winner_no_winner(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        winner_id = tournament_manager.get_winner(tournament_id)
+        assert winner_id is None
+
+    def test_remove_participant(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+        tournament_manager.add_participant(tournament_id, bot_id)
+
+        success = tournament_manager.remove_participant(tournament_id, bot_id)
+        assert success is True
+
+        tournament = tournament_manager.get_tournament_by_id(tournament_id)
+        assert bot_id not in tournament["participants"]
+
+    def test_remove_nonexistent_participant(self, tournament_manager: Tournament):
+        tournament_id = tournament_manager.create_tournament(
+            "Test Tournament",
+            "Description",
+            ObjectId(),
+            ObjectId(),
+            datetime.now(),
+            "ACCESS123",
+            8,
+        )
+        bot_id = ObjectId()
+
+        success = tournament_manager.remove_participant(tournament_id, bot_id)
+        assert success is False
 
 
 class TestMatch:
