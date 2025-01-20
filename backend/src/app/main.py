@@ -1,4 +1,4 @@
-from app.routers import admin, tournaments, matches, users, bots, games
+from app.routers import admin, users, bots, tournaments, matches, game_types
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Response
 from app.config import settings
@@ -11,7 +11,7 @@ app.include_router(users.router, tags=["users"])
 app.include_router(bots.router, tags=["bots"])
 app.include_router(tournaments.router, tags=["tournaments"])
 app.include_router(matches.router, tags=["matches"])
-app.include_router(games.router, tags=["games"])
+app.include_router(game_types.router, tags=["game_types"])
 
 app.add_middleware(
     CORSMiddleware,

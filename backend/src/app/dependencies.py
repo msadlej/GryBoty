@@ -3,18 +3,18 @@ from jwt.exceptions import InvalidTokenError
 from typing import Annotated, Any
 import jwt
 
-from app.models.user import get_user_by_username, convert_user
-from app.schemas.user import TokenData, AccountType, UserModel
+from app.schemas.user import TokenData, AccountType, User
 from app.utils.database import get_db_connection
+from app.models.user import DBUser
 from app.config import settings
 
 
 oauth2_scheme = settings.oauth2_scheme
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
+async def get_token_data(token: Annotated[str, Depends(oauth2_scheme)]) -> TokenData:
     """
-    Get the current user from the token.
+    Get the token data from the token.
     """
 
     credentials_exception: HTTPException = HTTPException(
@@ -32,23 +32,36 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         if username is None:
             raise credentials_exception
 
-        token_data = TokenData(username=username)
+        return TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
 
-    with get_db_connection() as db:
-        user_dict = get_user_by_username(db, token_data.username)
-        if user_dict is None:
-            raise credentials_exception
 
-        user = convert_user(db, user_dict)
+async def get_current_user(
+    token_data: Annotated[TokenData, Depends(get_token_data)]
+) -> User:
+    """
+    Get the current user from the token data.
+    """
+
+    with get_db_connection() as db:
+        user_id = DBUser.get_id_by_username(db, token_data.username)
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        db_user = DBUser(db, id=user_id)
+        user = db_user.to_schema()
 
     return user
 
 
 async def get_current_active_user(
-    current_user: Annotated[UserModel, Depends(get_current_user)]
-) -> UserModel:
+    current_user: Annotated[User, Depends(get_current_user)]
+) -> User:
     """
     Get the current active user.
     Raises an exception if the user is inactive.
@@ -63,8 +76,8 @@ async def get_current_active_user(
 
 
 async def get_current_premium_user(
-    current_user: Annotated[UserModel, Depends(get_current_user)]
-) -> UserModel:
+    current_user: Annotated[User, Depends(get_current_user)]
+) -> User:
     """
     Get the current active premium user.
     Raises an exception if the user is not a premium user.
@@ -80,8 +93,8 @@ async def get_current_premium_user(
 
 
 async def get_current_admin(
-    current_user: UserModel = Depends(get_current_active_user),
-) -> UserModel:
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """
     Get the current admin.
     Raises an exception if the user is not an admin.
@@ -95,6 +108,6 @@ async def get_current_admin(
     return current_user
 
 
-UserDependency = Annotated[UserModel, Depends(get_current_active_user)]
-AdminDependency = Annotated[UserModel, Depends(get_current_admin)]
-PremiumDependency = Annotated[UserModel, Depends(get_current_premium_user)]
+UserDependency = Annotated[User, Depends(get_current_active_user)]
+AdminDependency = Annotated[User, Depends(get_current_admin)]
+PremiumDependency = Annotated[User, Depends(get_current_premium_user)]

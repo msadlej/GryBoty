@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.schemas.user import Token, UserModel, UserCreate, PasswordUpdate
-from app.dependencies import UserDependency
+from app.schemas.user import Token, User, UserCreate, PasswordUpdate
 from app.utils.database import get_db_connection
+from app.dependencies import UserDependency
 import app.utils.authentication as auth
 
 
@@ -19,7 +19,7 @@ router = APIRouter()
 )
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     with get_db_connection() as db:
-        user: UserModel | None = auth.authenticate_user(
+        user: User | None = auth.authenticate_user(
             db, form_data.username, form_data.password
         )
 
@@ -34,7 +34,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.post("/register/", response_model=UserModel)
+@router.post("/register/", response_model=User)
 async def register_user(user_data: UserCreate = Form(...)):
     with get_db_connection() as db:
         new_user = auth.create_user(db, user_data)
@@ -42,12 +42,12 @@ async def register_user(user_data: UserCreate = Form(...)):
     return new_user
 
 
-@router.get("/users/me/", response_model=UserModel)
+@router.get("/users/me/", response_model=User)
 async def read_users_me(current_user: UserDependency):
     return current_user
 
 
-@router.put("/users/change_password/", response_model=UserModel)
+@router.put("/users/change_password/", response_model=User)
 async def change_password(
     current_user: UserDependency,
     user_data: PasswordUpdate = Form(...),

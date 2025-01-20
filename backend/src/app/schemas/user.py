@@ -2,8 +2,6 @@ from pydantic import BaseModel, Field
 from pyobjectID import PyObjectId
 from enum import Enum
 
-from app.schemas.bot import BotModel
-
 
 BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
 
@@ -29,20 +27,19 @@ class AccountType(str, Enum):
     ADMIN = "admin"
 
 
-class UserModel(BaseModel):
+class User(BaseModel):
     """Represents a user"""
 
     id: PyObjectId = Field(alias="_id")
     username: str
     account_type: AccountType
-    bots: list[BotModel] | None = None
     is_banned: bool
 
 
 class UserCreate(BaseModel):
     """Represents a user creation model"""
 
-    username: str = Field(min_length=3, max_length=16)
+    username: str = Field(min_length=5, max_length=16)
     password: str = Field(min_length=5, max_length=32)
 
 
