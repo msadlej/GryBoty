@@ -38,7 +38,10 @@ class DBMatch:
     def _from_data(self, data: dict[str, Any]) -> None:
         self.id: ObjectId = data["_id"]
         self.game_num: int = data["game_num"]
-        self.players: tuple[ObjectId, ObjectId] = data["players"].values()
+        self.players: tuple[ObjectId, ObjectId] = (
+            data["players"]["bot1"],
+            data["players"]["bot2"],
+        )
         self.moves: list[str] = data["moves"]
         self.winner: ObjectId | None = data["winner"]
 
@@ -123,16 +126,21 @@ class DBMatch:
         db_winner = DBBot(self._db, id=self.winner) if self.winner else None
         winner = db_winner.to_schema() if db_winner else None
 
-        result = Match(
+        if detail:
+            return Match(
+                _id=self.id,
+                game_num=self.game_num,
+                players=players,
+                moves=self.moves,
+                winner=winner,
+            )
+        return Match(
             _id=self.id,
             game_num=self.game_num,
             players=players,
+            moves=None,
             winner=winner,
         )
-
-        if detail:
-            result.moves = self.moves
-        return result
 
     @classmethod
     def insert(
@@ -147,9 +155,8 @@ class DBMatch:
         """
 
         db_tournament = DBTournament(db, id=tournament_id)
-        participants = db_tournament.get_participants()
         for player_id in match_data.player_ids:
-            if player_id not in participants:
+            if player_id not in db_tournament.participants:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Bot: {player_id} is not a participant in the tournament.",

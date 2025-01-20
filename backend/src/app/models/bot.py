@@ -119,7 +119,21 @@ class DBBot:
         db_owner = self.get_owner()
         owner = db_owner.to_schema()
 
-        result = Bot(
+        if detail:
+            return Bot(
+                _id=self.id,
+                name=self.name,
+                game_type=game_type,
+                code=self.code,
+                is_validated=self.is_validated,
+                games_played=self.games_played,
+                wins=self.wins,
+                losses=self.losses,
+                total_tournaments=self.total_tournaments,
+                tournaments_won=self.tournaments_won,
+                owner=owner,
+            )
+        return Bot(
             _id=self.id,
             name=self.name,
             game_type=game_type,
@@ -131,10 +145,6 @@ class DBBot:
             tournaments_won=self.tournaments_won,
             owner=owner,
         )
-
-        if detail:
-            result.code = self.code
-        return result
 
     @classmethod
     def insert(
