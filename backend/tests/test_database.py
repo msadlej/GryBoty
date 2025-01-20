@@ -253,6 +253,51 @@ class TestBot:
 
         assert bot_manager.get_bot_by_id(opponent_id) is not None
 
+    def test_get_tournaments_won(self, bot_manager: Bot, tournament_manager: Tournament):
+        game_type_id = ObjectId()
+        bot_id = bot_manager.create_bot("testbot", game_type_id, b"print('Hello, World!')")
+
+        creator_id = ObjectId()
+        tournament_id1 = tournament_manager.create_tournament(
+            "Tournament 1",
+            "Description 1",
+            game_type_id,
+            creator_id,
+            datetime.now() + timedelta(days=1),
+            "ACCESS123",
+            10
+        )
+        tournament_id2 = tournament_manager.create_tournament(
+            "Tournament 2",
+            "Description 2",
+            game_type_id,
+            creator_id,
+            datetime.now() + timedelta(days=2),
+            "ACCESS456",
+            10
+        )
+        tournament_id3 = tournament_manager.create_tournament(
+            "Tournament 3",
+            "Description 3",
+            game_type_id,
+            creator_id,
+            datetime.now() + timedelta(days=3),
+            "ACCESS789",
+            10
+        )
+
+        tournament_manager.set_winner(tournament_id1, bot_id)
+        tournament_manager.set_winner(tournament_id2, bot_id)
+        tournament_manager.set_winner(tournament_id3, ObjectId())
+
+        won_tournaments = bot_manager.get_tournaments_won(bot_id)
+
+        assert len(won_tournaments) == 2
+        tournament_names = {t["name"] for t in won_tournaments}
+        assert "Tournament 1" in tournament_names
+        assert "Tournament 2" in tournament_names
+        assert "Tournament 3" not in tournament_names
+
 
 class TestGameType:
     def test_create_game_type(self, game_type_manager: GameType):

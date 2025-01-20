@@ -174,6 +174,9 @@ class Bot:
 
         return True
 
+    def get_tournaments_won(self, bot_id: ObjectId) -> List[Dict]:
+        return list(self.db.tournaments.find({"winner": bot_id}))
+
 
 class GameType:
     def __init__(self, db: MongoDB):
