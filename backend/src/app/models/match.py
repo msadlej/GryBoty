@@ -146,12 +146,20 @@ class DBMatch:
         Returns the created match.
         """
 
+        db_tournament = DBTournament(db, id=tournament_id)
+        participants = db_tournament.get_participants()
+        for player_id in match_data.player_ids:
+            if player_id not in participants:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Bot: {player_id} is not a participant in the tournament.",
+                )
+
         collection = MatchCollection(db)
         match_id = collection.create_match(
-            match_data.game_num, match_data.players[0], match_data.players[1]
+            match_data.game_num, match_data.player_ids[0], match_data.player_ids[1]
         )
 
-        db_tournament = DBTournament(db, id=tournament_id)
         db_tournament.add_match(match_id)
 
         return cls(db, id=match_id)
