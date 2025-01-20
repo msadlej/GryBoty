@@ -46,7 +46,6 @@ class DBBot:
         self.losses: int = data["losses"]
         self.total_tournaments: int = data["total_tournaments"]
         self.tournaments_won: int = data["tournaments_won"]
-        # self.creator: ObjectId = data["creator"]
 
     def _from_id(self, bot_id: ObjectId) -> None:
         data = self._collection.get_bot_by_id(bot_id)
@@ -59,16 +58,30 @@ class DBBot:
 
         self._from_data(data)
 
+    def get_owner(self) -> DBUser:
+        """
+        Retrieves the owner of the bot.
+        """
+
+        owner_data = self._collection.get_owner(self.id)
+        if owner_data is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Owner of bot: {self.id} not found.",
+            )
+
+        db_owner = DBUser(self._db, id=owner_data["_id"])
+        return db_owner
+
     def check_access(self, user: User) -> bool:
         """
         Checks if the user has access to a specific bot.
         """
 
         is_admin: bool = user.account_type is AccountType.ADMIN
-        # is_creator: bool = self.creator == user.id
-        is_creator: bool = True
+        is_owner: bool = self.get_owner().id == user.id
 
-        return is_admin or is_creator
+        return is_admin or is_owner
 
     def update(self, bot_data: BotUpdate) -> None:
         """
@@ -88,15 +101,14 @@ class DBBot:
         self._collection.update_stats(self.id, winner)
         self._from_id(self.id)
 
-    # TODO: Implement in db
-    # def delete(self) -> None:
-    #     """
-    #     Deletes a bot from the database.
-    #     """
+    def delete(self) -> None:
+        """
+        Deletes the bot from the database.
+        """
 
-    #     self.collection.delete_bot(self.id)
+        self._collection.delete_bot(self.id)
 
-    def to_schema(self) -> Bot:
+    def to_schema(self, detail: bool = False) -> Bot:
         """
         Converts the model to a Bot schema.
         """
@@ -104,18 +116,25 @@ class DBBot:
         db_game_type = DBGameType(self._db, id=self.game_type)
         game_type = db_game_type.to_schema()
 
-        return Bot(
+        db_owner = self.get_owner()
+        owner = db_owner.to_schema()
+
+        result = Bot(
             _id=self.id,
             name=self.name,
             game_type=game_type,
-            code=self.code,
             is_validated=self.is_validated,
             games_played=self.games_played,
             wins=self.wins,
             losses=self.losses,
             total_tournaments=self.total_tournaments,
             tournaments_won=self.tournaments_won,
+            owner=owner,
         )
+
+        if detail:
+            result.code = self.code
+        return result
 
     @classmethod
     def insert(

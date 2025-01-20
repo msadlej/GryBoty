@@ -38,11 +38,11 @@ class TestGameModel:
         assert db_game_type.name == game_type_dict["name"]
         assert db_game_type.description == game_type_dict["description"]
 
-    def test_all(self, db_connection, game_type_dict):
+    def test_get_all(self, db_connection, game_type_dict):
         game_type = GameTypeCreate(**game_type_dict)
-        _ = DBGameType.insert(db_connection, game_type)
+        db_game_type = DBGameType.insert(db_connection, game_type)
         game_types = DBGameType.get_all(db_connection)
 
         assert len(game_types) == 1
-        assert game_types[0].name == game_type_dict["name"]
-        assert game_types[0].description == game_type_dict["description"]
+        assert game_types[0].name == db_game_type.name
+        assert game_types[0].description == db_game_type.description

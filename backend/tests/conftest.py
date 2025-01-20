@@ -34,18 +34,19 @@ def user_dict():
 
 
 @pytest.fixture
-def bot_dict(game_type_dict):
+def bot_dict(game_type_dict, user_dict):
     return {
         "_id": ObjectId(),
         "name": "Test Bot",
         "game_type": GameType(**game_type_dict),
         "code": b"print('Hello, World!')",
         "is_validated": True,
-        "games_played": 4,
-        "wins": 3,
-        "losses": 2,
-        "total_tournaments": 1,
+        "games_played": 0,
+        "wins": 0,
+        "losses": 0,
+        "total_tournaments": 0,
         "tournaments_won": 0,
+        "owner": User(**user_dict),
     }
 
 
@@ -61,7 +62,7 @@ def match_dict(bot_dict):
 
 
 @pytest.fixture
-def tournament_dict(game_type_dict, bot_dict, user_dict, match_dict):
+def tournament_dict(game_type_dict, user_dict, bot_dict):
     return {
         "_id": ObjectId(),
         "name": "Test Tournament",
@@ -71,6 +72,7 @@ def tournament_dict(game_type_dict, bot_dict, user_dict, match_dict):
         "start_date": datetime(2024, 12, 24),
         "access_code": "0A1B2C",
         "max_participants": 4,
+        "winner": Bot(**bot_dict),
     }
 
 

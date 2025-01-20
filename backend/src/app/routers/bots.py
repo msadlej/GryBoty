@@ -29,7 +29,7 @@ async def create_bot(
 ):
     with get_db_connection() as db:
         db_bot = DBBot.insert(db, current_user, name, game_type_id, code.file.read())
-        new_bot = db_bot.to_schema()
+        new_bot = db_bot.to_schema(detail=True)
 
     return new_bot
 
@@ -48,7 +48,7 @@ async def read_bot_by_id(
                 detail=f"Bot: {bot_id} not found.",
             )
 
-        bot = db_bot.to_schema()
+        bot = db_bot.to_schema(detail=True)
 
     return bot
 
@@ -69,24 +69,23 @@ async def edit_bot_by_id(
             )
 
         db_bot.update(bot_data)
-        updated_bot = db_bot.to_schema()
+        updated_bot = db_bot.to_schema(detail=True)
 
     return updated_bot
 
 
-# TODO: Implement in db
-# @router.delete("/{bot_id}/")
-# async def delete_bot_by_id(
-#     current_user: UserDependency,
-#     bot_id: PyObjectId,
-# ):
-#     with get_db_connection() as db:
-#         db_bot = DBBot(db, id=bot_id)
+@router.delete("/{bot_id}/")
+async def delete_bot_by_id(
+    current_user: UserDependency,
+    bot_id: PyObjectId,
+):
+    with get_db_connection() as db:
+        db_bot = DBBot(db, id=bot_id)
 
-#         if not db_bot.check_access(current_user):
-#             raise HTTPException(
-#                 status_code=status.HTTP_404_NOT_FOUND,
-#                 detail=f"Bot: {bot_id} not found.",
-#             )
+        if not db_bot.check_access(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
 
-#         db_bot.delete()
+        db_bot.delete()
