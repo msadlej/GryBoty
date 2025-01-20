@@ -87,10 +87,10 @@ async def read_all_bots(current_admin: AdminDependency):
 
 @router.post("/games/", response_model=GameType)
 def create_game_type(
-    current_admin: AdminDependency, game_data: GameTypeCreate = Form(...)
+    current_admin: AdminDependency, game_type_data: GameTypeCreate = Form(...)
 ):
     with get_db_connection() as db:
-        db_game = DBGameType.insert(db, game_data)
+        db_game = DBGameType.insert(db, game_type_data)
         new_game = db_game.to_schema()
 
     return new_game

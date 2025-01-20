@@ -53,14 +53,17 @@ class DBMatch:
 
         self._from_data(data)
 
-    def get_players(self) -> tuple[Bot, Bot]:
+    def get_players(self, detail: bool = False) -> tuple[Bot, Bot]:
         """
         Retrieves the players of the match.
         """
 
         id_0, id_1 = self.players
         db_players = DBBot(self._db, id=id_0), DBBot(self._db, id=id_1)
-        return db_players[0].to_schema(), db_players[1].to_schema()
+        bot_0 = db_players[0].to_schema(detail=detail)
+        bot_1 = db_players[1].to_schema(detail=detail)
+
+        return bot_0, bot_1
 
     def run(self) -> dict[str, Bot]:
         """
@@ -69,12 +72,17 @@ class DBMatch:
         Returns the winner and loser bots with updated stats.
         """
 
-        bot_0, bot_1 = self.get_players()
-        response = conn.run_match(bot_0.game_type.name, bot_1.code, bot_1.code)
+        bot_0, bot_1 = self.get_players(detail=True)
+        game_type = bot_0.game_type
+        assert bot_0.game_type == bot_1.game_type
+        assert bot_0.code is not None
+        assert bot_1.code is not None
+
+        response = conn.run_match(game_type.name, bot_0.code, bot_1.code)
         i = 0
 
         while response["winner"] is None:
-            response = conn.run_match(bot_0.game_type.name, bot_1.code, bot_1.code)
+            response = conn.run_match(game_type.name, bot_0.code, bot_1.code)
             i += 1
 
             if i > 9:
@@ -105,7 +113,7 @@ class DBMatch:
             "loser": db_loser.to_schema(),
         }
 
-    def to_schema(self) -> Match:
+    def to_schema(self, detail: bool = False) -> Match:
         """
         Converts the model to a Match schema.
         """
@@ -115,13 +123,16 @@ class DBMatch:
         db_winner = DBBot(self._db, id=self.winner) if self.winner else None
         winner = db_winner.to_schema() if db_winner else None
 
-        return Match(
+        result = Match(
             _id=self.id,
             game_num=self.game_num,
             players=players,
-            moves=self.moves,
             winner=winner,
         )
+
+        if detail:
+            result.moves = self.moves
+        return result
 
     @classmethod
     def insert(

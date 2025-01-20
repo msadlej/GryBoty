@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.schemas.game_type import GameType
 from app.schemas.user import User
+from app.schemas.bot import Bot
 
 
 BaseModel.model_config["json_encoders"] = {PyObjectId: lambda v: str(v)}
@@ -20,7 +21,7 @@ class Tournament(BaseModel):
     start_date: datetime
     access_code: str
     max_participants: int
-    # winner: BotModel | None = None
+    winner: Bot | None = None
 
 
 class TournamentCreate(BaseModel):
@@ -28,7 +29,7 @@ class TournamentCreate(BaseModel):
 
     name: str = Field(min_length=5, max_length=32)
     description: str = Field(max_length=128)
-    game_type: PyObjectId
+    game_type_id: PyObjectId
     start_date: datetime = Field(gt=datetime.now())
     max_participants: int = Field(ge=2)
 
@@ -40,4 +41,4 @@ class TournamentUpdate(BaseModel):
     description: str | None = Field(max_length=128, default=None)
     start_date: datetime | None = Field(gt=datetime.now(), default=None)
     max_participants: int | None = Field(ge=2, default=None)
-    # winner_id: PyObjectId | None = None
+    winner_id: PyObjectId | None = None

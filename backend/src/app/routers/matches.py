@@ -73,7 +73,7 @@ async def read_match_by_id(
             )
 
         db_match = DBMatch(db, id=match_id)
-        match = db_match.to_schema()
+        match = db_match.to_schema(detail=True)
 
     return match
 

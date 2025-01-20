@@ -50,7 +50,7 @@ class DBTournament:
         self.max_participants: int = data["max_participants"]
         self.participants: list[ObjectId] = data["participants"]
         self.matches: list[ObjectId] = data["matches"]
-        # self.winner: ObjectId | None = data["winner"]
+        self.winner: ObjectId | None = data["winner"]
 
     def _from_id(self, tournament_id: ObjectId) -> None:
         data = self._collection.get_tournament_by_id(tournament_id)
@@ -101,12 +101,11 @@ class DBTournament:
         Updates the tournament in the database.
         """
 
-        # TODO: Check if the tournament is finished
-        # if self.winner is not None:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_409_CONFLICT,
-        #         detail=f"Tournament: {tournament_id} is already finished.",
-        #     )
+        if self.winner is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tournament: {self.id} is already finished.",
+            )
 
         if tournament_data.name is not None:
             self._collection.update_name(self.id, tournament_data.name)
@@ -122,9 +121,8 @@ class DBTournament:
                 self.id, tournament_data.max_participants
             )
 
-        # TODO: Implement in db
-        # if tournament_data.winner_id is not None:
-        #     self._collection.update_winner(self.id, tournament_data.winner_id)
+        if tournament_data.winner_id is not None:
+            self._collection.set_winner(self.id, tournament_data.winner_id)
 
         self._from_id(self.id)
 
@@ -145,18 +143,17 @@ class DBTournament:
                 detail=f"Bot: {bot_id} is not validated.",
             )
 
-        # TODO: Check if the creator of the bot already has a bot in the tournament.
-        # if any(bot.creator == participant.creator for participant in tournament.participants):
-        #     raise HTTPException(
-        #         status_code=status.HTTP_409_CONFLICT,
-        #         detail=f"User: {bot.creator} already has a bot in the tournament"
-        #     )
-        # TODO: Check if the tournament is finished.
-        # if tournament.winner is not None:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_409_CONFLICT,
-        #         detail=f"Tournament: {tournament_id} is already finished.",
-        #     )
+        db_owner = db_bot.get_owner()
+        if any(bot_id in self.participants for bot_id in db_owner.bots):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"User: {db_owner.id} already has a bot in the tournament",
+            )
+        if self.winner is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tournament: {self.id} is already finished.",
+            )
 
         success = self._collection.add_participant(self.id, bot_id)
 
@@ -187,7 +184,8 @@ class DBTournament:
         db_creator = DBUser(self._db, id=self.creator)
         creator = db_creator.to_schema()
 
-        # winner = tournament_dict.pop("winner")
+        db_winner = DBBot(self._db, id=self.winner) if self.winner else None
+        winner = db_winner.to_schema() if db_winner else None
 
         return Tournament(
             _id=self.id,
@@ -198,18 +196,19 @@ class DBTournament:
             start_date=self.start_date,
             access_code=self.access_code,
             max_participants=self.max_participants,
+            winner=winner,
         )
 
     @classmethod
     def insert(
-        cls, db: MongoDB, creator: User, tournament: TournamentCreate
+        cls, db: MongoDB, creator: User, tournament_data: TournamentCreate
     ) -> "DBTournament":
         """
         Inserts a new tournament into the database.
         Returns the created tournament.
         """
 
-        _ = DBGameType(db, id=tournament.game_type)
+        _ = DBGameType(db, id=tournament_data.game_type_id)
 
         access_code = cls._generate_access_code()
         i = 0
@@ -225,13 +224,13 @@ class DBTournament:
 
         collection = TournamentCollection(db)
         tournament_id = collection.create_tournament(
-            tournament.name,
-            tournament.description,
-            tournament.game_type,
+            tournament_data.name,
+            tournament_data.description,
+            tournament_data.game_type_id,
             creator.id,
-            tournament.start_date,
+            tournament_data.start_date,
             access_code,
-            tournament.max_participants,
+            tournament_data.max_participants,
         )
 
         return cls(db, id=tournament_id)
