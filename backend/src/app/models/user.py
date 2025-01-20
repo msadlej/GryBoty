@@ -7,6 +7,25 @@ from database.main import MongoDB, User as UserCollection
 
 
 class DBUser:
+    """
+    Represents a user model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the user.
+    username : str
+        The username of the user.
+    password_hash : str
+        The hashed password of the user.
+    account_type : str
+        The account type of the user.
+    bots : list[ObjectId]
+        The unique identifiers of the user's bots.
+    is_banned : bool
+        The ban status of the user.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 

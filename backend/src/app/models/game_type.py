@@ -7,6 +7,19 @@ from app.schemas.game_type import GameType, GameTypeCreate
 
 
 class DBGameType:
+    """
+    Represents a game type model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the game type.
+    name : str
+        The name of the game type.
+    description : str
+        The description of the game type.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 

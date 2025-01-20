@@ -15,6 +15,35 @@ from app.schemas.bot import Bot
 
 
 class DBTournament:
+    """
+    Represents a tournament model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the tournament.
+    name : str
+        The name of the tournament.
+    description : str
+        The description of the tournament.
+    game_type : ObjectId
+        The game type the tournament is associated with.
+    creator : ObjectId
+        The unique identifier of the creator of the tournament.
+    start_date : datetime
+        The start date of the tournament.
+    access_code : str
+        The access code of the tournament.
+    max_participants : int
+        The maximum number of participants in the tournament.
+    participants : list[ObjectId]
+        The unique identifiers of the participants in the tournament.
+    matches : list[ObjectId]
+        The unique identifiers of the matches in the tournament.
+    winner : ObjectId
+        The unique identifier of the winner of the tournament.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 

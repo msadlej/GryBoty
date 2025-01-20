@@ -11,6 +11,33 @@ from app.models.user import DBUser
 
 
 class DBBot:
+    """
+    Represents a bot model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the bot.
+    name : str
+        The name of the bot.
+    game_type : ObjectId
+        The game type the bot is associated with.
+    code : bytes
+        The code of the bot.
+    is_validated : bool
+        The validation status of the bot.
+    games_played : int
+        The number of games the bot has played.
+    wins : int
+        The number of games the bot has won.
+    losses : int
+        The number of games the bot has lost.
+    total_tournaments : int
+        The total number of tournaments the bot has participated in.
+    tournaments_won : int
+        The number of tournaments the bot has won.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 

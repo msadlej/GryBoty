@@ -11,6 +11,23 @@ from app.schemas.bot import Bot
 
 
 class DBMatch:
+    """
+    Represents a match model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the match.
+    game_num : int
+        The number of the game in the tournament.
+    players : tuple[ObjectId, ObjectId]
+        The unique identifiers of the players.
+    moves : list[str]
+        The moves of the match.
+    winner : ObjectId
+        The unique identifier of the winner of the match.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 
