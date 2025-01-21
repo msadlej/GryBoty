@@ -5,6 +5,7 @@ from app.schemas.tournament import Tournament, TournamentCreate, TournamentUpdat
 from app.dependencies import UserDependency, PremiumDependency
 from app.utils.database import get_db_connection
 from app.models.tournament import DBTournament
+from app.schemas.match import Match
 from app.models.user import DBUser
 from app.schemas.bot import Bot
 
@@ -115,6 +116,26 @@ async def edit_tournament_by_id(
     return tournament
 
 
+@router.put("/{tournament_id}/winner", response_model=Tournament)
+async def set_tournament_winner(
+    current_premium_user: PremiumDependency,
+    tournament_id: PyObjectId,
+    winner_id: PyObjectId = Form(...),
+):
+    with get_db_connection() as db:
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_creator(current_premium_user):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
+            )
+
+        db_tournament.set_winner(winner_id)
+        tournament = db_tournament.to_schema()
+
+    return tournament
+
+
 @router.get(
     "/{tournament_id}/bots/",
     response_model=list[Bot],
@@ -134,3 +155,22 @@ async def read_bots_by_tournament_id(
         bots = db_tournament.get_participants()
 
     return bots
+
+
+@router.put("/{tournament_id}/run", response_model=list[Match])
+async def run_tournament(
+    current_premium_user: PremiumDependency,
+    tournament_id: PyObjectId,
+):
+    with get_db_connection() as db:
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_creator(current_premium_user):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
+            )
+
+        db_tournament.run()
+        matches = db_tournament.get_matches()
+
+    return matches

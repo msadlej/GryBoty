@@ -183,7 +183,6 @@ class DBMatch:
         match_id = collection.create_match(
             match_data.game_num, match_data.player_ids[0], match_data.player_ids[1]
         )
-
         db_tournament.add_match(match_id)
 
         return cls(db, id=match_id)
