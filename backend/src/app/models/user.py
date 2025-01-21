@@ -3,10 +3,37 @@ from typing import overload, Any
 from bson import ObjectId
 
 from app.schemas.user import AccountType, User, UserUpdate
-from database.main import MongoDB, User as UserCollection
+from app.schemas.tournament import Tournament
+from app.schemas.bot import Bot
+from database.main import (
+    Tournament as TournamentCollection,
+    User as UserCollection,
+    MongoDB,
+)
+import app.models.tournament as T
+import app.models.bot as B
 
 
 class DBUser:
+    """
+    Represents a user model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the user.
+    username : str
+        The username of the user.
+    password_hash : str
+        The hashed password of the user.
+    account_type : str
+        The account type of the user.
+    bots : list[ObjectId]
+        The unique identifiers of the user's bots.
+    is_banned : bool
+        The ban status of the user.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 
@@ -49,6 +76,45 @@ class DBUser:
             )
 
         self._from_data(data)
+
+    def get_bots(self) -> list[Bot]:
+        """
+        Retrieves all bots from the database that belong to the user.
+        """
+
+        bots = []
+        for bot_id in self.bots:
+            db_bot = B.DBBot(self._db, id=bot_id)
+            bots.append(db_bot.to_schema())
+
+        return bots
+
+    def get_created_tournaments(self) -> list[Tournament]:
+        """
+        Retrieves all tournaments that the user has created.
+        """
+
+        collection = TournamentCollection(self._db)
+        tournament_ids = collection.get_tournaments_by_creator(self.id)
+        db_tournaments = [
+            T.DBTournament(self._db, data=tournament) for tournament in tournament_ids
+        ]
+
+        return [db_tournament.to_schema() for db_tournament in db_tournaments]
+
+    def get_tournaments(self) -> list[Tournament]:
+        """
+        Retrieves all tournaments that the user has created or is participating in.
+        """
+
+        tournaments = self.get_created_tournaments()
+        bots = self.get_bots()
+
+        for bot in bots:
+            db_bot = B.DBBot(self._db, id=bot.id)
+            tournaments.extend(db_bot.get_tournaments())
+
+        return tournaments
 
     def update_password(self, hashed_password: str) -> None:
         """
