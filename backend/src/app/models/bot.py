@@ -2,15 +2,48 @@ from fastapi import HTTPException, status
 from typing import overload, Any
 from bson import ObjectId
 
-from database.main import MongoDB, Bot as BotCollection
 from app.schemas.user import AccountType, User
-from app.models.game_type import DBGameType
+from app.schemas.tournament import Tournament
 from app.schemas.bot import Bot, BotUpdate
+from database.main import (
+    Tournament as TournamentCollection,
+    Bot as BotCollection,
+    MongoDB,
+)
 import app.utils.connection as conn
-from app.models.user import DBUser
+import app.models.tournament as T
+import app.models.game_type as G
+import app.models.user as U
 
 
 class DBBot:
+    """
+    Represents a bot model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the bot.
+    name : str
+        The name of the bot.
+    game_type : ObjectId
+        The game type the bot is associated with.
+    code : bytes
+        The code of the bot.
+    is_validated : bool
+        The validation status of the bot.
+    games_played : int
+        The number of games the bot has played.
+    wins : int
+        The number of games the bot has won.
+    losses : int
+        The number of games the bot has lost.
+    total_tournaments : int
+        The total number of tournaments the bot has participated in.
+    tournaments_won : int
+        The number of tournaments the bot has won.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 
@@ -58,7 +91,7 @@ class DBBot:
 
         self._from_data(data)
 
-    def get_owner(self) -> DBUser:
+    def get_owner(self) -> User:
         """
         Retrieves the owner of the bot.
         """
@@ -70,8 +103,21 @@ class DBBot:
                 detail=f"Owner of bot: {self.id} not found.",
             )
 
-        db_owner = DBUser(self._db, id=owner_data["_id"])
-        return db_owner
+        db_owner = U.DBUser(self._db, id=owner_data["_id"])
+        return db_owner.to_schema()
+
+    def get_tournaments(self) -> list[Tournament]:
+        """
+        Retrieves all tournaments the bot has participated in.
+        """
+
+        collection = TournamentCollection(self._db)
+        tournament_ids = collection.get_tournaments_by_bot_id(self.id)
+        db_tournaments = [
+            T.DBTournament(self._db, data=tournament) for tournament in tournament_ids
+        ]
+
+        return [db_tournament.to_schema() for db_tournament in db_tournaments]
 
     def check_access(self, user: User) -> bool:
         """
@@ -101,6 +147,14 @@ class DBBot:
         self._collection.update_stats(self.id, winner)
         self._from_id(self.id)
 
+    def update_tournament_wins(self) -> None:
+        """
+        Updates the bot's tournament wins in the database.
+        """
+
+        # self._collection.update_tournament_wins(self.id)
+        self._from_id(self.id)
+
     def delete(self) -> None:
         """
         Deletes the bot from the database.
@@ -113,11 +167,10 @@ class DBBot:
         Converts the model to a Bot schema.
         """
 
-        db_game_type = DBGameType(self._db, id=self.game_type)
+        db_game_type = G.DBGameType(self._db, id=self.game_type)
         game_type = db_game_type.to_schema()
 
-        db_owner = self.get_owner()
-        owner = db_owner.to_schema()
+        owner = self.get_owner()
 
         if detail:
             return Bot(
@@ -159,12 +212,12 @@ class DBBot:
         Inserts a bot into the database.
         """
 
-        db_game_type = DBGameType(db, id=game_type_id)
+        db_game_type = G.DBGameType(db, id=game_type_id)
         game_type = db_game_type.to_schema()
 
         collection = BotCollection(db)
         bot_id = collection.create_bot(name, game_type.id, code)
-        db_user = DBUser(db, id=current_user.id)
+        db_user = U.DBUser(db, id=current_user.id)
         db_user.add_bot(bot_id)
 
         if not conn.validate_bot(game_type.name, code):
@@ -175,22 +228,6 @@ class DBBot:
 
         collection.validate_bot(bot_id)
         return cls(db, id=bot_id)
-
-    @staticmethod
-    def get_by_user_id(db: MongoDB, user_id: ObjectId) -> list[Bot]:
-        """
-        Retrieves all bots from the database that belong to a specific user.
-        """
-
-        db_user = DBUser(db, id=user_id)
-        bot_ids = db_user.bots
-
-        bots = []
-        for bot_id in bot_ids:
-            db_bot = DBBot(db, id=bot_id)
-            bots.append(db_bot.to_schema())
-
-        return bots
 
     @staticmethod
     def get_all(db: MongoDB) -> list[Bot]:
