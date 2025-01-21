@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from pyobjectID import PyObjectId
 
 from app.utils.database import get_db_connection
+from app.schemas.tournament import Tournament
 from app.dependencies import UserDependency
 from app.schemas.bot import Bot, BotUpdate
 from app.models.user import DBUser
@@ -53,6 +54,25 @@ async def read_bot_by_id(
         bot = db_bot.to_schema(detail=True)
 
     return bot
+
+
+@router.get("/{bot_id}/tournaments_won", response_model=list[Tournament])
+async def read_tournaments_won(
+    current_user: UserDependency,
+    bot_id: PyObjectId,
+):
+    with get_db_connection() as db:
+        db_bot = DBBot(db, id=bot_id)
+
+        if not db_bot.check_access(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} not found.",
+            )
+
+        tournaments_won = db_bot.get_tournaments_won()
+
+    return tournaments_won
 
 
 @router.put("/{bot_id}/", response_model=Bot)
