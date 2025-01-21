@@ -4,13 +4,30 @@ from bson import ObjectId
 
 from database.main import MongoDB, Match as MatchCollection
 from app.schemas.match import Match, MatchCreate
-from app.models.tournament import DBTournament
-import app.utils.connection as conn
-from app.models.bot import DBBot
 from app.schemas.bot import Bot
+import app.utils.connection as conn
+import app.models.tournament as T
+import app.models.bot as B
 
 
 class DBMatch:
+    """
+    Represents a match model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the match.
+    game_num : int
+        The number of the game in the tournament.
+    players : tuple[ObjectId, ObjectId]
+        The unique identifiers of the players.
+    moves : list[str]
+        The moves of the match.
+    winner : ObjectId
+        The unique identifier of the winner of the match.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 
@@ -62,7 +79,7 @@ class DBMatch:
         """
 
         id_0, id_1 = self.players
-        db_players = DBBot(self._db, id=id_0), DBBot(self._db, id=id_1)
+        db_players = B.DBBot(self._db, id=id_0), B.DBBot(self._db, id=id_1)
         bot_0 = db_players[0].to_schema(detail=detail)
         bot_1 = db_players[1].to_schema(detail=detail)
 
@@ -106,8 +123,8 @@ class DBMatch:
         for move in moves:
             self._collection.add_move(self.id, move)
 
-        db_winner = DBBot(self._db, id=winner.id)
-        db_loser = DBBot(self._db, id=loser.id)
+        db_winner = B.DBBot(self._db, id=winner.id)
+        db_loser = B.DBBot(self._db, id=loser.id)
         db_winner.update_stats(True)
         db_loser.update_stats(False)
 
@@ -123,7 +140,7 @@ class DBMatch:
 
         players = self.get_players()
 
-        db_winner = DBBot(self._db, id=self.winner) if self.winner else None
+        db_winner = B.DBBot(self._db, id=self.winner) if self.winner else None
         winner = db_winner.to_schema() if db_winner else None
 
         if detail:
@@ -154,7 +171,7 @@ class DBMatch:
         Returns the created match.
         """
 
-        db_tournament = DBTournament(db, id=tournament_id)
+        db_tournament = T.DBTournament(db, id=tournament_id)
         for player_id in match_data.player_ids:
             if player_id not in db_tournament.participants:
                 raise HTTPException(
@@ -166,18 +183,6 @@ class DBMatch:
         match_id = collection.create_match(
             match_data.game_num, match_data.player_ids[0], match_data.player_ids[1]
         )
-
         db_tournament.add_match(match_id)
 
         return cls(db, id=match_id)
-
-    @staticmethod
-    def get_by_tournament_id(db: MongoDB, tournament_id: ObjectId) -> list[Match]:
-        """
-        Retrieves all matches from the database that belong to a specific tournament.
-        """
-
-        db_tournament = DBTournament(db, id=tournament_id)
-        db_matches = [DBMatch(db, id=match_id) for match_id in db_tournament.matches]
-
-        return [db_match.to_schema() for db_match in db_matches]

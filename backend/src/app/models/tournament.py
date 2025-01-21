@@ -7,14 +7,45 @@ import string
 
 from app.schemas.tournament import Tournament, TournamentCreate, TournamentUpdate
 from database.main import MongoDB, Tournament as TournamentCollection
+from app.schemas.match import Match, MatchCreate
 from app.schemas.user import AccountType, User
-from app.models.game_type import DBGameType
-from app.models.user import DBUser
-from app.models.bot import DBBot
 from app.schemas.bot import Bot
+import app.models.game_type as G
+import app.models.match as M
+import app.models.user as U
+import app.models.bot as B
 
 
 class DBTournament:
+    """
+    Represents a tournament model in the database.
+
+    Attributes:
+    ---
+    id : ObjectId
+        The unique identifier of the tournament.
+    name : str
+        The name of the tournament.
+    description : str
+        The description of the tournament.
+    game_type : ObjectId
+        The game type the tournament is associated with.
+    creator : ObjectId
+        The unique identifier of the creator of the tournament.
+    start_date : datetime
+        The start date of the tournament.
+    access_code : str
+        The access code of the tournament.
+    max_participants : int
+        The maximum number of participants in the tournament.
+    participants : list[ObjectId]
+        The unique identifiers of the participants in the tournament.
+    matches : list[ObjectId]
+        The unique identifiers of the matches in the tournament.
+    winner : ObjectId
+        The unique identifier of the winner of the tournament.
+    """
+
     @overload
     def __init__(self, db: MongoDB, /, *, id: ObjectId) -> None: ...
 
@@ -78,7 +109,7 @@ class DBTournament:
         Checks if the user has access to the tournament.
         """
 
-        db_user = DBUser(self._db, id=user.id)
+        db_user = U.DBUser(self._db, id=user.id)
 
         is_admin: bool = user.account_type is AccountType.ADMIN
         is_creator: bool = user.id == self.creator
@@ -88,27 +119,29 @@ class DBTournament:
 
         return any((is_admin, is_creator, is_participant))
 
-    def is_finished(self) -> bool:
-        """
-        Checks if the tournament is finished.
-        """
-
-        return self.winner is not None or self.start_date < datetime.now()
-
     def get_participants(self) -> list[Bot]:
         """
         Retrieves all bots from the database that participate in the tournament.
         """
 
-        db_bots = [DBBot(self._db, id=bot_id) for bot_id in self.participants]
+        db_bots = [B.DBBot(self._db, id=bot_id) for bot_id in self.participants]
         return [db_bot.to_schema() for db_bot in db_bots]
+
+    def get_matches(self) -> list[Match]:
+        """
+        Retrieves all matches from the database that belong to a specific tournament.
+        """
+
+        db_matches = [M.DBMatch(self._db, id=match_id) for match_id in self.matches]
+
+        return [db_match.to_schema() for db_match in db_matches]
 
     def update(self, tournament_data: TournamentUpdate) -> None:
         """
         Updates the tournament in the database.
         """
 
-        if self.is_finished():
+        if self._is_finished():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Tournament: {self.id} is already finished.",
@@ -128,9 +161,17 @@ class DBTournament:
                 self.id, tournament_data.max_participants
             )
 
-        if tournament_data.winner_id is not None:
-            self._collection.set_winner(self.id, tournament_data.winner_id)
+        self._from_id(self.id)
 
+    def set_winner(self, winner_id: ObjectId) -> None:
+        """
+        Sets the winner of the tournament.
+        """
+
+        db_winner = B.DBBot(self._db, id=winner_id)
+        db_winner.update_tournament_wins()
+
+        self._collection.set_winner(self.id, winner_id)
         self._from_id(self.id)
 
     def add_participant(self, bot_id: ObjectId) -> None:
@@ -138,13 +179,13 @@ class DBTournament:
         Adds a bot to the tournament.
         """
 
-        if self.is_finished():
+        if self._is_finished():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Tournament: {self.id} is already finished.",
             )
 
-        db_bot = DBBot(self._db, id=bot_id)
+        db_bot = B.DBBot(self._db, id=bot_id)
         if db_bot.game_type != self.game_type:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -156,11 +197,11 @@ class DBTournament:
                 detail=f"Bot: {bot_id} is not validated.",
             )
 
-        db_owner = db_bot.get_owner()
-        if any(bot_id in self.participants for bot_id in db_owner.bots):
+        owner = db_bot.get_owner()
+        if self._is_user_participant(owner.id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"User: {db_owner.id} already has a bot in the tournament",
+                detail=f"User: {owner.id} already has a bot in the tournament",
             )
 
         success = self._collection.add_participant(self.id, bot_id)
@@ -181,18 +222,43 @@ class DBTournament:
         self._collection.add_match(self.id, match_id)
         self._from_id(self.id)
 
+    def run(self) -> None:
+        """
+        Starts the tournament.
+        Creates the first round of matches.
+        Adds an example bot to the tournament if there are too few participants.
+        """
+
+        if self._is_finished():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tournament: {self.id} is already finished.",
+            )
+
+        participants = self._fill_tournament()
+        random.shuffle(participants)
+        for i in range(len(participants) // 2):
+            bot_0 = participants[2 * i]
+            bot_1 = participants[2 * i + 1]
+
+            match_data = MatchCreate(game_num=i, player_ids=(bot_0, bot_1))
+            M.DBMatch.insert(self._db, self.id, match_data)
+
+        self._collection.update_start_date(self.id, datetime.now())
+        self._from_id(self.id)
+
     def to_schema(self) -> Tournament:
         """
         Converts the model to a Tournament schema.
         """
 
-        db_game_type = DBGameType(self._db, id=self.game_type)
+        db_game_type = G.DBGameType(self._db, id=self.game_type)
         game_type = db_game_type.to_schema()
 
-        db_creator = DBUser(self._db, id=self.creator)
+        db_creator = U.DBUser(self._db, id=self.creator)
         creator = db_creator.to_schema()
 
-        db_winner = DBBot(self._db, id=self.winner) if self.winner else None
+        db_winner = B.DBBot(self._db, id=self.winner) if self.winner else None
         winner = db_winner.to_schema() if db_winner else None
 
         return Tournament(
@@ -216,7 +282,7 @@ class DBTournament:
         Returns the created tournament.
         """
 
-        _ = DBGameType(db, id=tournament_data.game_type_id)
+        G.DBGameType(db, id=tournament_data.game_type_id)
 
         access_code = cls._generate_access_code()
         i = 0
@@ -244,24 +310,6 @@ class DBTournament:
         return cls(db, id=tournament_id)
 
     @staticmethod
-    def get_by_user_id(db: MongoDB, user_id: ObjectId) -> list[Tournament]:
-        """
-        Retrieves all tournaments that the user has created or is participating in.
-        """
-
-        collection = TournamentCollection(db)
-        tournaments = collection.get_tournaments_by_creator(user_id)
-
-        bots = DBBot.get_by_user_id(db, user_id)
-        for bot in bots:
-            tournaments.extend(collection.get_tournaments_by_bot_id(bot.id))
-
-        db_tournaments = [
-            DBTournament(db, data=tournament) for tournament in tournaments
-        ]
-        return [tournament.to_schema() for tournament in db_tournaments]
-
-    @staticmethod
     def get_id_by_access_code(db: MongoDB, access_code: str) -> ObjectId | None:
         """
         Retrieves a tournament ID from the database by its access code.
@@ -286,6 +334,71 @@ class DBTournament:
         ]
 
         return [db_tournament.to_schema() for db_tournament in db_tournaments]
+
+    def _is_user_participant(self, user_id: ObjectId) -> bool:
+        """
+        Checks if a user is a participant in the tournament.
+        """
+
+        db_user = U.DBUser(self._db, id=user_id)
+        return any(bot_id in self.participants for bot_id in db_user.bots)
+
+    def _is_finished(self) -> bool:
+        """
+        Checks if the tournament is finished.
+        """
+
+        return self.start_date < datetime.now()
+
+    def _get_example_bot(self) -> Bot:
+        """
+        Retrieves an example bot for the tournament.
+        """
+
+        admin_id = U.DBUser.get_id_by_username(self._db, "admin")
+        if admin_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Admin not found.",
+            )
+
+        db_admin = U.DBUser(self._db, id=admin_id)
+        example_bots = db_admin.get_bots()
+        example_bot = None
+        for bot in example_bots:
+            if bot.game_type.id == self.game_type:
+                example_bot = bot
+                break
+
+        if example_bot is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Example bot not found for game type: {self.game_type}",
+            )
+
+        return example_bot
+
+    def _fill_tournament(self) -> list[ObjectId]:
+        """
+        Fills the tournament with example bots if there are too few participants.
+        Returns the modified list of participants.
+        """
+
+        n_participants = len(self.participants)
+        next_power = 1
+        while next_power < n_participants:
+            next_power *= 2
+        bots_needed = next_power - n_participants
+
+        participants = self.participants
+        if bots_needed > 0:
+            example_bot = self._get_example_bot()
+            self.add_participant(example_bot.id)
+
+            for _ in range(bots_needed):
+                participants.append(example_bot.id)
+
+        return participants
 
     @staticmethod
     def _generate_access_code(length: int = 6) -> str:

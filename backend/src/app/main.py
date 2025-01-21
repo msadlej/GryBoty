@@ -1,8 +1,9 @@
-from app.routers import admin, users, bots, tournaments, matches, game_types
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Response
-from app.config import settings
 import uvicorn
+
+from app.routers import admin, users, bots, tournaments, matches, game_types
+from app.config import settings
 
 
 app = FastAPI()
@@ -38,7 +39,7 @@ def read_root():
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
-        host="127.0.0.1",
-        port=8000,
+        host=settings.HOST,
+        port=settings.PORT,
         reload=(settings.ENVIRONMENT == "local"),
     )
