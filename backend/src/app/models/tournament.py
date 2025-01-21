@@ -262,7 +262,7 @@ class DBTournament:
             bot_0 = participants[2 * i]
             bot_1 = participants[2 * i + 1]
 
-            match_data = MatchCreate(game_num=i, player_ids=(bot_0, bot_1))
+            match_data = MatchCreate(game_num=i, player_0_id=bot_0, player_1_id=bot_1)
             M.DBMatch.insert(self._db, self.id, match_data)
 
         self._collection.update_start_date(self.id, datetime.now())

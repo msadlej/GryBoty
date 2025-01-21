@@ -157,7 +157,7 @@ async def read_bots_by_tournament_id(
     return bots
 
 
-@router.put(
+@router.delete(
     "/{tournament_id}/bots/",
     response_model=list[Bot],
 )
