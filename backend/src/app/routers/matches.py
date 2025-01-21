@@ -50,7 +50,8 @@ async def create_match(
                 detail=f"User does not have access to create a match in tournament: {tournament_id}.",
             )
 
-        match = DBMatch.insert(db, tournament_id, match_data)
+        db_match = DBMatch.insert(db, tournament_id, match_data)
+        match = db_match.to_schema()
 
     return match
 
