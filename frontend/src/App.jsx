@@ -556,18 +556,15 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       joinFormData.append('name', formData.name.trim());
       joinFormData.append('description', formData.description.trim());
       joinFormData.append('game_type', formData.game);
-      // Validate and format the date
       const date = new Date(formData.startTime);
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date format');
       }
       
-      // Format date to match Django's expected format: YYYY-MM-DD HH:MM:SS
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
       joinFormData.append('start_date', formattedDate);
       joinFormData.append('max_participants', parseInt(formData.playerLimit));
       
-      // Debug log to inspect the form data
       for (let pair of joinFormData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
@@ -743,6 +740,7 @@ export const BotsListScreen = ({ onNavigate }) => {
     </div>
   );
 };
+
 export const AddBotScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -790,8 +788,12 @@ export const AddBotScreen = ({ onNavigate }) => {
     const formDataToSend = new FormData();
     formDataToSend.append('code', selectedFile);
     formDataToSend.append('name', formData.name.trim());
-    formDataToSend.append('game_type', formData.game._id);
-
+    formDataToSend.append('game_type_id', formData.game._id);
+    console.log('form data: ', formData);
+    console.log(Object.fromEntries(formDataToSend));
+    for (let pair of formDataToSend.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
     setLoading(true);
     try {
       await api.post('/bots/', formDataToSend, {
@@ -879,13 +881,13 @@ export const AddBotScreen = ({ onNavigate }) => {
         <div>
           <label className="text-2xl font-light">Gra:</label>
           <select 
-            value={formData.game}
+            value={formData.game._id}
             onChange={(e) => setFormData({...formData, game: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
             required
           >
             {games.map(game => (
-              <option key={game} value={game}>{game.name}</option>
+              <option key={game} value={game._id}>{game.name}</option>
             ))}
           </select>
         </div>

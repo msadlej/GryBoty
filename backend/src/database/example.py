@@ -69,15 +69,15 @@ if __name__ == "__main__":
         "DCIA4N",
         2,
     )
-    connect_four_tournament_id = tournaments.create_tournament(
-        "Connect Four Tournament",
-        "A tournament of the Connect Four game",
-        connect_four_id,
-        smakuch_id,
-        datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "REQ2HJ",
-        8,
-    )
+    # connect_four_tournament_id = tournaments.create_tournament(
+    #     "Connect Four Tournament",
+    #     "A tournament of the Connect Four game",
+    #     connect_four_id,
+    #     smakuch_id,
+    #     datetime.now().strftime("%Y-%m-%d %H:%M"),
+    #     "REQ2HJ",
+    #     8,
+    # )
 
     # Add participants to the tournament
     tournaments.add_participant(morris_tournament_id, adam_bot_id)
