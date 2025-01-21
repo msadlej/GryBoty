@@ -96,7 +96,7 @@ async def edit_bot_by_id(
     return updated_bot
 
 
-@router.delete("/{bot_id}/")
+@router.delete("/{bot_id}/", response_model=bool)
 async def delete_bot_by_id(
     current_user: UserDependency,
     bot_id: PyObjectId,
@@ -111,3 +111,5 @@ async def delete_bot_by_id(
             )
 
         db_bot.delete()
+
+    return True
