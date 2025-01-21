@@ -157,6 +157,29 @@ async def read_bots_by_tournament_id(
     return bots
 
 
+@router.delete(
+    "/{tournament_id}/bots/",
+    response_model=list[Bot],
+)
+async def remove_bot_from_tournament(
+    current_premium_user: PremiumDependency,
+    tournament_id: PyObjectId,
+    bot_id: PyObjectId = Form(...),
+):
+    with get_db_connection() as db:
+        db_tournament = DBTournament(db, id=tournament_id)
+        if not db_tournament.check_creator(current_premium_user):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tournament: {tournament_id} not found.",
+            )
+
+        db_tournament.remove_participant(bot_id)
+        bots = db_tournament.get_participants()
+
+    return bots
+
+
 @router.put("/{tournament_id}/run", response_model=list[Match])
 async def run_tournament(
     current_premium_user: PremiumDependency,

@@ -172,7 +172,7 @@ class DBMatch:
         """
 
         db_tournament = T.DBTournament(db, id=tournament_id)
-        for player_id in match_data.player_ids:
+        for player_id in match_data.player_0_id, match_data.player_1_id:
             if player_id not in db_tournament.participants:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -181,7 +181,7 @@ class DBMatch:
 
         collection = MatchCollection(db)
         match_id = collection.create_match(
-            match_data.game_num, match_data.player_ids[0], match_data.player_ids[1]
+            match_data.game_num, match_data.player_0_id, match_data.player_1_id
         )
         db_tournament.add_match(match_id)
 
