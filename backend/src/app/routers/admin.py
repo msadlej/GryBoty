@@ -53,7 +53,8 @@ async def read_users_bots(
     user_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        bots = DBBot.get_by_user_id(db, user_id)
+        db_user = DBUser(db, id=user_id)
+        bots = db_user.get_bots()
 
     return bots
 
@@ -64,7 +65,8 @@ async def read_users_tournaments(
     user_id: PyObjectId,
 ):
     with get_db_connection() as db:
-        tournaments = DBTournament.get_by_user_id(db, user_id)
+        db_user = DBUser(db, id=user_id)
+        tournaments = db_user.get_tournaments()
 
     return tournaments
 

@@ -28,7 +28,7 @@ async def read_matches_by_tournament_id(
                 detail=f"Tournament: {tournament_id} not found.",
             )
 
-        matches = DBMatch.get_by_tournament_id(db, tournament_id)
+        matches = db_tournament.get_matches()
 
     return matches
 

@@ -8,10 +8,12 @@ import string
 from app.schemas.tournament import Tournament, TournamentCreate, TournamentUpdate
 from database.main import MongoDB, Tournament as TournamentCollection
 from app.schemas.user import AccountType, User
-from app.models.game_type import DBGameType
-from app.models.user import DBUser
-from app.models.bot import DBBot
+from app.schemas.match import Match
 from app.schemas.bot import Bot
+import app.models.game_type as G
+import app.models.match as M
+import app.models.user as U
+import app.models.bot as B
 
 
 class DBTournament:
@@ -107,7 +109,7 @@ class DBTournament:
         Checks if the user has access to the tournament.
         """
 
-        db_user = DBUser(self._db, id=user.id)
+        db_user = U.DBUser(self._db, id=user.id)
 
         is_admin: bool = user.account_type is AccountType.ADMIN
         is_creator: bool = user.id == self.creator
@@ -117,27 +119,29 @@ class DBTournament:
 
         return any((is_admin, is_creator, is_participant))
 
-    def is_finished(self) -> bool:
-        """
-        Checks if the tournament is finished.
-        """
-
-        return self.winner is not None or self.start_date < datetime.now()
-
     def get_participants(self) -> list[Bot]:
         """
         Retrieves all bots from the database that participate in the tournament.
         """
 
-        db_bots = [DBBot(self._db, id=bot_id) for bot_id in self.participants]
+        db_bots = [B.DBBot(self._db, id=bot_id) for bot_id in self.participants]
         return [db_bot.to_schema() for db_bot in db_bots]
+
+    def get_matches(self) -> list[Match]:
+        """
+        Retrieves all matches from the database that belong to a specific tournament.
+        """
+
+        db_matches = [M.DBMatch(self._db, id=match_id) for match_id in self.matches]
+
+        return [db_match.to_schema() for db_match in db_matches]
 
     def update(self, tournament_data: TournamentUpdate) -> None:
         """
         Updates the tournament in the database.
         """
 
-        if self.is_finished():
+        if self._is_finished():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Tournament: {self.id} is already finished.",
@@ -167,13 +171,13 @@ class DBTournament:
         Adds a bot to the tournament.
         """
 
-        if self.is_finished():
+        if self._is_finished():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Tournament: {self.id} is already finished.",
             )
 
-        db_bot = DBBot(self._db, id=bot_id)
+        db_bot = B.DBBot(self._db, id=bot_id)
         if db_bot.game_type != self.game_type:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -185,11 +189,11 @@ class DBTournament:
                 detail=f"Bot: {bot_id} is not validated.",
             )
 
-        db_owner = db_bot.get_owner()
-        if any(bot_id in self.participants for bot_id in db_owner.bots):
+        owner = db_bot.get_owner()
+        if self._is_user_participant(owner.id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"User: {db_owner.id} already has a bot in the tournament",
+                detail=f"User: {owner.id} already has a bot in the tournament",
             )
 
         success = self._collection.add_participant(self.id, bot_id)
@@ -215,13 +219,13 @@ class DBTournament:
         Converts the model to a Tournament schema.
         """
 
-        db_game_type = DBGameType(self._db, id=self.game_type)
+        db_game_type = G.DBGameType(self._db, id=self.game_type)
         game_type = db_game_type.to_schema()
 
-        db_creator = DBUser(self._db, id=self.creator)
+        db_creator = U.DBUser(self._db, id=self.creator)
         creator = db_creator.to_schema()
 
-        db_winner = DBBot(self._db, id=self.winner) if self.winner else None
+        db_winner = B.DBBot(self._db, id=self.winner) if self.winner else None
         winner = db_winner.to_schema() if db_winner else None
 
         return Tournament(
@@ -245,7 +249,7 @@ class DBTournament:
         Returns the created tournament.
         """
 
-        _ = DBGameType(db, id=tournament_data.game_type_id)
+        _ = G.DBGameType(db, id=tournament_data.game_type_id)
 
         access_code = cls._generate_access_code()
         i = 0
@@ -273,24 +277,6 @@ class DBTournament:
         return cls(db, id=tournament_id)
 
     @staticmethod
-    def get_by_user_id(db: MongoDB, user_id: ObjectId) -> list[Tournament]:
-        """
-        Retrieves all tournaments that the user has created or is participating in.
-        """
-
-        collection = TournamentCollection(db)
-        tournaments = collection.get_tournaments_by_creator(user_id)
-
-        bots = DBBot.get_by_user_id(db, user_id)
-        for bot in bots:
-            tournaments.extend(collection.get_tournaments_by_bot_id(bot.id))
-
-        db_tournaments = [
-            DBTournament(db, data=tournament) for tournament in tournaments
-        ]
-        return [tournament.to_schema() for tournament in db_tournaments]
-
-    @staticmethod
     def get_id_by_access_code(db: MongoDB, access_code: str) -> ObjectId | None:
         """
         Retrieves a tournament ID from the database by its access code.
@@ -315,6 +301,21 @@ class DBTournament:
         ]
 
         return [db_tournament.to_schema() for db_tournament in db_tournaments]
+
+    def _is_user_participant(self, user_id: ObjectId) -> bool:
+        """
+        Checks if a user is a participant in the tournament.
+        """
+
+        db_user = U.DBUser(self._db, id=user_id)
+        return any(bot_id in self.participants for bot_id in db_user.bots)
+
+    def _is_finished(self) -> bool:
+        """
+        Checks if the tournament is finished.
+        """
+
+        return self.winner is not None or self.start_date < datetime.now()
 
     @staticmethod
     def _generate_access_code(length: int = 6) -> str:

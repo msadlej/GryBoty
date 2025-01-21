@@ -5,6 +5,7 @@ from app.schemas.tournament import Tournament, TournamentCreate, TournamentUpdat
 from app.dependencies import UserDependency, PremiumDependency
 from app.utils.database import get_db_connection
 from app.models.tournament import DBTournament
+from app.models.user import DBUser
 from app.schemas.bot import Bot
 
 
@@ -16,7 +17,8 @@ async def read_own_tournaments(
     current_user: UserDependency,
 ):
     with get_db_connection() as db:
-        tournaments = DBTournament.get_by_user_id(db, current_user.id)
+        db_user = DBUser(db, id=current_user.id)
+        tournaments = db_user.get_tournaments()
 
     return tournaments
 
