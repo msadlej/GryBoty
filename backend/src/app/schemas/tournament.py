@@ -41,4 +41,3 @@ class TournamentUpdate(BaseModel):
     description: str | None = Field(max_length=128, default=None)
     start_date: datetime | None = Field(gt=datetime.now(), default=None)
     max_participants: int | None = Field(ge=2, default=None)
-    winner_id: PyObjectId | None = None

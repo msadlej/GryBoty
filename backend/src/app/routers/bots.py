@@ -4,6 +4,7 @@ from pyobjectID import PyObjectId
 from app.utils.database import get_db_connection
 from app.dependencies import UserDependency
 from app.schemas.bot import Bot, BotUpdate
+from app.models.user import DBUser
 from app.models.bot import DBBot
 
 
@@ -15,7 +16,8 @@ async def read_own_bots(
     current_user: UserDependency,
 ):
     with get_db_connection() as db:
-        bots = DBBot.get_by_user_id(db, current_user.id)
+        db_user = DBUser(db, id=current_user.id)
+        bots = db_user.get_bots()
 
     return bots
 
