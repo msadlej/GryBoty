@@ -716,7 +716,7 @@ export const BotsListScreen = ({ onNavigate }) => {
         </div>
         {bots.map((bot) => (
           <div 
-            key={bot.id} 
+            key={bot._id} 
             className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
             onClick={() => onNavigate('bot-details', { botId: bot._id })}
           >
@@ -1363,7 +1363,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournament-tree" tournamentId={tournamentId} />
       <h1 className="text-5xl mb-12 font-light">
-        Mecz {match.game_num}: {match.players.bot1.name} vs {match.players.bot2.name}
+        Mecz {match.game_num}: {match.players[0].name} vs {match.players[1].name}
       </h1>
       <div className="w-full max-w-[80%] space-y-6 flex-grow flex flex-col">
         <div className="text-2xl font-light text-center mb-12">
@@ -1455,17 +1455,17 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       state: match.winner ? "DONE" : "SCHEDULED",
       participants: [
         {
-          id: match.players.bot1._id,
-          name: match.players.bot1.name,
-          resultText: match.winner?.name === match.players.bot1.name ? "Won" : null,
-          isWinner: match.winner?.name === match.players.bot1.name,
+          id: match.players[0]._id,
+          name: match.players[0].name,
+          resultText: match.winner?.name === match.players[0].name ? "Won" : null,
+          isWinner: match.winner?.name === match.players[0].name,
           status: match.winner ? "PLAYED" : "NO_SHOW",
         },
         {
-          id: match.players.bot2._id,
-          name: match.players.bot2.name,
-          resultText: match.winner?.name === match.players.bot2.name ? "Won" : null,
-          isWinner: match.winner?.name === match.players.bot2.name,
+          id: match.players[1]._id,
+          name: match.players[1].name,
+          resultText: match.winner?.name === match.players[1].name ? "Won" : null,
+          isWinner: match.winner?.name === match.players[1].name,
           status: match.winner ? "PLAYED" : "NO_SHOW",
         }
       ]
