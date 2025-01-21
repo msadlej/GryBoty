@@ -2,20 +2,17 @@ VENV = .venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
-.PHONY: clean build build-dev test run generate-env
+.PHONY: clean build build-dev test run
 
-generate-env:
-	@echo "Generating .env file..."
-	@echo "SECRET_KEY=$(shell openssl rand -hex 32)" > .env
-	@echo "The .env file has been generated."
+all: build-dev test run
 
-build:	generate-env
+build:
 	@echo "Building the project..."
 	@python3 -m venv $(VENV)
 	@$(PIP) install .
 	@echo "Successfully built the project."
 
-build-dev:	generate-env
+build-dev:
 	@echo "Building the project in development mode..."
 	@python3 -m venv $(VENV)
 	@$(PIP) install -e .[testing]
