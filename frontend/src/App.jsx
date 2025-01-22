@@ -1595,7 +1595,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const bracketMatches = transformMatchesToBracketFormat(matches);
   console.log('Transformed matches:', bracketMatches);
 
-  if (!bracketMatches || bracketMatches.length === 0) {
+  if ((!bracketMatches || bracketMatches.length === 0) && matches.length > 0) {
     return <div className="text-center">Nie można utworzyć drabinki turniejowej</div>;
   }
 
@@ -1609,6 +1609,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
+      {bracketMatches.length > 0 && 
       <div className="w-[80%] h-[500px] mb-12">
         <SingleEliminationBracket
           matches={bracketMatches}
@@ -1665,7 +1666,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
             </div>
           )}
         />
-      </div>
+      </div>}
 
       {tournament.creator._id === user._id && (
         <div className="flex flex-col items-center gap-4">
