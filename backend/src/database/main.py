@@ -152,8 +152,8 @@ class Bot:
 
         matches = self.db.matches.find({
             "$or": [
-                {"players.bot1": bot_id},
-                {"players.bot2": bot_id}
+                {"players.0": bot_id},
+                {"players.1": bot_id}
             ]
         })
 
@@ -165,8 +165,8 @@ class Bot:
 
         self.db.matches.delete_many({
             "$or": [
-                {"players.bot1": bot_id},
-                {"players.bot2": bot_id}
+                {"players.0": bot_id},
+                {"players.1": bot_id}
             ]
         })
 
