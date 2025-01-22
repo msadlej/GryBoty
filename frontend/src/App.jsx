@@ -508,7 +508,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
         const response = await api.get('/games/');
         setGames(response.data);
         if (response.data.length > 0) {
-          setFormData(prev => ({ ...prev, game: response.data[0].id }));
+          setFormData(prev => ({ ...prev, game: response.data[0]._id }));
         }
       } catch (err) {
         setError('Nie udało się pobrać listy gier');
@@ -633,7 +633,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
           >
             <option value="">Wybierz grę</option>
             {games.map(game => (
-              <option key={game.id} value={game._id}>{game.name}</option>
+              <option key={game._id} value={game._id}>{game.name}</option>
             ))}
           </select>
         </div>
@@ -694,7 +694,7 @@ export const BotsListScreen = ({ onNavigate }) => {
     e.stopPropagation();
     try {
       await api.delete(`/bots/${botId}/`);
-      setBots(bots.filter(bot => bot.id !== botId));
+      setBots(bots.filter(bot => bot._id !== botId));
     } catch (err) {
       setError('Nie udało się usunąć bota');
     }
@@ -723,7 +723,7 @@ export const BotsListScreen = ({ onNavigate }) => {
             <div>{bot.game}</div>
             <button 
               className="bg-button-hover text-white px-6 py-2 rounded hover:bg-primary-bg justify-self-end"
-              onClick={(e) => handleDeleteBot(bot.id, e)}
+              onClick={(e) => handleDeleteBot(bot._id, e)}
             >
               Usuń
             </button>
@@ -965,7 +965,7 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
 
   // const handleDeleteBot = async () => {
   //   try {
-  //     await botService.deleteBot(bot.id);
+  //     await botService.deleteBot(bot._id);
   //     onNavigate('bots');
   //   } catch (err) {
   //     setError('Nie udało się usunąć bota');
@@ -1121,7 +1121,7 @@ export const SelectBotScreen = ({ onNavigate, tournamentCode }) => {
                 className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
               >
                 {availableBots.map(bot => (
-                  <option key={bot.id} value={bot.id}>
+                  <option key={bot._id} value={bot._id}>
                     {bot.name}
                   </option>
                 ))}
@@ -1152,6 +1152,7 @@ export const SelectBotScreen = ({ onNavigate, tournamentCode }) => {
 
 export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
   const [tournament, setTournament] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -1160,6 +1161,8 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
       try {
         const data = await api.get(`/tournaments/${tournamentId}/`);
         setTournament(data.data);
+        const participantsData = await api.get(`/tournaments/${tournamentId}/bots/`);
+        setParticipants(participantsData.data);
       } catch (err) {
         setError('Nie udało się pobrać danych turnieju');
       } finally {
@@ -1173,7 +1176,7 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await api.put(`/tournaments/${tournament.id}/`, tournament);
+      await api.put(`/tournaments/${tournament._id}/`, tournament);
       onNavigate('tournaments');
     } catch (err) {
       setError('Nie udało się zaktualizować turnieju');
@@ -1182,10 +1185,10 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
 
   const handleRemoveParticipant = async (participantId) => {
     try {
-      await api.delete(`/tournaments/${tournament.id}/bots/${participantId}/`);
+      await api.delete(`/tournaments/${tournament._id}/bots/${participantId}/`);
       setTournament({
         ...tournament,
-        participants: tournament.participants.filter(p => p.id !== participantId)
+        participants: tournament.participants.filter(p => p._id !== participantId)
       });
     } catch (err) {
       setError('Nie udało się usunąć uczestnika');
@@ -1239,12 +1242,12 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
         </div>
         <div className="space-y-4">
           <label className="text-2xl font-light">Uczestnicy:</label>
-          {tournament.participants.map((participant) => (
+          {participants.map((participant) => (
             <div key={participant._id} className="flex justify-between items-center bg-button-bg p-4 rounded">
               <span className="text-xl font-light">{participant.name}</span>
               <button 
                 type="button"
-                onClick={() => handleRemoveParticipant(participant.id)}
+                onClick={() => handleRemoveParticipant(participant._id)}
                 className="bg-button-hover px-6 py-2 rounded hover:bg-button-bg"
               >
                 Usuń
@@ -1257,7 +1260,7 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             type="button"
             onClick={async () => {
               try {
-                await api.delete(`/tournaments/${tournament.id}/`);
+                await api.delete(`/tournaments/${tournament._id}/`);
                 onNavigate('tournaments');
               } catch (err) {
                 setError('Nie udało się anulować turnieju');
@@ -1271,8 +1274,8 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             type="button"
             onClick={async () => {
               try {
-                await api.post(`/tournaments/${tournament.id}/start/`);
-                onNavigate('tournament-tree', { tournamentId: tournament.id });
+                await api.put(`/tournaments/${tournament._id}/run/`);
+                onNavigate('tournament-tree', { tournamentId: tournament._id });
               } catch (err) {
                 setError('Nie udało się rozpocząć turnieju');
               }
@@ -1400,12 +1403,16 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
   );
 };
 
+
+
 const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -1415,12 +1422,12 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         const tournamentData = tournamentResponse.data;
         const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
         
-        for (let i = 0; i < matchesResponse.data.length; i++) {
-          const matchResponse = await api.get(`/tournaments/${tournamentId}/matches/${matchesResponse.data[i]._id}/`);
-          matchesResponse.data[i] = matchResponse.data;
-        }
+        const matchPromises = matchesResponse.data.map(match => 
+          api.get(`/tournaments/${tournamentId}/matches/${match._id}/`)
+        );
+        const matchResults = await Promise.all(matchPromises);
+        const matchesData = matchResults.map(result => result.data);
         
-        const matchesData = matchesResponse.data;
         setTournament(tournamentData);
         setMatches(matchesData);
       } catch (err) {
@@ -1446,22 +1453,22 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
 
   const transformMatchesToBracketFormat = (matches) => {
     return matches.map(match => ({
-      id: match._id,
+      _id: match._id,
       name: `Match ${match.game_num}`,
-      nextMatchId: null, // will need to be calculated
+      nextMatchId: null,
       tournamentRoundText: `Round ${Math.ceil(match.game_num / 2)}`,
       startTime: match.start_date,
       state: match.winner ? "DONE" : "SCHEDULED",
       participants: [
         {
-          id: match.players[0]._id,
+          _id: match.players[0]._id,
           name: match.players[0].name,
           resultText: match.winner?.name === match.players[0].name ? "Won" : null,
           isWinner: match.winner?.name === match.players[0].name,
           status: match.winner ? "PLAYED" : "NO_SHOW",
         },
         {
-          id: match.players[1]._id,
+          _id: match.players[1]._id, 
           name: match.players[1].name,
           resultText: match.winner?.name === match.players[1].name ? "Won" : null,
           isWinner: match.winner?.name === match.players[1].name,
@@ -1469,6 +1476,92 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         }
       ]
     }));
+  };
+
+  const startTournament = async () => {
+    setIsStarting(true);
+    setError('');
+    
+    try {
+      await api.put(`/tournaments/${tournamentId}/run`);
+      const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
+      
+      const matchQueue = [...matchesResponse.data].sort((a, b) => a.game_num - b.game_num);
+      let previousMatch = null;
+      let matchCount = 0;
+      
+      while (matchQueue.length > 0) {
+        const currentMatch = matchQueue.shift();
+        matchCount++;
+        setCurrentMatchIndex(matchCount);
+        
+        try {
+          await api.put(`/tournaments/${tournamentId}/matches/${currentMatch._id}/run/`);
+          console.log(`Running match ${matchCount}`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const updatedMatchResponse = await api.get(`/tournaments/${tournamentId}/matches/${currentMatch._id}/`);
+          const updatedMatch = updatedMatchResponse.data;
+          
+          setMatches(prevMatches => {
+            const newMatches = [...prevMatches];
+            const matchIndex = newMatches.findIndex(m => m._id === currentMatch._id);
+            if (matchIndex !== -1) {
+              newMatches[matchIndex] = updatedMatch;
+            }
+            return newMatches;
+          });
+
+          if (previousMatch) {
+            console.log("Creating new pair with winners:", {
+              match1: previousMatch.winner.name,
+              match2: updatedMatch.winner.name
+            });
+            
+            const formData = new FormData();
+            formData.append('game_num', Math.floor(currentMatch.game_num / 2));
+            formData.append('player_0_id', previousMatch.winner._id);
+            formData.append('player_1_id', updatedMatch.winner._id);
+            
+            const newMatchResponse = await api.post(`/tournaments/${tournamentId}/matches/`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            });
+            
+            matchQueue.push(newMatchResponse.data);
+            setMatches(prevMatches => [...prevMatches, newMatchResponse.data]);
+            
+            previousMatch = null;
+          } else {
+            previousMatch = updatedMatch;
+          }
+          
+        } catch (err) {
+          console.error(`Error processing match:`, err);
+          setError(`Błąd podczas przetwarzania meczu ${matchCount}`);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error running tournament:', error);
+      setError('Wystąpił błąd podczas uruchamiania turnieju');
+    } finally {
+      setIsStarting(false);
+      setCurrentMatchIndex(0);
+      
+      try {
+        const finalMatchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
+        const matchPromises = finalMatchesResponse.data.map(match => 
+          api.get(`/tournaments/${tournamentId}/matches/${match._id}/`)
+        );
+        const matchResults = await Promise.all(matchPromises);
+        const updatedMatches = matchResults.map(result => result.data);
+        setMatches(updatedMatches);
+      } catch (err) {
+        console.error('Error fetching final tournament state:', err);
+      }
+    }
   };
 
   const theme = createTheme({
@@ -1488,46 +1581,6 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     svgBackground: '#000000'
   });
 
-  const [isStarting, setIsStarting] = useState(false);
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-
-  const startTournament = async () => {
-    setIsStarting(true);
-    
-    try {
-      const sortedMatches = [...matches].sort((a, b) => a.game_num - b.game_num);
-      
-      for (let i = 0; i < sortedMatches.length; i++) {
-        setCurrentMatchIndex(i);
-        const match = sortedMatches[i];
-
-        if (match.winner) continue;
-        
-        await api.put(`/tournaments/${tournamentId}/matches/${match._id}/run/`);
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const updatedMatchResponse = await api.get(`/tournaments/${tournamentId}/matches/${match._id}/`);
-        const updatedMatch = updatedMatchResponse.data;
-        
-        setMatches(prevMatches => {
-          const newMatches = [...prevMatches];
-          const matchIndex = newMatches.findIndex(m => m._id === match._id);
-          if (matchIndex !== -1) {
-            newMatches[matchIndex] = updatedMatch;
-          }
-          return newMatches;
-        });
-      }
-    } catch (error) {
-      console.error('Error running tournament:', error);
-      setError('Wystąpił błąd podczas uruchamiania turnieju');
-    } finally {
-      setIsStarting(false);
-      setCurrentMatchIndex(0);
-    }
-  };
-
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
@@ -1546,69 +1599,63 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       {bracketMatches.length === 0 ? (
         <div className="text-center">Brak meczów do wyświetlenia</div>
       ) : (      
-      <div className="w-full max-w-[90%] h-[600px]">
-        <SingleEliminationBracket
-          matches={bracketMatches}
-          theme={theme}
-          options={{
-            style: {
-              roundHeader: {
-                backgroundColor: '#2d2d2d',
-                fontColor: '#ffffff',
-              },
-              connectorColor: '#444444',
-              connectorColorHighlight: '#888888'
-            }
-          }}
-          svgWrapper={({ children, ...props }) => (
-            <SVGViewer 
-              width={window.innerWidth * 0.9}
-              height={500}
-              {...props}
-            >
-              {children}
-            </SVGViewer>
-          )}
-          onMatchClick={(match) => {
-            onNavigate('tournament-match', { 
-              tournamentId: tournamentId, 
-              matchId: match.id 
-            });
-          }}
-          matchComponent={({ match, onMatchClick, ...props }) => (
-            <div style={{ position: 'relative' }}>
-              <Match
+        <div className="w-full max-w-[90%] h-[600px]">
+          <SingleEliminationBracket
+            matches={bracketMatches}
+            theme={theme}
+            options={{
+              style: {
+                roundHeader: {
+                  backgroundColor: '#2d2d2d',
+                  fontColor: '#ffffff',
+                },
+                connectorColor: '#444444',
+                connectorColorHighlight: '#888888'
+              }
+            }}
+            svgWrapper={({ children, ...props }) => (
+              <SVGViewer 
+                width={window.innerWidth * 0.9}
+                height={500}
                 {...props}
-                match={match}
-                style={{
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease-in-out',
-                  ':hover': {
-                    transform: 'scale(1.05)'
-                  }
-                }}
-              />
-              <div
-                onClick={() => {
-                  onNavigate('tournament-match', {
-                    tournamentId: tournamentId,
-                    matchId: match.id
-                  });
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  cursor: 'pointer',
-                  zIndex: 10
-                }}
-              />
-            </div>
-          )}
-        />
-      </div>
+              >
+                {children}
+              </SVGViewer>
+            )}
+            matchComponent={({ match, onMatchClick, ...props }) => (
+              <div style={{ position: 'relative' }}>
+                <Match
+                  {...props}
+                  match={match}
+                  style={{
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease-in-out',
+                    ':hover': {
+                      transform: 'scale(1.05)'
+                    }
+                  }}
+                />
+                <div
+                  onClick={() => {
+                    onNavigate('tournament-match', {
+                      tournamentId: tournamentId,
+                      matchId: match._id
+                    });
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    cursor: 'pointer',
+                    zIndex: 10
+                  }}
+                />
+              </div>
+            )}
+          />
+        </div>
       )}
 
       {tournament.creator._id === user._id && (
@@ -1619,7 +1666,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
             className={`bg-[#000069] text-white px-12 py-4 rounded hover:bg-[#000089] text-xl font-light transition-colors
               ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isStarting ? `Uruchamianie meczu ${currentMatchIndex + 1} z ${matches.length}...` : 'Rozpocznij turniej'}
+            {isStarting ? `Uruchamianie meczu ${currentMatchIndex}...` : 'Rozpocznij turniej'}
           </button>
           <button
             onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
