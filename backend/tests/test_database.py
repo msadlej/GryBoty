@@ -686,8 +686,8 @@ class TestMatch:
         assert match_id is not None
         match = match_manager.get_match_by_id(match_id)
         assert match["game_num"] == 1
-        assert match["players"]["bot1"] == bot1_id
-        assert match["players"]["bot2"] == bot2_id
+        assert match["players"][0] == bot1_id
+        assert match["players"][1] == bot2_id
         assert match["moves"] == []
         assert match["winner"] is None
 

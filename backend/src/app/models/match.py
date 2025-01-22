@@ -55,10 +55,7 @@ class DBMatch:
     def _from_data(self, data: dict[str, Any]) -> None:
         self.id: ObjectId = data["_id"]
         self.game_num: int = data["game_num"]
-        self.players: tuple[ObjectId, ObjectId] = (
-            data["players"]["bot1"],
-            data["players"]["bot2"],
-        )
+        self.players: tuple[ObjectId, ObjectId] = data["players"]
         self.moves: list[str] = data["moves"]
         self.winner: ObjectId | None = data["winner"]
 
