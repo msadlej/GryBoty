@@ -21,5 +21,4 @@ class MatchCreate(BaseModel):
     """Represents a match creation request"""
 
     game_num: int
-    player_0_id: PyObjectId
-    player_1_id: PyObjectId
+    players: list[PyObjectId] = Field(min_length=2, max_length=2)
