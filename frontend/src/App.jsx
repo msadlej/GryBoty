@@ -388,6 +388,8 @@ export const ChangePasswordScreen = ({ onNavigate }) => {
 
 export const DashboardScreen = ({ onNavigate }) => {
   const [user, setUser] = useState(null);
+  const [error, setError] = useState('');
+  const [banned, setBanned] = useState(false);
   
   useEffect(() => {
     const fetchUser = async () => {
@@ -395,15 +397,32 @@ export const DashboardScreen = ({ onNavigate }) => {
         const response = await api.get('/users/me/');
         setUser(response.data);
       } catch (err) {
-        console.error('Error fetching user data:', err);
+        setError('Nie udało się pobrać danych użytkownika');
+        if (err.response?.status === 400) {
+          setBanned(true);
+        }
       }
     };
     
     fetchUser();
   }, []);
+  if (banned) {
+    return (
+      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
+        <h1 className="text-5xl mb-12 font-light">Masz bana :)</h1>
+        <button 
+          className="bg-button-bg text-white px-12 py-6 rounded hover:bg-button-hover text-2xl font-light"
+          onClick={() => onNavigate('login')}
+        >
+          Wróć do logowania
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <h1 className="text-5xl mb-12 font-light">Boty gierki</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
         <button 
           className="w-full bg-button-bg text-white px-12 py-6 rounded hover:bg-button-hover text-2xl font-light"
