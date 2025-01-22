@@ -200,9 +200,7 @@ def insert_match(monkeypatch, insert_tournament, db_connection, bot_dict):
     db_tournament.add_participant(db_bot_0.id)
     db_tournament.add_participant(db_bot_1.id)
 
-    match_data = MatchCreate(
-        game_num=0, player_0_id=db_bot_0.id, player_1_id=db_bot_1.id
-    )
+    match_data = MatchCreate(game_num=0, players=[db_bot_0.id, db_bot_1.id])
     db_match = DBMatch.insert(db_connection, db_tournament.id, match_data)
 
     return db_game_type, db_user, db_tournament, db_bot_0, db_bot_1, db_match
