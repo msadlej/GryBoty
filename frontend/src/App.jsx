@@ -1413,6 +1413,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const [user, setUser] = useState(null);
   const [isStarting, setIsStarting] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [bots, setBots] = useState([]);
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -1427,6 +1428,9 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         );
         const matchResults = await Promise.all(matchPromises);
         const matchesData = matchResults.map(result => result.data);
+
+        const botsResponse = await api.get(`/tournaments/${tournamentId}/bots/`);
+        setBots(botsResponse.data);
         
         setTournament(tournamentData);
         setMatches(matchesData);
@@ -1451,7 +1455,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     fetchUserData();
   }, [tournamentId]);
 
-  const transformMatchesToBracketFormat = (matches) => {
+  const transformMatchesToBracketFormat = (matches, numberOfParticipants) => {
     matches = matches.map(match => ({
       id: match._id,
       name: `Match ${match.game_num}`,
@@ -1476,7 +1480,37 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         }
       ]
     }));
-    for (let i = 0; i < matches.length - 1; i++) {
+    // for numberOfParticipants - 1 - matches.length add empty matches
+    console.log("Number of participants:", numberOfParticipants);
+    for (let i = matches.length; i < numberOfParticipants - 1; i++) {
+      matches.push({
+        id: `empty-${i}`,
+        name: `Match ${i + 1}`,
+        nextMatchId: null,
+        tournamentRoundText: `${Math.ceil(i + 1 / 2)}`,
+        startTime: null,
+        state: "SCHEDULED",
+
+        participants: [
+          {
+            id: null,
+            name: "TBD",
+            resultText: null,
+            isWinner: false,
+            status: "NO_SHOW",
+          },
+          {
+            id: null,
+            name: "TBD",
+            resultText: null,
+            isWinner: false,
+            status: "NO_SHOW",
+          }
+        ]
+      });
+    }
+    console.log("Matches after adding empty:", matches);
+    for (let i = 0; i < numberOfParticipants - 2; i++) {
       matches[i].nextMatchId = matches[Math.ceil((i + matches.length)/2)].id;
     }
     return matches;
@@ -1591,8 +1625,12 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
+  //return number of participants ceiled to the nearest power of 2
+  
+  const numberOfParticipants = Math.pow(2, Math.ceil(Math.log2(bots.length)));
+
   console.log('Original matches:', matches);
-  const bracketMatches = transformMatchesToBracketFormat(matches);
+  const bracketMatches = transformMatchesToBracketFormat(matches, numberOfParticipants);
   console.log('Transformed matches:', bracketMatches);
 
   if ((!bracketMatches || bracketMatches.length === 0) && matches.length > 0) {
