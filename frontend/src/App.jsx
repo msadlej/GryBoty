@@ -1452,23 +1452,23 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   }, [tournamentId]);
 
   const transformMatchesToBracketFormat = (matches) => {
-    return matches.map(match => ({
-      _id: match._id,
+    matches = matches.map(match => ({
+      id: match._id,
       name: `Match ${match.game_num}`,
       nextMatchId: null,
-      tournamentRoundText: `Round ${Math.ceil(match.game_num / 2)}`,
+      tournamentRoundText: `${Math.ceil(match.game_num / 2)}`,
       startTime: match.start_date,
       state: match.winner ? "DONE" : "SCHEDULED",
       participants: [
         {
-          _id: match.players[0]._id,
+          id: match.players[0]._id,
           name: match.players[0].name,
           resultText: match.winner?.name === match.players[0].name ? "Won" : null,
           isWinner: match.winner?.name === match.players[0].name,
           status: match.winner ? "PLAYED" : "NO_SHOW",
         },
         {
-          _id: match.players[1]._id, 
+          id: match.players[1]._id, 
           name: match.players[1].name,
           resultText: match.winner?.name === match.players[1].name ? "Won" : null,
           isWinner: match.winner?.name === match.players[1].name,
@@ -1476,6 +1476,10 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         }
       ]
     }));
+    for (let i = 0; i < matches.length - 1; i++) {
+      matches[i].nextMatchId = matches[Math.ceil((i + matches.length)/2)].id;
+    }
+    return matches;
   };
 
   const startTournament = async () => {
@@ -1508,6 +1512,9 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
             const matchIndex = newMatches.findIndex(m => m._id === currentMatch._id);
             if (matchIndex !== -1) {
               newMatches[matchIndex] = updatedMatch;
+            } else {
+              newMatches.push(updatedMatch);
+              newMatches.sort((a, b) => a.game_num - b.game_num);
             }
             return newMatches;
           });
@@ -1584,7 +1591,13 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
+  console.log('Original matches:', matches);
   const bracketMatches = transformMatchesToBracketFormat(matches);
+  console.log('Transformed matches:', bracketMatches);
+
+  if (!bracketMatches || bracketMatches.length === 0) {
+    return <div className="text-center">Nie można utworzyć drabinki turniejowej</div>;
+  }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-black text-white p-8 font-kanit">
@@ -1596,70 +1609,66 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
-      {bracketMatches.length === 0 ? (
-        <div className="text-center">Brak meczów do wyświetlenia</div>
-      ) : (      
-        <div className="w-full max-w-[90%] h-[600px]">
-          <SingleEliminationBracket
-            matches={bracketMatches}
-            theme={theme}
-            options={{
-              style: {
-                roundHeader: {
-                  backgroundColor: '#2d2d2d',
-                  fontColor: '#ffffff',
-                },
-                connectorColor: '#444444',
-                connectorColorHighlight: '#888888'
-              }
-            }}
-            svgWrapper={({ children, ...props }) => (
-              <SVGViewer 
-                width={window.innerWidth * 0.9}
-                height={500}
+      <div className="w-[80%] h-[500px] mb-12">
+        <SingleEliminationBracket
+          matches={bracketMatches}
+          theme={theme}
+          options={{
+            style: {
+              roundHeader: {
+                backgroundColor: '#2d2d2d',
+                fontColor: '#ffffff',
+              },
+              connectorColor: '#444444',
+              connectorColorHighlight: '#888888'
+            }
+          }}
+          svgWrapper={({ children, ...props }) => (
+            <SVGViewer 
+              width={window.innerWidth * 0.8}
+              height={500}
+              {...props}
+            >
+              {children}
+            </SVGViewer>
+          )}
+          matchComponent={({ match, onMatchClick, ...props }) => (
+            <div style={{ position: 'relative' }}>
+              <Match
                 {...props}
-              >
-                {children}
-              </SVGViewer>
-            )}
-            matchComponent={({ match, onMatchClick, ...props }) => (
-              <div style={{ position: 'relative' }}>
-                <Match
-                  {...props}
-                  match={match}
-                  style={{
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease-in-out',
-                    ':hover': {
-                      transform: 'scale(1.05)'
-                    }
-                  }}
-                />
-                <div
-                  onClick={() => {
-                    onNavigate('tournament-match', {
-                      tournamentId: tournamentId,
-                      matchId: match._id
-                    });
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    cursor: 'pointer',
-                    zIndex: 10
-                  }}
-                />
-              </div>
-            )}
-          />
-        </div>
-      )}
+                match={match}
+                style={{
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease-in-out',
+                  ':hover': {
+                    transform: 'scale(1.05)'
+                  }
+                }}
+              />
+              <div
+                onClick={() => {
+                  onNavigate('tournament-match', {
+                    tournamentId: tournamentId,
+                    matchId: match._id
+                  });
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  cursor: 'pointer',
+                  zIndex: 10
+                }}
+              />
+            </div>
+          )}
+        />
+      </div>
 
       {tournament.creator._id === user._id && (
-        <div className="flex flex-col items-center gap-4 mt-12">
+        <div className="flex flex-col items-center gap-4">
           <button
             onClick={startTournament}
             disabled={isStarting}
