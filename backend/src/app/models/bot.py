@@ -159,14 +159,6 @@ class DBBot:
         self._collection.update_stats(self.id, winner)
         self._from_id(self.id)
 
-    def update_tournament_wins(self) -> None:
-        """
-        Updates the bot's tournament wins in the database.
-        """
-
-        # self._collection.update_tournament_wins(self.id) TODO: Implement in db
-        self._from_id(self.id)
-
     def delete(self) -> None:
         """
         Deletes the bot from the database.

@@ -18,13 +18,11 @@ def test_match_schema(match_dict):
 
 class TestMatchModel:
     def test_init_data(self, db_connection, match_dict):
-        players = match_dict["players"]
-        match_dict["players"] = {"bot1": players[0], "bot2": players[1]}
         db_match = DBMatch(db_connection, data=match_dict)
 
         assert db_match.id == match_dict["_id"]
         assert db_match.game_num == match_dict["game_num"]
-        assert db_match.players == players
+        assert db_match.players == match_dict["players"]
         assert db_match.moves == match_dict["moves"]
         assert db_match.winner == match_dict["winner"]
 

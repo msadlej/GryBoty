@@ -133,42 +133,30 @@ class Bot:
         if not bot:
             return False
 
-        self.users_collection.update_many(
-            {"bots": bot_id},
-            {"$pull": {"bots": bot_id}}
-        )
+        self.users_collection.update_many({"bots": bot_id}, {"$pull": {"bots": bot_id}})
 
         tournaments = self.db.tournaments.find({"participants": bot_id})
         for tournament in tournaments:
             if tournament.get("winner") == bot_id:
                 self.db.tournaments.update_one(
-                    {"_id": tournament["_id"]},
-                    {"$set": {"winner": None}}
+                    {"_id": tournament["_id"]}, {"$set": {"winner": None}}
                 )
             self.db.tournaments.update_one(
-                {"_id": tournament["_id"]},
-                {"$pull": {"participants": bot_id}}
+                {"_id": tournament["_id"]}, {"$pull": {"participants": bot_id}}
             )
 
-        matches = self.db.matches.find({
-            "$or": [
-                {"players.bot1": bot_id},
-                {"players.bot2": bot_id}
-            ]
-        })
+        matches = self.db.matches.find(
+            {"$or": [{"players.0": bot_id}, {"players.1": bot_id}]}
+        )
 
         match_ids = [match["_id"] for match in matches]
         self.db.tournaments.update_many(
-            {"matches": {"$in": match_ids}},
-            {"$pull": {"matches": {"$in": match_ids}}}
+            {"matches": {"$in": match_ids}}, {"$pull": {"matches": {"$in": match_ids}}}
         )
 
-        self.db.matches.delete_many({
-            "$or": [
-                {"players.bot1": bot_id},
-                {"players.bot2": bot_id}
-            ]
-        })
+        self.db.matches.delete_many(
+            {"$or": [{"players.0": bot_id}, {"players.1": bot_id}]}
+        )
 
         self.collection.delete_one({"_id": bot_id})
 
@@ -302,10 +290,7 @@ class Tournament:
         return list(self.collection.find())
 
     def set_winner(self, tournament_id: ObjectId, bot_id: ObjectId) -> None:
-        self.collection.update_one(
-            {"_id": tournament_id},
-            {"$set": {"winner": bot_id}}
-        )
+        self.collection.update_one({"_id": tournament_id}, {"$set": {"winner": bot_id}})
 
     def get_winner(self, tournament_id: ObjectId) -> Optional[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
@@ -315,12 +300,10 @@ class Tournament:
         tournament = self.collection.find_one({"_id": tournament_id})
         if tournament and bot_id in tournament["participants"]:
             self.collection.update_one(
-                {"_id": tournament_id},
-                {"$pull": {"participants": bot_id}}
+                {"_id": tournament_id}, {"$pull": {"participants": bot_id}}
             )
             self.db.bots.update_one(
-                {"_id": bot_id},
-                {"$inc": {"total_tournaments": -1}}
+                {"_id": bot_id}, {"$inc": {"total_tournaments": -1}}
             )
             return True
         return False
@@ -336,7 +319,7 @@ class Match:
     ) -> ObjectId:
         match_data = {
             "game_num": game_num,
-            "players": {"bot1": bot1_id, "bot2": bot2_id},
+            "players": (bot1_id, bot2_id),
             "moves": [],
             "winner": None,
         }
@@ -355,7 +338,7 @@ class Match:
     def get_matches_by_bot(self, bot_id: ObjectId) -> List[Dict]:
         return list(
             self.collection.find(
-                {"$or": [{"players.bot1": bot_id}, {"players.bot2": bot_id}]}
+                {"$or": [{"players.0": bot_id}, {"players.1": bot_id}]}
             )
         )
 
