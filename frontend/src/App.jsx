@@ -387,6 +387,20 @@ export const ChangePasswordScreen = ({ onNavigate }) => {
 };
 
 export const DashboardScreen = ({ onNavigate }) => {
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('/users/me/');
+        setUser(response.data);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
+    
+    fetchUser();
+  }, []);
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-primary-bg text-white p-8 font-kanit">
       <h1 className="text-5xl mb-12 font-light">Boty gierki</h1>
@@ -409,12 +423,142 @@ export const DashboardScreen = ({ onNavigate }) => {
         >
           Ustawienia
         </button>
+        {user?.account_type === 'admin' && (
+          <button 
+            className="w-full bg-button-bg text-white px-12 py-6 rounded hover:bg-button-hover text-2xl font-light"
+            onClick={() => onNavigate('admin')}
+          >
+            Panel Admin
+          </button>
+        )}
         <button 
           className="w-full bg-button-bg text-white px-12 py-6 rounded hover:bg-button-hover text-2xl font-light"
           onClick={() => onNavigate('login')}
         >
           Wyloguj się
         </button>
+      </div>
+    </div>
+  );
+};
+
+export const AdminPanelScreen = ({ onNavigate }) => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get('/admin/users/');
+        const filteredUsers = response.data.filter(user => user.account_type !== 'admin');
+        setUsers(filteredUsers);
+      } catch (err) {
+        setError('Nie udało się pobrać listy użytkowników');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleUserUpdate = async (userId, updates) => {
+    try {
+      const formData = new FormData();
+      formData.append('account_type', updates.account_type);
+      formData.append('is_banned', updates.is_banned);
+      
+      await api.put(`/admin/users/${userId}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      setUsers(users.map(user => {
+        if (user._id === userId) {
+          return { ...user, ...updates };
+        }
+        return user;
+      }));
+    } catch (err) {
+      setError('Nie udało się zaktualizować użytkownika');
+    }
+  };
+
+  const handleBanUser = (userId, currentUser) => {
+    handleUserUpdate(userId, {
+      account_type: currentUser.account_type,
+      is_banned: !currentUser.is_banned
+    });
+  };
+
+  const handleAccountTypeChange = (userId, newType, currentUser) => {
+    handleUserUpdate(userId, {
+      account_type: newType,
+      is_banned: currentUser.is_banned
+    });
+  };
+
+  if (loading) return <div className="text-center">Ładowanie...</div>;
+
+  return (
+    <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
+      <BackButton onNavigate={onNavigate} />
+      <h1 className="text-5xl mb-12 font-light">Panel Administratora</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <div className="w-full max-w-[80%] space-y-6">
+        <div className="grid grid-cols-5 gap-4 text-2xl font-light mb-4">
+          <div>Login</div>
+          <div>Typ konta</div>
+          <div>Status</div>
+          <div>Zmień typ</div>
+          <div>Zbanuj / Odbanuj</div>
+        </div>
+        {users.map((user) => (
+          <div 
+            key={user._id} 
+            className="grid grid-cols-5 gap-4 bg-button-bg p-4 rounded items-center"
+          >
+            <div className="text-xl">{user.username}</div>
+            <div className="text-xl">{user.account_type}</div>
+            <div className="text-xl">{user.is_banned ? 'Zbanowany' : 'Aktywny'}</div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleAccountTypeChange(user._id, 'standard', user)}
+                className={`px-4 py-2 rounded ${
+                  user.account_type === 'standard'
+                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+                disabled={user.account_type === 'standard'}
+              >
+                Standard
+              </button>
+              <button
+                onClick={() => handleAccountTypeChange(user._id, 'premium', user)}
+                className={`px-4 py-2 rounded ${
+                  user.account_type === 'premium'
+                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+                disabled={user.account_type === 'premium'}
+              >
+                Premium
+              </button>
+            </div>
+            <button 
+              onClick={() => handleBanUser(user._id, user)}
+              className={`px-6 py-2 rounded text-white ${
+                user.is_banned 
+                  ? 'bg-green-600 hover:bg-green-700' 
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
+            >
+              {user.is_banned ? 'Odbanuj' : 'Zbanuj'}
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1661,6 +1805,7 @@ const App = () => {
     'manage-tournament': ManageTournamentScreen,
     'tournament-match': TournamentMatchScreen,
     'tournament-tree': TournamentTreeScreen,
+    'admin': AdminPanelScreen,
   };
 
   React.useEffect(() => {
