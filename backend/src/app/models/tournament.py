@@ -214,6 +214,27 @@ class DBTournament:
 
         self._from_id(self.id)
 
+    def remove_participant(self, bot_id: ObjectId) -> None:
+        """
+        Removes a bot from the tournament.
+        """
+
+        if self._is_finished():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Tournament: {self.id} is already finished.",
+            )
+
+        success = self._collection.remove_participant(self.id, bot_id)
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Bot: {bot_id} is not a participant in the tournament.",
+            )
+
+        self._from_id(self.id)
+
     def add_match(self, match_id: ObjectId) -> None:
         """
         Adds a match to the tournament.
@@ -241,7 +262,7 @@ class DBTournament:
             bot_0 = participants[2 * i]
             bot_1 = participants[2 * i + 1]
 
-            match_data = MatchCreate(game_num=i, player_ids=(bot_0, bot_1))
+            match_data = MatchCreate(game_num=i, player_0_id=bot_0, player_1_id=bot_1)
             M.DBMatch.insert(self._db, self.id, match_data)
 
         self._collection.update_start_date(self.id, datetime.now())

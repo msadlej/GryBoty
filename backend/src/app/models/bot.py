@@ -119,6 +119,18 @@ class DBBot:
 
         return [db_tournament.to_schema() for db_tournament in db_tournaments]
 
+    def get_tournaments_won(self) -> list[Tournament]:
+        """
+        Retrieves all tournaments the bot has won.
+        """
+
+        tournaments = self._collection.get_tournaments_won(self.id)
+        db_tournaments = [
+            T.DBTournament(self._db, data=tournament) for tournament in tournaments
+        ]
+
+        return [db_tournament.to_schema() for db_tournament in db_tournaments]
+
     def check_access(self, user: User) -> bool:
         """
         Checks if the user has access to a specific bot.
@@ -152,7 +164,7 @@ class DBBot:
         Updates the bot's tournament wins in the database.
         """
 
-        # self._collection.update_tournament_wins(self.id)
+        # self._collection.update_tournament_wins(self.id) TODO: Implement in db
         self._from_id(self.id)
 
     def delete(self) -> None:

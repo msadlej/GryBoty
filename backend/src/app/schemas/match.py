@@ -21,4 +21,5 @@ class MatchCreate(BaseModel):
     """Represents a match creation request"""
 
     game_num: int
-    player_ids: tuple[PyObjectId, PyObjectId]
+    player_0_id: PyObjectId
+    player_1_id: PyObjectId
