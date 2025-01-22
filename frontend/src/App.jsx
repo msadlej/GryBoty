@@ -532,11 +532,29 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
     
     if (!formData.game) return 'Wybór gry jest wymagany';
     if (!formData.startTime) return 'Czas rozpoczęcia jest wymagany';
+
+    const selectedDate = new Date(formData.startTime);
+    const now = new Date();
+    if (selectedDate <= now) {
+      return 'Data rozpoczęcia musi być w przyszłości';
+    }
     
     const players = parseInt(formData.playerLimit);
     if (!players || players < 2) return 'Limit graczy musi być co najmniej 2';
     
     return null;
+  };
+
+  const formatDateForAPI = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
   };
 
   const handleSubmit = async (e) => {
@@ -554,19 +572,16 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       const joinFormData = new FormData();
       joinFormData.append('name', formData.name.trim());
       joinFormData.append('description', formData.description.trim());
-      joinFormData.append('game_type', formData.game);
+      joinFormData.append('game_type_id', formData.game);
+      
       const date = new Date(formData.startTime);
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date format');
       }
       
-      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+      const formattedDate = formatDateForAPI(formData.startTime);
       joinFormData.append('start_date', formattedDate);
       joinFormData.append('max_participants', parseInt(formData.playerLimit));
-      
-      for (let pair of joinFormData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-      }
 
       const response = await api.post('/tournaments/', joinFormData, {
         headers: {
@@ -579,20 +594,26 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       onNavigate('tournaments');
     } catch (err) {
       let errorMessage = 'Nie udało się utworzyć turnieju';
-      if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
+      
+      if (err.response?.status === 422) {
+        const validationErrors = err.response.data.detail;
+        if (Array.isArray(validationErrors)) {
+          errorMessage = validationErrors.map(error => error.msg).join(', ');
+        } else if (typeof validationErrors === 'object') {
+          errorMessage = validationErrors.msg || JSON.stringify(validationErrors);
+        }
+      } else if (err.response?.data?.detail) {
+        errorMessage = typeof err.response.data.detail === 'string' 
+          ? err.response.data.detail 
+          : 'Błąd walidacji danych';
       } else if (err.response?.status === 500) {
         errorMessage = 'Błąd serwera - spróbuj ponownie później';
         console.error('Server error response:', err.response?.data);
       } else if (err.message === 'Invalid date format') {
         errorMessage = 'Nieprawidłowy format daty';
       }
+      
       setError(errorMessage);
-      console.error('Create tournament error:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        error: err
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -644,6 +665,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             value={formData.startTime}
             onChange={(e) => setFormData({...formData, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min={getMinDateTime()}
             required
           />
         </div>
@@ -1480,7 +1502,6 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         }
       ]
     }));
-    // for numberOfParticipants - 1 - matches.length add empty matches
     console.log("Number of participants:", numberOfParticipants);
     for (let i = matches.length; i < numberOfParticipants - 1; i++) {
       matches.push({
@@ -1625,8 +1646,6 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
-  //return number of participants ceiled to the nearest power of 2
-  
   const numberOfParticipants = Math.pow(2, Math.ceil(Math.log2(bots.length)));
 
   console.log('Original matches:', matches);
