@@ -306,6 +306,10 @@ class Tournament:
             {"_id": tournament_id},
             {"$set": {"winner": bot_id}}
         )
+        self.db.bots.update_one(
+            {"_id": bot_id},
+            {"$inc": {"tournaments_won": 1}}
+        )
 
     def get_winner(self, tournament_id: ObjectId) -> Optional[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
