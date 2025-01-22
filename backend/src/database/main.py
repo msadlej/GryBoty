@@ -336,7 +336,7 @@ class Match:
     ) -> ObjectId:
         match_data = {
             "game_num": game_num,
-            "players": {"bot1": bot1_id, "bot2": bot2_id},
+            "players": (bot1_id, bot2_id),
             "moves": [],
             "winner": None,
         }
@@ -355,7 +355,10 @@ class Match:
     def get_matches_by_bot(self, bot_id: ObjectId) -> List[Dict]:
         return list(
             self.collection.find(
-                {"$or": [{"players.bot1": bot_id}, {"players.bot2": bot_id}]}
+                {"$or": [
+                    {"players.0": bot_id},
+                    {"players.1": bot_id}
+                ]}
             )
         )
 
