@@ -26,6 +26,9 @@ if __name__ == "__main__":
     tournaments = Tournament(db)
     matches = Match(db)
 
+    # Clear the database
+    db.client.drop_database("pzsp_database")
+
     # Add users to the database
     admin_id = users.create_user(
         "admin",
@@ -57,6 +60,16 @@ if __name__ == "__main__":
         "$2b$12$rMRrhTnpEb6kDJZ9nHeWSOVf72WcySUQACT4JHNPI69odwwruHxDa",
         "standard",
     )
+    marcin2_id = users.create_user(
+        "marcin2",
+        "$2b$12$rMRrhTnpEb6kDJZ9nHeWSOVf72WcySUQACT4JHNPI69odwwruHxDa",
+        "standard",
+    )
+    marcin3_id = users.create_user(
+        "marcin3",
+        "$2b$12$rMRrhTnpEb6kDJZ9nHeWSOVf72WcySUQACT4JHNPI69odwwruHxDa",
+        "standard",
+    )
     users.update_ban(marcin_id, True)
 
     # Add a game to the database
@@ -67,10 +80,19 @@ if __name__ == "__main__":
     # Add bots to the database
     adam_bot_id = bots.create_bot("adam_bot", connect_four_id, example_code)
     jakub_bot_id = bots.create_bot("jakub_bot", connect_four_id, example_code)
+    michal_bot_id = bots.create_bot("michal_bot", connect_four_id, example_code)
+    marcin2_bot_id = bots.create_bot("marcin2_bot", connect_four_id, example_code)
+    marcin3_bot_id = bots.create_bot("marcin3_bot", connect_four_id, example_code)
     users.add_bot(adam_id, adam_bot_id)
     users.add_bot(jakub_id, jakub_bot_id)
+    users.add_bot(michal_id, michal_bot_id)
+    users.add_bot(marcin2_id, marcin2_bot_id)
+    users.add_bot(marcin3_id, marcin3_bot_id)
     bots.validate_bot(adam_bot_id)
     bots.validate_bot(jakub_bot_id)
+    bots.validate_bot(michal_bot_id)
+    bots.validate_bot(marcin2_bot_id)
+    bots.validate_bot(marcin3_bot_id)
 
     # Add a tournament to the database
     connect_four_tournament_id = tournaments.create_tournament(
@@ -86,6 +108,9 @@ if __name__ == "__main__":
     # Add participants to the tournament
     tournaments.add_participant(connect_four_tournament_id, adam_bot_id)
     tournaments.add_participant(connect_four_tournament_id, jakub_bot_id)
+    tournaments.add_participant(connect_four_tournament_id, michal_bot_id)
+    tournaments.add_participant(connect_four_tournament_id, marcin2_bot_id)
+    tournaments.add_participant(connect_four_tournament_id, marcin3_bot_id)
 
     # Add example bots to the database
     connect_four_example_bot = bots.create_bot(

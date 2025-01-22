@@ -287,8 +287,14 @@ class TestBot:
         )
 
         tournament_manager.set_winner(tournament_id1, bot_id)
+        bot_stats = bot_manager.get_bot_stats(bot_id)
+        assert bot_stats["tournaments_won"] == 1
         tournament_manager.set_winner(tournament_id2, bot_id)
+        bot_stats = bot_manager.get_bot_stats(bot_id)
+        assert bot_stats["tournaments_won"] == 2
         tournament_manager.set_winner(tournament_id3, ObjectId())
+        bot_stats = bot_manager.get_bot_stats(bot_id)
+        assert bot_stats["tournaments_won"] == 2
 
         won_tournaments = bot_manager.get_tournaments_won(bot_id)
 
