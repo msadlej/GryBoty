@@ -168,9 +168,6 @@ class DBTournament:
         Sets the winner of the tournament.
         """
 
-        db_winner = B.DBBot(self._db, id=winner_id)
-        db_winner.update_tournament_wins()
-
         self._collection.set_winner(self.id, winner_id)
         self._from_id(self.id)
 
