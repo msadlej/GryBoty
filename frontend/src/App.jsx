@@ -17,7 +17,6 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  console.log('Interceptor applied:', config);
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -424,6 +423,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchTournaments = async () => {
@@ -434,12 +434,22 @@ export const TournamentsScreen = ({ onNavigate }) => {
       } catch (err) {
         setError('Nie udało się pobrać turniejów');
         setTournaments([]);
+      }
+    };
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('/users/me/');
+        setUser(response.data);
+      } catch (err) {
+      setError('Nie udało się pobrać danych użytkownika');
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+    fetchUser();
     fetchTournaments();
+
   }, []);
 
   if (loading) {
@@ -479,12 +489,12 @@ export const TournamentsScreen = ({ onNavigate }) => {
           >
             Dołącz do turnieju
           </button>
-          <button
+          {user.account_type === "premium" && <button
             onClick={() => onNavigate('create-tournament')}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
           >
             Stwórz turniej
-          </button>
+          </button>}
         </div>
       </div>)}
     </div>
@@ -509,7 +519,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
         const response = await api.get('/games/');
         setGames(response.data);
         if (response.data.length > 0) {
-          setFormData(prev => ({ ...prev, game: response.data[0].id }));
+          setFormData(prev => ({ ...prev, game: response.data[0]._id }));
         }
       } catch (err) {
         setError('Nie udało się pobrać listy gier');
@@ -533,11 +543,29 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
     
     if (!formData.game) return 'Wybór gry jest wymagany';
     if (!formData.startTime) return 'Czas rozpoczęcia jest wymagany';
+
+    const selectedDate = new Date(formData.startTime);
+    const now = new Date();
+    if (selectedDate <= now) {
+      return 'Data rozpoczęcia musi być w przyszłości';
+    }
     
     const players = parseInt(formData.playerLimit);
     if (!players || players < 2) return 'Limit graczy musi być co najmniej 2';
     
     return null;
+  };
+
+  const formatDateForAPI = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
   };
 
   const handleSubmit = async (e) => {
@@ -555,19 +583,16 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       const joinFormData = new FormData();
       joinFormData.append('name', formData.name.trim());
       joinFormData.append('description', formData.description.trim());
-      joinFormData.append('game_type', formData.game);
+      joinFormData.append('game_type_id', formData.game);
+      
       const date = new Date(formData.startTime);
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date format');
       }
       
-      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+      const formattedDate = formatDateForAPI(formData.startTime);
       joinFormData.append('start_date', formattedDate);
       joinFormData.append('max_participants', parseInt(formData.playerLimit));
-      
-      for (let pair of joinFormData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-      }
 
       const response = await api.post('/tournaments/', joinFormData, {
         headers: {
@@ -580,20 +605,26 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
       onNavigate('tournaments');
     } catch (err) {
       let errorMessage = 'Nie udało się utworzyć turnieju';
-      if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
+      
+      if (err.response?.status === 422) {
+        const validationErrors = err.response.data.detail;
+        if (Array.isArray(validationErrors)) {
+          errorMessage = validationErrors.map(error => error.msg).join(', ');
+        } else if (typeof validationErrors === 'object') {
+          errorMessage = validationErrors.msg || JSON.stringify(validationErrors);
+        }
+      } else if (err.response?.data?.detail) {
+        errorMessage = typeof err.response.data.detail === 'string' 
+          ? err.response.data.detail 
+          : 'Błąd walidacji danych';
       } else if (err.response?.status === 500) {
         errorMessage = 'Błąd serwera - spróbuj ponownie później';
         console.error('Server error response:', err.response?.data);
       } else if (err.message === 'Invalid date format') {
         errorMessage = 'Nieprawidłowy format daty';
       }
+      
       setError(errorMessage);
-      console.error('Create tournament error:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        error: err
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -634,7 +665,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
           >
             <option value="">Wybierz grę</option>
             {games.map(game => (
-              <option key={game.id} value={game._id}>{game.name}</option>
+              <option key={game._id} value={game._id}>{game.name}</option>
             ))}
           </select>
         </div>
@@ -645,6 +676,7 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             value={formData.startTime}
             onChange={(e) => setFormData({...formData, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min={getMinDateTime()}
             required
           />
         </div>
@@ -695,7 +727,7 @@ export const BotsListScreen = ({ onNavigate }) => {
     e.stopPropagation();
     try {
       await api.delete(`/bots/${botId}/`);
-      setBots(bots.filter(bot => bot.id !== botId));
+      setBots(bots.filter(bot => bot._id !== botId));
     } catch (err) {
       setError('Nie udało się usunąć bota');
     }
@@ -716,7 +748,7 @@ export const BotsListScreen = ({ onNavigate }) => {
         </div>
         {bots.map((bot) => (
           <div 
-            key={bot.id} 
+            key={bot._id} 
             className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
             onClick={() => onNavigate('bot-details', { botId: bot._id })}
           >
@@ -724,7 +756,7 @@ export const BotsListScreen = ({ onNavigate }) => {
             <div>{bot.game}</div>
             <button 
               className="bg-button-hover text-white px-6 py-2 rounded hover:bg-primary-bg justify-self-end"
-              onClick={(e) => handleDeleteBot(bot.id, e)}
+              onClick={(e) => handleDeleteBot(bot._id, e)}
             >
               Usuń
             </button>
@@ -966,7 +998,7 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
 
   // const handleDeleteBot = async () => {
   //   try {
-  //     await botService.deleteBot(bot.id);
+  //     await botService.deleteBot(bot._id);
   //     onNavigate('bots');
   //   } catch (err) {
   //     setError('Nie udało się usunąć bota');
@@ -1122,7 +1154,7 @@ export const SelectBotScreen = ({ onNavigate, tournamentCode }) => {
                 className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
               >
                 {availableBots.map(bot => (
-                  <option key={bot.id} value={bot.id}>
+                  <option key={bot._id} value={bot._id}>
                     {bot.name}
                   </option>
                 ))}
@@ -1153,14 +1185,21 @@ export const SelectBotScreen = ({ onNavigate, tournamentCode }) => {
 
 export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
   const [tournament, setTournament] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTournament = async () => {
       try {
         const data = await api.get(`/tournaments/${tournamentId}/`);
-        setTournament(data.data);
+        setTournament({
+          ...data.data,
+          startTime: new Date(data.data.start_date).toISOString().slice(0, 16)
+        });
+        const participantsData = await api.get(`/tournaments/${tournamentId}/bots/`);
+        setParticipants(participantsData.data);
       } catch (err) {
         setError('Nie udało się pobrać danych turnieju');
       } finally {
@@ -1169,25 +1208,93 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
     };
 
     fetchTournament();
-  }, []);
+  }, [tournamentId]);
+
+  const formatDateForAPI = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  };
+
+  const validateForm = () => {
+    const trimmedName = tournament.name.trim();
+    const trimmedDesc = tournament.description.trim();
+    
+    if (!trimmedName) return 'Nazwa turnieju jest wymagana';
+    if (trimmedName.length < 5) return 'Nazwa turnieju musi mieć co najmniej 5 znaków';
+    if (trimmedName.length > 32) return 'Nazwa turnieju może mieć maksymalnie 32 znaki';
+    
+    if (!trimmedDesc) return 'Opis turnieju jest wymagany';
+    if (trimmedDesc.length > 128) return 'Opis turnieju może mieć maksymalnie 128 znaków';
+    
+    if (!tournament.startTime) return 'Czas rozpoczęcia jest wymagany';
+
+    const selectedDate = new Date(tournament.startTime);
+    if (isNaN(selectedDate.getTime())) {
+      return 'Nieprawidłowy format daty';
+    }
+
+    const players = parseInt(tournament.max_participants);
+    if (!players || players < 2) return 'Limit graczy musi być co najmniej 2';
+    
+    return null;
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      await api.put(`/tournaments/${tournament.id}/`, tournament);
+      const formData = new FormData();
+      formData.append('name', tournament.name.trim());
+      formData.append('description', tournament.description.trim());
+      formData.append('start_date', formatDateForAPI(tournament.startTime));
+      formData.append('max_participants', parseInt(tournament.max_participants));
+
+      await api.put(`/tournaments/${tournament._id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+        crossDomain: true,
+      });
+      
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się zaktualizować turnieju');
+      let errorMessage = 'Nie udało się zaktualizować turnieju';
+      
+      if (err.response?.status === 422) {
+        const validationErrors = err.response.data.detail;
+        if (Array.isArray(validationErrors)) {
+          errorMessage = validationErrors.map(error => error.msg).join(', ');
+        }
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleRemoveParticipant = async (participantId) => {
     try {
-      await api.delete(`/tournaments/${tournament.id}/bots/${participantId}/`);
-      setTournament({
-        ...tournament,
-        participants: tournament.participants.filter(p => p.id !== participantId)
-      });
+      await api.delete(`/tournaments/${tournament._id}/bots/${participantId}/`);
+      setParticipants(participants.filter(p => p._id !== participantId));
     } catch (err) {
       setError('Nie udało się usunąć uczestnika');
     }
@@ -1209,24 +1316,27 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             value={tournament.name}
             onChange={(e) => setTournament({...tournament, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            required
           />
         </div>
         <div>
           <label className="text-2xl font-light">Opis:</label>
-          <input 
-            type="text"
+          <textarea 
             value={tournament.description}
             onChange={(e) => setTournament({...tournament, description: e.target.value})}
-            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light min-h-[100px]"
+            required
           />
         </div>
         <div>
           <label className="text-2xl font-light">Czas rozpoczęcia:</label>
           <input 
             type="datetime-local"
-            value={tournament.start_date}
+            value={tournament.startTime}
             onChange={(e) => setTournament({...tournament, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min={getMinDateTime()}
+            required
           />
         </div>
         <div>
@@ -1234,18 +1344,20 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
           <input 
             type="number"
             value={tournament.max_participants}
-            onChange={(e) => setTournament({...tournament, playerLimit: parseInt(e.target.value)})}
+            onChange={(e) => setTournament({...tournament, max_participants: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min="2"
+            required
           />
         </div>
         <div className="space-y-4">
           <label className="text-2xl font-light">Uczestnicy:</label>
-          {tournament.participants.map((participant) => (
+          {participants.map((participant) => (
             <div key={participant._id} className="flex justify-between items-center bg-button-bg p-4 rounded">
               <span className="text-xl font-light">{participant.name}</span>
               <button 
                 type="button"
-                onClick={() => handleRemoveParticipant(participant.id)}
+                onClick={() => handleRemoveParticipant(participant._id)}
                 className="bg-button-hover px-6 py-2 rounded hover:bg-button-bg"
               >
                 Usuń
@@ -1253,12 +1365,12 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             </div>
           ))}
         </div>
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-between items-center mt-8 space-x-4">
           <button 
             type="button"
             onClick={async () => {
               try {
-                await api.delete(`/tournaments/${tournament.id}/`);
+                await api.delete(`/tournaments/${tournament._id}/`);
                 onNavigate('tournaments');
               } catch (err) {
                 setError('Nie udało się anulować turnieju');
@@ -1269,11 +1381,18 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             Anuluj turniej
           </button>
           <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light disabled:opacity-50"
+          >
+            {isSubmitting ? 'Zapisywanie...' : 'Zapisz zmiany'}
+          </button>
+          <button 
             type="button"
             onClick={async () => {
               try {
-                await api.post(`/tournaments/${tournament.id}/start/`);
-                onNavigate('tournament-tree', { tournamentId: tournament.id });
+                await api.put(`/tournaments/${tournament._id}/run/`);
+                onNavigate('tournament-tree', { tournamentId: tournament._id });
               } catch (err) {
                 setError('Nie udało się rozpocząć turnieju');
               }
@@ -1363,7 +1482,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-primary-bg text-white p-8 font-kanit">
       <BackButton onNavigate={onNavigate} to="tournament-tree" tournamentId={tournamentId} />
       <h1 className="text-5xl mb-12 font-light">
-        Mecz {match.game_num}: {match.players.bot1.name} vs {match.players.bot2.name}
+        Mecz {match.game_num}: {match.players[0].name} vs {match.players[1].name}
       </h1>
       <div className="w-full max-w-[80%] space-y-6 flex-grow flex flex-col">
         <div className="text-2xl font-light text-center mb-12">
@@ -1401,12 +1520,17 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
   );
 };
 
+
+
 const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [bots, setBots] = useState([]);
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -1416,12 +1540,15 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         const tournamentData = tournamentResponse.data;
         const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
         
-        for (let i = 0; i < matchesResponse.data.length; i++) {
-          const matchResponse = await api.get(`/tournaments/${tournamentId}/matches/${matchesResponse.data[i]._id}/`);
-          matchesResponse.data[i] = matchResponse.data;
-        }
+        const matchPromises = matchesResponse.data.map(match => 
+          api.get(`/tournaments/${tournamentId}/matches/${match._id}/`)
+        );
+        const matchResults = await Promise.all(matchPromises);
+        const matchesData = matchResults.map(result => result.data);
+
+        const botsResponse = await api.get(`/tournaments/${tournamentId}/bots/`);
+        setBots(botsResponse.data);
         
-        const matchesData = matchesResponse.data;
         setTournament(tournamentData);
         setMatches(matchesData);
       } catch (err) {
@@ -1445,31 +1572,153 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     fetchUserData();
   }, [tournamentId]);
 
-  const transformMatchesToBracketFormat = (matches) => {
-    return matches.map(match => ({
+  const transformMatchesToBracketFormat = (matches, numberOfParticipants) => {
+    matches = matches.map(match => ({
       id: match._id,
       name: `Match ${match.game_num}`,
-      nextMatchId: null, // will need to be calculated
-      tournamentRoundText: `Round ${Math.ceil(match.game_num / 2)}`,
+      nextMatchId: null,
+      tournamentRoundText: ``,
       startTime: match.start_date,
       state: match.winner ? "DONE" : "SCHEDULED",
       participants: [
         {
-          id: match.players.bot1._id,
-          name: match.players.bot1.name,
-          resultText: match.winner?.name === match.players.bot1.name ? "Won" : null,
-          isWinner: match.winner?.name === match.players.bot1.name,
+          id: match.players[0]._id,
+          name: match.players[0].name,
+          resultText: match.winner?.name === match.players[0].name ? "Won" : null,
+          isWinner: match.winner?.name === match.players[0].name,
           status: match.winner ? "PLAYED" : "NO_SHOW",
         },
         {
-          id: match.players.bot2._id,
-          name: match.players.bot2.name,
-          resultText: match.winner?.name === match.players.bot2.name ? "Won" : null,
-          isWinner: match.winner?.name === match.players.bot2.name,
+          id: match.players[1]._id, 
+          name: match.players[1].name,
+          resultText: match.winner?.name === match.players[1].name ? "Won" : null,
+          isWinner: match.winner?.name === match.players[1].name,
           status: match.winner ? "PLAYED" : "NO_SHOW",
         }
       ]
     }));
+    console.log("Number of participants:", numberOfParticipants);
+    for (let i = matches.length; i < numberOfParticipants - 1; i++) {
+      matches.push({
+        id: `empty-${i}`,
+        name: `Match ${i + 1}`,
+        nextMatchId: null,
+        tournamentRoundText: ``,
+        startTime: null,
+        state: "SCHEDULED",
+
+        participants: [
+          {
+            id: null,
+            name: "TBD",
+            resultText: null,
+            isWinner: false,
+            status: "NO_SHOW",
+          },
+          {
+            id: null,
+            name: "TBD",
+            resultText: null,
+            isWinner: false,
+            status: "NO_SHOW",
+          }
+        ]
+      });
+    }
+    console.log("Matches after adding empty:", matches);
+    for (let i = 0; i < numberOfParticipants - 2; i++) {
+      matches[i].nextMatchId = matches[Math.ceil((i + matches.length)/2)].id;
+    }
+    return matches;
+  };
+
+  const startTournament = async () => {
+    setIsStarting(true);
+    setError('');
+    
+    try {
+      await api.put(`/tournaments/${tournamentId}/run`);
+      const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
+      
+      const matchQueue = [...matchesResponse.data].sort((a, b) => a.game_num - b.game_num);
+      let previousMatch = null;
+      let matchCount = 0;
+      
+      while (matchQueue.length > 0) {
+        const currentMatch = matchQueue.shift();
+        matchCount++;
+        setCurrentMatchIndex(matchCount);
+        
+        try {
+          await api.put(`/tournaments/${tournamentId}/matches/${currentMatch._id}/run/`);
+          console.log(`Running match ${matchCount}`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const updatedMatchResponse = await api.get(`/tournaments/${tournamentId}/matches/${currentMatch._id}/`);
+          const updatedMatch = updatedMatchResponse.data;
+          
+          setMatches(prevMatches => {
+            const newMatches = [...prevMatches];
+            const matchIndex = newMatches.findIndex(m => m._id === currentMatch._id);
+            if (matchIndex !== -1) {
+              newMatches[matchIndex] = updatedMatch;
+            } else {
+              newMatches.push(updatedMatch);
+              newMatches.sort((a, b) => a.game_num - b.game_num);
+            }
+            return newMatches;
+          });
+
+          if (previousMatch) {
+            console.log("Creating new pair with winners:", {
+              match1: previousMatch.winner.name,
+              match2: updatedMatch.winner.name
+            });
+            
+            const formData = new FormData();
+            formData.append('game_num', Math.floor(currentMatch.game_num / 2));
+            formData.append('player_0_id', previousMatch.winner._id);
+            formData.append('player_1_id', updatedMatch.winner._id);
+            
+            const newMatchResponse = await api.post(`/tournaments/${tournamentId}/matches/`, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            });
+            
+            matchQueue.push(newMatchResponse.data);
+            setMatches(prevMatches => [...prevMatches, newMatchResponse.data]);
+            
+            previousMatch = null;
+          } else {
+            previousMatch = updatedMatch;
+          }
+          
+        } catch (err) {
+          console.error(`Error processing match:`, err);
+          setError(`Błąd podczas przetwarzania meczu ${matchCount}`);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error running tournament:', error);
+      setError('Wystąpił błąd podczas uruchamiania turnieju');
+    } finally {
+      setIsStarting(false);
+      setCurrentMatchIndex(0);
+      
+      try {
+        const finalMatchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
+        const matchPromises = finalMatchesResponse.data.map(match => 
+          api.get(`/tournaments/${tournamentId}/matches/${match._id}/`)
+        );
+        const matchResults = await Promise.all(matchPromises);
+        const updatedMatches = matchResults.map(result => result.data);
+        setMatches(updatedMatches);
+      } catch (err) {
+        console.error('Error fetching final tournament state:', err);
+      }
+    }
   };
 
   const theme = createTheme({
@@ -1489,50 +1738,18 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     svgBackground: '#000000'
   });
 
-  const [isStarting, setIsStarting] = useState(false);
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-
-  const startTournament = async () => {
-    setIsStarting(true);
-    
-    try {
-      const sortedMatches = [...matches].sort((a, b) => a.game_num - b.game_num);
-      
-      for (let i = 0; i < sortedMatches.length; i++) {
-        setCurrentMatchIndex(i);
-        const match = sortedMatches[i];
-
-        if (match.winner) continue;
-        
-        await api.put(`/tournaments/${tournamentId}/matches/${match._id}/run/`);
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const updatedMatchResponse = await api.get(`/tournaments/${tournamentId}/matches/${match._id}/`);
-        const updatedMatch = updatedMatchResponse.data;
-        
-        setMatches(prevMatches => {
-          const newMatches = [...prevMatches];
-          const matchIndex = newMatches.findIndex(m => m._id === match._id);
-          if (matchIndex !== -1) {
-            newMatches[matchIndex] = updatedMatch;
-          }
-          return newMatches;
-        });
-      }
-    } catch (error) {
-      console.error('Error running tournament:', error);
-      setError('Wystąpił błąd podczas uruchamiania turnieju');
-    } finally {
-      setIsStarting(false);
-      setCurrentMatchIndex(0);
-    }
-  };
-
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!tournament) return <div className="text-center">Nie znaleziono turnieju</div>;
 
-  const bracketMatches = transformMatchesToBracketFormat(matches);
+  const numberOfParticipants = Math.pow(2, Math.ceil(Math.log2(bots.length)));
+
+  console.log('Original matches:', matches);
+  const bracketMatches = transformMatchesToBracketFormat(matches, numberOfParticipants);
+  console.log('Transformed matches:', bracketMatches);
+
+  if ((!bracketMatches || bracketMatches.length === 0) && matches.length > 0) {
+    return <div className="text-center">Nie można utworzyć drabinki turniejowej</div>;
+  }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-black text-white p-8 font-kanit">
@@ -1544,10 +1761,8 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
-      {bracketMatches.length === 0 ? (
-        <div className="text-center">Brak meczów do wyświetlenia</div>
-      ) : (      
-      <div className="w-full max-w-[90%] h-[600px]">
+      {bracketMatches.length > 0 && 
+      <div className="w-[80%] h-[500px] mb-12">
         <SingleEliminationBracket
           matches={bracketMatches}
           theme={theme}
@@ -1563,19 +1778,13 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
           }}
           svgWrapper={({ children, ...props }) => (
             <SVGViewer 
-              width={window.innerWidth * 0.9}
+              width={window.innerWidth * 0.8}
               height={500}
               {...props}
             >
               {children}
             </SVGViewer>
           )}
-          onMatchClick={(match) => {
-            onNavigate('tournament-match', { 
-              tournamentId: tournamentId, 
-              matchId: match.id 
-            });
-          }}
           matchComponent={({ match, onMatchClick, ...props }) => (
             <div style={{ position: 'relative' }}>
               <Match
@@ -1593,7 +1802,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
                 onClick={() => {
                   onNavigate('tournament-match', {
                     tournamentId: tournamentId,
-                    matchId: match.id
+                    matchId: match._id
                   });
                 }}
                 style={{
@@ -1609,19 +1818,40 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
             </div>
           )}
         />
-      </div>
-      )}
+      </div>}
 
-      {tournament.creator._id === user._id && (
-        <div className="flex flex-col items-center gap-4 mt-12">
+      {bracketMatches.length === 0 && bots.length > 0 &&
+        <div className="space-y-4">
+          <label className="text-2xl font-light">Uczestnicy:</label>
+          {bots.map((bot) => (
+            <div key={bot._id} className="flex justify-between items-center bg-button-bg p-4 rounded">
+              <span className="text-xl font-light">{bot.name}</span>
+            </div>
+          ))}
+        </div>
+      }
+
+      {bots.length === 0 &&
+        <div className="space-y-4">
+          <label className="text-2xl font-light">Nikt jeszcze nie dołączył</label>
+        </div>
+      }
+
+      {tournament.creator._id === user._id && bots.length > 1 && (
+        <div className="flex flex-col items-center gap-4">
           <button
             onClick={startTournament}
             disabled={isStarting}
             className={`bg-[#000069] text-white px-12 py-4 rounded hover:bg-[#000089] text-xl font-light transition-colors
               ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isStarting ? `Uruchamianie meczu ${currentMatchIndex + 1} z ${matches.length}...` : 'Rozpocznij turniej'}
+            {isStarting ? `Uruchamianie meczu ${currentMatchIndex}...` : 'Rozpocznij turniej'}
           </button>
+        </div>
+      )}
+
+      {tournament.creator._id === user._id && (
+        <div className="flex flex-col items-center gap-4">
           <button
             onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
             className="bg-[#002137] text-white px-12 py-4 rounded hover:bg-[#003147] text-xl font-light transition-colors"
