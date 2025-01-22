@@ -423,6 +423,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const fetchTournaments = async () => {
@@ -433,12 +434,22 @@ export const TournamentsScreen = ({ onNavigate }) => {
       } catch (err) {
         setError('Nie udało się pobrać turniejów');
         setTournaments([]);
+      }
+    };
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('/users/me/');
+        setUser(response.data);
+      } catch (err) {
+      setError('Nie udało się pobrać danych użytkownika');
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+    fetchUser();
     fetchTournaments();
+
   }, []);
 
   if (loading) {
@@ -478,12 +489,12 @@ export const TournamentsScreen = ({ onNavigate }) => {
           >
             Dołącz do turnieju
           </button>
-          <button
+          {user.account_type === "premium" && <button
             onClick={() => onNavigate('create-tournament')}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
           >
             Stwórz turniej
-          </button>
+          </button>}
         </div>
       </div>)}
     </div>
@@ -1566,7 +1577,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       id: match._id,
       name: `Match ${match.game_num}`,
       nextMatchId: null,
-      tournamentRoundText: `${Math.ceil(match.game_num / 2)}`,
+      tournamentRoundText: ``,
       startTime: match.start_date,
       state: match.winner ? "DONE" : "SCHEDULED",
       participants: [
@@ -1592,7 +1603,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         id: `empty-${i}`,
         name: `Match ${i + 1}`,
         nextMatchId: null,
-        tournamentRoundText: `${Math.ceil(i + 1 / 2)}`,
+        tournamentRoundText: ``,
         startTime: null,
         state: "SCHEDULED",
 
@@ -1809,7 +1820,24 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         />
       </div>}
 
-      {tournament.creator._id === user._id && (
+      {bracketMatches.length === 0 && bots.length > 0 &&
+        <div className="space-y-4">
+          <label className="text-2xl font-light">Uczestnicy:</label>
+          {bots.map((bot) => (
+            <div key={bot._id} className="flex justify-between items-center bg-button-bg p-4 rounded">
+              <span className="text-xl font-light">{bot.name}</span>
+            </div>
+          ))}
+        </div>
+      }
+
+      {bots.length === 0 &&
+        <div className="space-y-4">
+          <label className="text-2xl font-light">Nikt jeszcze nie dołączył</label>
+        </div>
+      }
+
+      {tournament.creator._id === user._id && bots.length > 1 && (
         <div className="flex flex-col items-center gap-4">
           <button
             onClick={startTournament}
@@ -1819,6 +1847,11 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
           >
             {isStarting ? `Uruchamianie meczu ${currentMatchIndex}...` : 'Rozpocznij turniej'}
           </button>
+        </div>
+      )}
+
+      {tournament.creator._id === user._id && (
+        <div className="flex flex-col items-center gap-4">
           <button
             onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
             className="bg-[#002137] text-white px-12 py-4 rounded hover:bg-[#003147] text-xl font-light transition-colors"
