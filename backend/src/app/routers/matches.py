@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Form
+from fastapi import APIRouter, HTTPException, status, Query
 from pyobjectID import PyObjectId
 
 from app.dependencies import UserDependency, PremiumDependency
@@ -40,7 +40,7 @@ async def read_matches_by_tournament_id(
 async def create_match(
     current_user: PremiumDependency,
     tournament_id: PyObjectId,
-    match_data: MatchCreate = Form(...),
+    match_data: MatchCreate = Query(...),
 ):
     with get_db_connection() as db:
         db_tournament = DBTournament(db, id=tournament_id)
