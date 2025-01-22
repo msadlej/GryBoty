@@ -1177,12 +1177,16 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTournament = async () => {
       try {
         const data = await api.get(`/tournaments/${tournamentId}/`);
-        setTournament(data.data);
+        setTournament({
+          ...data.data,
+          startTime: new Date(data.data.start_date).toISOString().slice(0, 16)
+        });
         const participantsData = await api.get(`/tournaments/${tournamentId}/bots/`);
         setParticipants(participantsData.data);
       } catch (err) {
@@ -1193,25 +1197,93 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
     };
 
     fetchTournament();
-  }, []);
+  }, [tournamentId]);
+
+  const formatDateForAPI = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`;
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  };
+
+  const validateForm = () => {
+    const trimmedName = tournament.name.trim();
+    const trimmedDesc = tournament.description.trim();
+    
+    if (!trimmedName) return 'Nazwa turnieju jest wymagana';
+    if (trimmedName.length < 5) return 'Nazwa turnieju musi mieć co najmniej 5 znaków';
+    if (trimmedName.length > 32) return 'Nazwa turnieju może mieć maksymalnie 32 znaki';
+    
+    if (!trimmedDesc) return 'Opis turnieju jest wymagany';
+    if (trimmedDesc.length > 128) return 'Opis turnieju może mieć maksymalnie 128 znaków';
+    
+    if (!tournament.startTime) return 'Czas rozpoczęcia jest wymagany';
+
+    const selectedDate = new Date(tournament.startTime);
+    if (isNaN(selectedDate.getTime())) {
+      return 'Nieprawidłowy format daty';
+    }
+
+    const players = parseInt(tournament.max_participants);
+    if (!players || players < 2) return 'Limit graczy musi być co najmniej 2';
+    
+    return null;
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      await api.put(`/tournaments/${tournament._id}/`, tournament);
+      const formData = new FormData();
+      formData.append('name', tournament.name.trim());
+      formData.append('description', tournament.description.trim());
+      formData.append('start_date', formatDateForAPI(tournament.startTime));
+      formData.append('max_participants', parseInt(tournament.max_participants));
+
+      await api.put(`/tournaments/${tournament._id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+        crossDomain: true,
+      });
+      
       onNavigate('tournaments');
     } catch (err) {
-      setError('Nie udało się zaktualizować turnieju');
+      let errorMessage = 'Nie udało się zaktualizować turnieju';
+      
+      if (err.response?.status === 422) {
+        const validationErrors = err.response.data.detail;
+        if (Array.isArray(validationErrors)) {
+          errorMessage = validationErrors.map(error => error.msg).join(', ');
+        }
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleRemoveParticipant = async (participantId) => {
     try {
       await api.delete(`/tournaments/${tournament._id}/bots/${participantId}/`);
-      setTournament({
-        ...tournament,
-        participants: tournament.participants.filter(p => p._id !== participantId)
-      });
+      setParticipants(participants.filter(p => p._id !== participantId));
     } catch (err) {
       setError('Nie udało się usunąć uczestnika');
     }
@@ -1233,24 +1305,27 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             value={tournament.name}
             onChange={(e) => setTournament({...tournament, name: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            required
           />
         </div>
         <div>
           <label className="text-2xl font-light">Opis:</label>
-          <input 
-            type="text"
+          <textarea 
             value={tournament.description}
             onChange={(e) => setTournament({...tournament, description: e.target.value})}
-            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light min-h-[100px]"
+            required
           />
         </div>
         <div>
           <label className="text-2xl font-light">Czas rozpoczęcia:</label>
           <input 
             type="datetime-local"
-            value={tournament.start_date}
+            value={tournament.startTime}
             onChange={(e) => setTournament({...tournament, startTime: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min={getMinDateTime()}
+            required
           />
         </div>
         <div>
@@ -1258,8 +1333,10 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
           <input 
             type="number"
             value={tournament.max_participants}
-            onChange={(e) => setTournament({...tournament, playerLimit: parseInt(e.target.value)})}
+            onChange={(e) => setTournament({...tournament, max_participants: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
+            min="2"
+            required
           />
         </div>
         <div className="space-y-4">
@@ -1277,7 +1354,7 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             </div>
           ))}
         </div>
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-between items-center mt-8 space-x-4">
           <button 
             type="button"
             onClick={async () => {
@@ -1291,6 +1368,13 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
           >
             Anuluj turniej
+          </button>
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light disabled:opacity-50"
+          >
+            {isSubmitting ? 'Zapisywanie...' : 'Zapisz zmiany'}
           </button>
           <button 
             type="button"
