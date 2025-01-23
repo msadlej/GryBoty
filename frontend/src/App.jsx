@@ -91,7 +91,6 @@ export const LoginScreen = ({ onNavigate }) => {
       await login(formData.username, formData.password);
       onNavigate('dashboard');
     } catch (err) {
-      console.error('Login failed:', err);
       setError('Nieprawidłowy login lub hasło');
     } finally {
       setLoading(false);
@@ -624,27 +623,32 @@ export const TournamentsScreen = ({ onNavigate }) => {
       <BackButton onNavigate={onNavigate} />
       <h1 className="text-5xl mb-12 font-light">Turnieje</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
-      {tournaments.length === 0 ? (<div className="text-center">Brak turniejów</div>) : (
       <div className="w-full max-w-[80%] space-y-6">
-        <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
-          <div>Nazwa</div>
-          <div>Rozpoczęcie</div>
-          <div>Organizator</div>
-        </div>
-        {tournaments.map((tournament) => (
-          <div 
-            key={tournament._id}
-            className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
-            onClick={() => {
-              console.log('Navigating with params:', { tournamentId: tournament._id });
-              onNavigate('tournament-tree', { tournamentId: tournament._id });
-            }}
-          >
-            <div className="hover:underline">{tournament.name}</div>
-            <div>{new Date(tournament.start_date).toLocaleString()}</div>
-            <div>{tournament.creator.username}</div>
-          </div>
-        ))}
+        {tournaments.length === 0 ? (
+          <div className="text-center">Brak turniejów</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
+              <div>Nazwa</div>
+              <div>Rozpoczęcie</div>
+              <div>Organizator</div>
+            </div>
+            {tournaments.map((tournament) => (
+              <div 
+                key={tournament._id}
+                className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
+                onClick={() => {
+                  console.log('Navigating with params:', { tournamentId: tournament._id });
+                  onNavigate('tournament-tree', { tournamentId: tournament._id });
+                }}
+              >
+                <div className="hover:underline">{tournament.name}</div>
+                <div>{new Date(tournament.start_date).toLocaleString()}</div>
+                <div>{tournament.creator.username}</div>
+              </div>
+            ))}
+          </>
+        )}
         <div className="flex justify-between mt-8">
           <button
             onClick={() => onNavigate('join-tournament')}
@@ -659,7 +663,7 @@ export const TournamentsScreen = ({ onNavigate }) => {
             Stwórz turniej
           </button>}
         </div>
-      </div>)}
+      </div>
     </div>
   );
 };
@@ -826,7 +830,6 @@ export const CreateTournamentScreen = ({ onNavigate }) => {
             onChange={(e) => setFormData({...formData, game: e.target.value})}
             required
           >
-            <option value="">Wybierz grę</option>
             {games.map(game => (
               <option key={game._id} value={game._id}>{game.name}</option>
             ))}
@@ -1530,39 +1533,11 @@ export const ManageTournamentScreen = ({ onNavigate, tournamentId }) => {
         </div>
         <div className="flex justify-between items-center mt-8 space-x-4">
           <button 
-            type="button"
-            onClick={async () => {
-              try {
-                await api.delete(`/tournaments/${tournament._id}/`);
-                onNavigate('tournaments');
-              } catch (err) {
-                setError('Nie udało się anulować turnieju');
-              }
-            }}
-            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
-          >
-            Anuluj turniej
-          </button>
-          <button 
             type="submit"
             disabled={isSubmitting}
             className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light disabled:opacity-50"
           >
             {isSubmitting ? 'Zapisywanie...' : 'Zapisz zmiany'}
-          </button>
-          <button 
-            type="button"
-            onClick={async () => {
-              try {
-                await api.put(`/tournaments/${tournament._id}/run/`);
-                onNavigate('tournament-tree', { tournamentId: tournament._id });
-              } catch (err) {
-                setError('Nie udało się rozpocząć turnieju');
-              }
-            }}
-            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
-          >
-            Rozpocznij turniej
           </button>
         </div>
       </form>
@@ -1574,7 +1549,6 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
   const [user, setUser] = useState(null);
   const [tournament, setTournament] = useState(null);
 
@@ -1609,33 +1583,31 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
       }
     };
 
-    if (tournamentId && matchId) {
-      fetchUserData();
-      fetchTournament();
-      fetchMatch();
-    }
+    fetchUserData();
+    fetchTournament();
+    fetchMatch();
   }, [tournamentId, matchId]);
 
-  const handleRunMatch = async () => {
-    setIsRunning(true);
-    try {
-      await api.put(`/tournaments/${tournamentId}/matches/${matchId}/run/`);
-      const response = await api.get(`/tournaments/${tournamentId}/matches/${matchId}/`);
-      setMatch(response.data);
-    } catch (err) {
-      console.error('Error running match:', err);
-      setError('Nie udało się uruchomić meczu');
-    } finally {
-      setIsRunning(false);
-    }
-  };
+  // const handleRunMatch = async () => {
+  //   setIsRunning(true);
+  //   try {
+  //     await api.put(`/tournaments/${tournamentId}/matches/${matchId}/run/`);
+  //     const response = await api.get(`/tournaments/${tournamentId}/matches/${matchId}/`);
+  //     setMatch(response.data);
+  //   } catch (err) {
+  //     console.error('Error running match:', err);
+  //     setError('Nie udało się uruchomić meczu');
+  //   } finally {
+  //     setIsRunning(false);
+  //   }
+  // };
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!match) return <div className="text-center">Nie znaleziono meczu</div>;
   if (!tournament || !user) return <div className="text-center">Ładowanie danych...</div>;
 
   const isCreator = tournament?.creator?._id === user?._id;
-  const showRunButton = isCreator && !match.winner;
+  // const showRunButton = isCreator && !match.winner;
 
   const formattedMoves = match.moves?.map(move => {
     return move;
@@ -1652,7 +1624,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
           Stan: {match.winner ? `Zwycięzca: ${match.winner.name}` : 'Mecz w toku'}
         </div>
         
-        {showRunButton && (
+        {/* {showRunButton && (
           <button
             onClick={handleRunMatch}
             disabled={isRunning}
@@ -1660,7 +1632,7 @@ export const TournamentMatchScreen = ({ onNavigate, tournamentId, matchId }) => 
           >
             {isRunning ? 'Uruchamianie meczu...' : 'Uruchom mecz'}
           </button>
-        )}
+        )} */}
 
         {error && (
           <div className="text-red-500 text-center mb-4">
@@ -1760,7 +1732,6 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         }
       ]
     }));
-    console.log("Number of participants:", numberOfParticipants);
     for (let i = matches.length; i < numberOfParticipants - 1; i++) {
       matches.push({
         id: `empty-${i}`,
@@ -1769,7 +1740,6 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         tournamentRoundText: ``,
         startTime: null,
         state: "SCHEDULED",
-
         participants: [
           {
             id: null,
@@ -1799,15 +1769,18 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
     setIsStarting(true);
     setError('');
     
+    let previousMatch = null;
+    let matchCount = 0;
+
     try {
       await api.put(`/tournaments/${tournamentId}/run`);
       const matchesResponse = await api.get(`/tournaments/${tournamentId}/matches/`);
       
       const matchQueue = [...matchesResponse.data].sort((a, b) => a.game_num - b.game_num);
-      let previousMatch = null;
-      let matchCount = 0;
+      setMatches(matchQueue);
       
       while (matchQueue.length > 0) {
+        console.log('Match queue:', ...matchQueue);
         const currentMatch = matchQueue.shift();
         matchCount++;
         setCurrentMatchIndex(matchCount);
@@ -1837,17 +1810,13 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
               match1: previousMatch.winner.name,
               match2: updatedMatch.winner.name
             });
-            
-            const formData = new FormData();
-            formData.append('game_num', Math.floor(currentMatch.game_num / 2));
-            formData.append('player_0_id', previousMatch.winner._id);
-            formData.append('player_1_id', updatedMatch.winner._id);
-            
-            const newMatchResponse = await api.post(`/tournaments/${tournamentId}/matches/`, formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
-            });
+
+            const params = new URLSearchParams();
+            params.append('game_num', Math.ceil((updatedMatch.game_num + matches.length)/2) + 2); 
+            params.append('players', previousMatch.winner._id);
+            params.append('players', updatedMatch.winner._id);
+
+            const newMatchResponse = await api.post(`/tournaments/${tournamentId}/matches/?${params.toString()}`);
             
             matchQueue.push(newMatchResponse.data);
             setMatches(prevMatches => [...prevMatches, newMatchResponse.data]);
@@ -1867,6 +1836,18 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
       console.error('Error running tournament:', error);
       setError('Wystąpił błąd podczas uruchamiania turnieju');
     } finally {
+      const formData = new FormData();
+      formData.append('winner_id', previousMatch.winner._id);
+      
+      await api.put(`/tournaments/${tournamentId}/winner/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const tournamentResponse = await api.get(`/tournaments/${tournamentId}/`);
+      setTournament(tournamentResponse.data);
+
       setIsStarting(false);
       setCurrentMatchIndex(0);
       
@@ -1906,9 +1887,9 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
 
   const numberOfParticipants = Math.pow(2, Math.ceil(Math.log2(bots.length)));
 
-  console.log('Original matches:', matches);
+  console.log('Original matches:', ...matches);
   const bracketMatches = transformMatchesToBracketFormat(matches, numberOfParticipants);
-  console.log('Transformed matches:', bracketMatches);
+  console.log('Transformed matches:', ...bracketMatches);
 
   if ((!bracketMatches || bracketMatches.length === 0) && matches.length > 0) {
     return <div className="text-center">Nie można utworzyć drabinki turniejowej</div>;
@@ -1916,16 +1897,19 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-start bg-black text-white p-8 font-kanit">
-      <BackButton onNavigate={onNavigate} to="tournaments" />
-      <h1 className="text-5xl mb-4 font-light">Turniej: {tournament.name}</h1>
-      <div className="text-2xl font-light mb-2">
-        Rozpoczęcie: {new Date(tournament.start_date).toLocaleString()}
+      <div className="flex flex-col items-center w-full">
+        <BackButton onNavigate={onNavigate} to="tournaments" />
+        <h1 className="text-5xl mb-4 font-light">Turniej: {tournament.name}</h1>
+        <div className="text-2xl font-light mb-2">
+          Rozpoczęcie: {new Date(tournament.start_date).toLocaleString()}
+        </div>
+        {!tournament.winner && <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>}
+        {tournament.winner && <div className="text-2xl font-light mb-12">Zwycięzca: {tournament.winner.name}</div>}
+        {error && <div className="text-red-500 mb-4">{error}</div>}
       </div>
-      <div className="text-2xl font-light mb-12">Kod: {tournament.access_code}</div>
-      {error && <div className="text-red-500 mb-4">{error}</div>}
 
-      {bracketMatches.length > 0 && 
-      <div className="w-[80%] h-[500px] mb-12">
+      {(isStarting || tournament.winner) && 
+      <div className="w-[80%] h-screen mb-24">
         <SingleEliminationBracket
           matches={bracketMatches}
           theme={theme}
@@ -1941,8 +1925,8 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
           }}
           svgWrapper={({ children, ...props }) => (
             <SVGViewer 
-              width={window.innerWidth * 0.8}
-              height={500}
+              width={16000}
+              height={1200}
               {...props}
             >
               {children}
@@ -1965,7 +1949,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
                 onClick={() => {
                   onNavigate('tournament-match', {
                     tournamentId: tournamentId,
-                    matchId: match._id
+                    matchId: match.id
                   });
                 }}
                 style={{
@@ -1983,7 +1967,7 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         />
       </div>}
 
-      {bracketMatches.length === 0 && bots.length > 0 &&
+      {bots.length > 0 && !isStarting && !tournament.winner &&
         <div className="space-y-4">
           <label className="text-2xl font-light">Uczestnicy:</label>
           {bots.map((bot) => (
@@ -2000,8 +1984,8 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
         </div>
       }
 
-      {tournament.creator._id === user._id && bots.length > 1 && (
-        <div className="flex flex-col items-center gap-4">
+      <div className="fixed bottom-8 left-0 right-0 flex flex-col items-center gap-4">
+        {tournament.creator._id === user._id && bots.length > 1 && !tournament.winner && (
           <button
             onClick={startTournament}
             disabled={isStarting}
@@ -2010,19 +1994,17 @@ const TournamentTreeScreen = ({ onNavigate, tournamentId }) => {
           >
             {isStarting ? `Uruchamianie meczu ${currentMatchIndex}...` : 'Rozpocznij turniej'}
           </button>
-        </div>
-      )}
+        )}
 
-      {tournament.creator._id === user._id && (
-        <div className="flex flex-col items-center gap-4">
+        {tournament.creator._id === user._id && !isStarting && !tournament.winner && (
           <button
             onClick={() => onNavigate('manage-tournament', { tournamentId: tournament._id })}
             className="bg-[#002137] text-white px-12 py-4 rounded hover:bg-[#003147] text-xl font-light transition-colors"
           >
             Zarządzaj
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
