@@ -219,16 +219,16 @@ class DBBot:
         db_game_type = G.DBGameType(db, id=game_type_id)
         game_type = db_game_type.to_schema()
 
-        collection = BotCollection(db)
-        bot_id = collection.create_bot(name, game_type.id, code)
-        db_user = U.DBUser(db, id=current_user.id)
-        db_user.add_bot(bot_id)
-
         if not conn.validate_bot(game_type.name, code):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bot validation failed.",
             )
+        
+        collection = BotCollection(db)
+        bot_id = collection.create_bot(name, game_type.id, code)
+        db_user = U.DBUser(db, id=current_user.id)
+        db_user.add_bot(bot_id)
 
         collection.validate_bot(bot_id)
         return cls(db, id=bot_id)
