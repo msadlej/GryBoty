@@ -224,7 +224,7 @@ class DBBot:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bot validation failed.",
             )
-        
+
         collection = BotCollection(db)
         bot_id = collection.create_bot(name, game_type.id, code)
         db_user = U.DBUser(db, id=current_user.id)

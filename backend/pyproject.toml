@@ -5,7 +5,8 @@ build-backend = "setuptools.build_meta"
 [tool.coverage.run]
 omit = [
     "src/app/utils/connection.py",
-    "src/database/example.py"
+    "src/database/example.py",
+    "src/database/bots.py"
 ]
 
 [tool.pytest.ini_options]
