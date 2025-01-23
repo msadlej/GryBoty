@@ -68,14 +68,14 @@ class DBGameType:
         return GameType(_id=self.id, name=self.name, description=self.description)
 
     @classmethod
-    def insert(cls, db: MongoDB, game: GameTypeCreate) -> "DBGameType":
+    def insert(cls, db: MongoDB, game_data: GameTypeCreate) -> "DBGameType":
         """
         Inserts a game type into the database.
         Returns the created game type.
         """
 
         collection = GameTypeCollection(db)
-        game_id = collection.create_game_type(game.name, game.description)
+        game_id = collection.create_game_type(game_data.name, game_data.description)
 
         return cls(db, id=game_id)
 

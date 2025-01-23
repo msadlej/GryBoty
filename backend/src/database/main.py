@@ -7,7 +7,7 @@ from bson import ObjectId
 class MongoDB:
     def __init__(self, connection_string: str = "mongodb://localhost:27017/"):
         self.client = MongoClient(connection_string)
-        self.db = self.client.pzsp_database
+        self.db = self.client.gry_boty_database
 
     def get_all_users(self) -> List[Dict]:
         return list(self.db.users.find())
@@ -290,14 +290,8 @@ class Tournament:
         return list(self.collection.find())
 
     def set_winner(self, tournament_id: ObjectId, bot_id: ObjectId) -> None:
-        self.collection.update_one(
-            {"_id": tournament_id},
-            {"$set": {"winner": bot_id}}
-        )
-        self.db.bots.update_one(
-            {"_id": bot_id},
-            {"$inc": {"tournaments_won": 1}}
-        )
+        self.collection.update_one({"_id": tournament_id}, {"$set": {"winner": bot_id}})
+        self.db.bots.update_one({"_id": bot_id}, {"$inc": {"tournaments_won": 1}})
 
     def get_winner(self, tournament_id: ObjectId) -> Optional[ObjectId]:
         tournament = self.get_tournament_by_id(tournament_id)
