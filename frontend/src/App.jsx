@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
   SingleEliminationBracket,
@@ -463,6 +463,7 @@ export const AdminPanelScreen = ({ onNavigate }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -517,6 +518,10 @@ export const AdminPanelScreen = ({ onNavigate }) => {
     });
   };
 
+  const filteredUsers = users.filter(user => 
+    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) return <div className="text-center">Ładowanie...</div>;
 
   return (
@@ -525,6 +530,16 @@ export const AdminPanelScreen = ({ onNavigate }) => {
       <h1 className="text-5xl mb-12 font-light">Panel Administratora</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Szukaj użytkownika..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-button-bg text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-button-hover"
+          />
+        </div>
+
         <div className="grid grid-cols-5 gap-4 text-2xl font-light mb-4">
           <div>Login</div>
           <div>Typ konta</div>
@@ -532,50 +547,55 @@ export const AdminPanelScreen = ({ onNavigate }) => {
           <div>Zmień typ</div>
           <div>Zbanuj / Odbanuj</div>
         </div>
-        {users.map((user) => (
-          <div 
-            key={user._id} 
-            className="grid grid-cols-5 gap-4 bg-button-bg p-4 rounded items-center"
-          >
-            <div className="text-xl">{user.username}</div>
-            <div className="text-xl">{user.account_type}</div>
-            <div className="text-xl">{user.is_banned ? 'Zbanowany' : 'Aktywny'}</div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleAccountTypeChange(user._id, 'standard', user)}
-                className={`px-4 py-2 rounded ${
-                  user.account_type === 'standard'
-                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                    : 'bg-blue-600 hover:bg-blue-700'
+        
+        {filteredUsers.length === 0 ? (
+          <div className="text-center text-xl">Nie znaleziono użytkowników</div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div 
+              key={user._id} 
+              className="grid grid-cols-5 gap-4 bg-button-bg p-4 rounded items-center"
+            >
+              <div className="text-xl">{user.username}</div>
+              <div className="text-xl">{user.account_type}</div>
+              <div className="text-xl">{user.is_banned ? 'Zbanowany' : 'Aktywny'}</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleAccountTypeChange(user._id, 'standard', user)}
+                  className={`px-4 py-2 rounded ${
+                    user.account_type === 'standard'
+                      ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                  disabled={user.account_type === 'standard'}
+                >
+                  Standard
+                </button>
+                <button
+                  onClick={() => handleAccountTypeChange(user._id, 'premium', user)}
+                  className={`px-4 py-2 rounded ${
+                    user.account_type === 'premium'
+                      ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                      : 'bg-purple-600 hover:bg-purple-700'
+                  }`}
+                  disabled={user.account_type === 'premium'}
+                >
+                  Premium
+                </button>
+              </div>
+              <button 
+                onClick={() => handleBanUser(user._id, user)}
+                className={`px-6 py-2 rounded text-white ${
+                  user.is_banned 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-red-600 hover:bg-red-700'
                 }`}
-                disabled={user.account_type === 'standard'}
               >
-                Standard
-              </button>
-              <button
-                onClick={() => handleAccountTypeChange(user._id, 'premium', user)}
-                className={`px-4 py-2 rounded ${
-                  user.account_type === 'premium'
-                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                    : 'bg-purple-600 hover:bg-purple-700'
-                }`}
-                disabled={user.account_type === 'premium'}
-              >
-                Premium
+                {user.is_banned ? 'Odbanuj' : 'Zbanuj'}
               </button>
             </div>
-            <button 
-              onClick={() => handleBanUser(user._id, user)}
-              className={`px-6 py-2 rounded text-white ${
-                user.is_banned 
-                  ? 'bg-green-600 hover:bg-green-700' 
-                  : 'bg-red-600 hover:bg-red-700'
-              }`}
-            >
-              {user.is_banned ? 'Odbanuj' : 'Zbanuj'}
-            </button>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
@@ -586,33 +606,37 @@ export const TournamentsScreen = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [games, setGames] = useState([]);
+  const [selectedGame, setSelectedGame] = useState('');
 
   useEffect(() => {
-    const fetchTournaments = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/tournaments/');
-        console.log('API Response.data:', response.data);
-        setTournaments(response.data);
+        const [tournamentsResponse, gamesResponse, userResponse] = await Promise.all([
+          api.get('/tournaments/'),
+          api.get('/games/'),
+          api.get('/users/me/')
+        ]);
+        
+        setTournaments(tournamentsResponse.data);
+        setGames(gamesResponse.data);
+        setUser(userResponse.data);
       } catch (err) {
-        setError('Nie udało się pobrać turniejów');
-        setTournaments([]);
-      }
-    };
-    const fetchUser = async () => {
-      try {
-        const response = await api.get('/users/me/');
-        setUser(response.data);
-      } catch (err) {
-      setError('Nie udało się pobrać danych użytkownika');
+        setError('Nie udało się pobrać danych');
       } finally {
         setLoading(false);
       }
-  };
+    };
 
-    fetchUser();
-    fetchTournaments();
-
+    fetchData();
   }, []);
+
+  const filteredTournaments = tournaments.filter(tournament => {
+    const matchesSearch = tournament.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesGame = !selectedGame || tournament.game_type._id === selectedGame;
+    return matchesSearch && matchesGame;
+  });
 
   if (loading) {
     return <div className="text-center">Ładowanie...</div>;
@@ -624,25 +648,49 @@ export const TournamentsScreen = ({ onNavigate }) => {
       <h1 className="text-5xl mb-12 font-light">Turnieje</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="w-full max-w-[80%] space-y-6">
-        {tournaments.length === 0 ? (
+        <div className="flex gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Szukaj turnieju..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 bg-button-bg text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-button-hover"
+          />
+          <select
+            value={selectedGame}
+            onChange={(e) => setSelectedGame(e.target.value)}
+            className="bg-button-bg text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-button-hover"
+          >
+            <option value="">Wszystkie gry</option>
+            {games.map(game => (
+              <option key={game._id} value={game._id}>
+                {game.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {filteredTournaments.length === 0 ? (
           <div className="text-center">Brak turniejów</div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
+            <div className="grid grid-cols-4 gap-4 text-2xl font-light mb-4">
               <div>Nazwa</div>
+              <div>Gra</div>
               <div>Rozpoczęcie</div>
               <div>Organizator</div>
             </div>
-            {tournaments.map((tournament) => (
+            {filteredTournaments.map((tournament) => (
               <div 
                 key={tournament._id}
-                className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
+                className="grid grid-cols-4 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
                 onClick={() => {
                   console.log('Navigating with params:', { tournamentId: tournament._id });
                   onNavigate('tournament-tree', { tournamentId: tournament._id });
                 }}
               >
                 <div className="hover:underline">{tournament.name}</div>
+                <div>{tournament.game_type.name}</div>
                 <div>{new Date(tournament.start_date).toLocaleString()}</div>
                 <div>{tournament.creator.username}</div>
               </div>
@@ -656,12 +704,14 @@ export const TournamentsScreen = ({ onNavigate }) => {
           >
             Dołącz do turnieju
           </button>
-          {user.account_type === "premium" && <button
-            onClick={() => onNavigate('create-tournament')}
-            className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
-          >
-            Stwórz turniej
-          </button>}
+          {user?.account_type === "premium" && (
+            <button
+              onClick={() => onNavigate('create-tournament')}
+              className="bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light"
+            >
+              Stwórz turniej
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -873,20 +923,27 @@ export const BotsListScreen = ({ onNavigate }) => {
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGameType, setSelectedGameType] = useState('');
+  const [gameTypes, setGameTypes] = useState([]);
 
   useEffect(() => {
-    const fetchBots = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/bots/');
-        setBots(response.data);
+        const [botsResponse, gameTypesResponse] = await Promise.all([
+          api.get('/bots/'),
+          api.get('/games/')
+        ]);
+        setBots(botsResponse.data);
+        setGameTypes(gameTypesResponse.data);
         setLoading(false);
       } catch (err) {
-        setError('Nie udało się pobrać botów');
+        setError('Nie udało się pobrać danych');
         setLoading(false);
       }
     };
 
-    fetchBots();
+    fetchData();
   }, []);
 
   const handleDeleteBot = async (botId, e) => {
@@ -899,6 +956,12 @@ export const BotsListScreen = ({ onNavigate }) => {
     }
   };
 
+  const filteredBots = bots.filter(bot => {
+    const matchesSearch = bot.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesGameType = !selectedGameType || bot.game_type._id === selectedGameType;
+    return matchesSearch && matchesGameType;
+  });
+
   if (loading) return <div className="text-center">Ładowanie...</div>;
 
   return (
@@ -906,28 +969,57 @@ export const BotsListScreen = ({ onNavigate }) => {
       <BackButton onNavigate={onNavigate} />
       <h1 className="text-5xl mb-12 font-light">Boty</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
+      
       <div className="w-full max-w-[80%] space-y-6">
+        <div className="flex gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Szukaj bota..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 bg-button-bg text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-button-hover"
+          />
+          <select
+            value={selectedGameType}
+            onChange={(e) => setSelectedGameType(e.target.value)}
+            className="bg-button-bg text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-button-hover"
+          >
+            <option value="">Wszystkie gry</option>
+            {gameTypes.map(type => (
+              <option key={type._id} value={type._id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="grid grid-cols-3 gap-4 text-2xl font-light mb-4">
           <div>Nazwa</div>
           <div>Gra</div>
           <div></div>
         </div>
-        {bots.map((bot) => (
-          <div 
-            key={bot._id} 
-            className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
-            onClick={() => onNavigate('bot-details', { botId: bot._id })}
-          >
-            <div className="hover:underline">{bot.name}</div>
-            <div>{bot.game}</div>
-            <button 
-              className="bg-button-hover text-white px-6 py-2 rounded hover:bg-primary-bg justify-self-end"
-              onClick={(e) => handleDeleteBot(bot._id, e)}
+        
+        {filteredBots.length === 0 ? (
+          <div className="text-center text-gray-400">Nie znaleziono botów</div>
+        ) : (
+          filteredBots.map((bot) => (
+            <div 
+              key={bot._id} 
+              className="grid grid-cols-3 gap-4 bg-button-bg p-4 rounded cursor-pointer hover:bg-button-hover transition-colors"
+              onClick={() => onNavigate('bot-details', { botId: bot._id })}
             >
-              Usuń
-            </button>
-          </div>
-        ))}
+              <div className="hover:underline">{bot.name}</div>
+              <div>{bot.game_type.name}</div>
+              <button 
+                className="bg-button-hover text-white px-6 py-2 rounded hover:bg-primary-bg justify-self-end"
+                onClick={(e) => handleDeleteBot(bot._id, e)}
+              >
+                Usuń
+              </button>
+            </div>
+          ))
+        )}
+
         <button
           onClick={() => onNavigate('add-bot')}
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover text-xl font-light mt-8"
@@ -939,10 +1031,124 @@ export const BotsListScreen = ({ onNavigate }) => {
   );
 };
 
+const BotRulesModal = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleBackdropClick = useCallback((e) => {
+    if (e.target === e.currentTarget) {
+      setIsOpen(false);
+    }
+  }, []);
+
+  return (
+    <>
+      <button 
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="w-full bg-secondary-button text-white px-12 py-4 rounded hover:bg-secondary-button-hover mb-6 text-xl font-light"
+      >
+        Zasady dodawania bota
+      </button>
+
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={handleBackdropClick}
+        >
+          <div className="bg-primary-bg text-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto relative">
+            <button 
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 text-2xl hover:text-gray-400"
+            >
+              ×
+            </button>
+            
+            <h2 className="text-2xl font-light mb-6">Zasady dodawania bota</h2>
+            
+            <div className="space-y-6 text-lg font-light">
+              <section>
+                <h3 className="text-xl font-medium mb-2">1. Dozwolone biblioteki:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>math</li>
+                  <li>random</li>
+                  <li>itertools</li>
+                  <li>functools</li>
+                  <li>collections</li>
+                  <li>numpy</li>
+                  <li>src.bots.example_bots.example_bot (Abstrakcyjna klasa Bot, Wymagane)</li>
+                  <li>abc</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-medium mb-2">2. Importy dotyczące gry:</h3>
+                <p>Twój bot może importować elementy związane z grą poprzez two_player_game, takie jak:</p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>two_player_games.move (dla ruchów)</li>
+                  <li>two_player_games.state (dla stanu gry)</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-medium mb-2">3. Zasady nazewnictwa:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Nie możesz używać operatorów takich jak +=</li>
+                  <li>Unikaj używania _ w nazwach atrybutów</li>
+                  <li>Nie używaj super().__init__()</li>
+                  <li>__init__ jest dozwolone, jednak nie dla klasy, która implementuje bota (dziedziczy po Bot)</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-medium mb-2">4. Dziedziczenie po klasie Bot:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Twój bot musi dziedziczyć po klasie Bot, która jest podstawową klasą bota w systemie</li>
+                  <li>Musi istnieć dokładnie jedna klasa dziedzicząca po Bot</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-medium mb-2">5. Metoda get_move:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Twój bot musi implementować metodę <code>get_move(self, state: State) &rarr; Move</code></li>
+                  <li>Metoda zwraca odpowiednią klasę ruchu, np. MorrisMove, zgodnie z grą</li>
+                  <li>Przyjmuje parametry: self (instancję bota) oraz state (obiekt reprezentujący stan gry)</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-medium mb-2">6. Limit czasu:</h3>
+                <p>Bot nie może przekroczyć 2 sekund na wykonanie ruchu</p>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-medium mb-2">Przykład poprawnego bota:</h3>
+                <pre className="bg-gray-800 p-4 rounded-lg overflow-x-auto">
+                  <code>{`from src.bots.example_bots.example_bot import Bot
+from two_player_games.move import Move
+from two_player_games.state import State
+import random
+
+class Bot_1(Bot):
+    def get_move(self, state: State) -> Move:
+        moves = state.get_moves()
+        move = random.choice(moves)
+        return move`}</code>
+                </pre>
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 export const AddBotScreen = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     name: '',
-    game: ''
+    gameId: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -957,7 +1163,7 @@ export const AddBotScreen = ({ onNavigate }) => {
         const response = await api.get('/games/');
         setGames(response.data);
         if (response.data.length > 0) {
-          setFormData(prev => ({...prev, game: response.data[0]}));
+          setFormData(prev => ({...prev, gameId: response.data[0]._id}));
         }
       } catch (err) {
         setError('Nie udało się pobrać listy gier');
@@ -974,7 +1180,7 @@ export const AddBotScreen = ({ onNavigate }) => {
       setError('Nazwa musi mieć od 3 do 16 znaków');
       return;
     }
-    if (!formData.game) {
+    if (!formData.gameId) {
       setError('Wybierz grę');
       return;
     }
@@ -986,7 +1192,7 @@ export const AddBotScreen = ({ onNavigate }) => {
     const formDataToSend = new FormData();
     formDataToSend.append('code', selectedFile);
     formDataToSend.append('name', formData.name.trim());
-    formDataToSend.append('game_type_id', formData.game._id);
+    formDataToSend.append('game_type_id', formData.gameId);
     console.log('form data: ', formData);
     console.log(Object.fromEntries(formDataToSend));
     for (let pair of formDataToSend.entries()) {
@@ -1065,6 +1271,7 @@ export const AddBotScreen = ({ onNavigate }) => {
       <h1 className="text-5xl mb-12 font-light">Dodaj bota</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <form onSubmit={handleSubmit} className="w-full max-w-[80%] space-y-6">
+      <BotRulesModal />
         <div>
           <label className="text-2xl font-light">Nazwa:</label>
           <input 
@@ -1079,13 +1286,13 @@ export const AddBotScreen = ({ onNavigate }) => {
         <div>
           <label className="text-2xl font-light">Gra:</label>
           <select 
-            value={formData.game._id}
-            onChange={(e) => setFormData({...formData, game: e.target.value})}
+            value={formData.gameId}
+            onChange={(e) => setFormData({...formData, gameId: e.target.value})}
             className="w-full p-4 mt-2 bg-button-bg rounded text-xl font-light"
             required
           >
             {games.map(game => (
-              <option key={game} value={game._id}>{game.name}</option>
+              <option key={game._id} value={game._id}>{game.name}</option>
             ))}
           </select>
         </div>
@@ -1162,14 +1369,14 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
     fetchBotData();
   }, []);
 
-  // const handleDeleteBot = async () => {
-  //   try {
-  //     await botService.deleteBot(bot._id);
-  //     onNavigate('bots');
-  //   } catch (err) {
-  //     setError('Nie udało się usunąć bota');
-  //   }
-  // };
+  const handleDeleteBot = async () => {
+    try {
+      await api.delete(`/bots/${botId}/`);
+      onNavigate('bots');
+    } catch (err) {
+      setError('Nie udało się usunąć bota');
+    }
+  };
 
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (!bot) return <div className="text-center">Nie znaleziono bota</div>;
@@ -1186,12 +1393,16 @@ export const BotDetailsScreen = ({ onNavigate, botId }) => {
           <div className="text-xl font-light">Liczba wygranych: {bot.wins}</div>
           <div className="text-xl font-light">Procent wygranych: {bot.games_played === 0 ? "" : ((bot.wins / bot.games_played) * 100).toFixed(1) + "%"}</div> 
         </div>
-        {/* <button 
+        <button 
           onClick={handleDeleteBot}
           className="w-full bg-button-bg text-white px-12 py-4 rounded hover:bg-button-hover mt-6 text-xl font-light"
         >
           Usuń bota
-        </button> */}
+        </button>
+        <div className="space-y-4">
+          <h2 className="text-3xl font-light mb-6">Kod:</h2>
+          <pre className="text-lg font-light bg-button-bg p-4 rounded">{bot.code}</pre>
+        </div>
       </div>
     </div>
   );

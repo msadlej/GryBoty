@@ -14,6 +14,7 @@
   "dependencies": {
     "@g-loot/react-tournament-brackets": "^1.0.31-rc",
     "@radix-ui/react-alert-dialog": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.5",
     "@radix-ui/react-slot": "^1.1.0",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
