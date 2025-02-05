@@ -11,9 +11,10 @@ class Settings(BaseSettings):
     )
 
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
-    MONGO_URI: str = "mongodb://localhost:27017"
-    HOST: str = "127.0.0.1"
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    HOST: str = "0.0.0.0"
     PORT: int = 8000
+    BOT_ENV: str = "http://localhost:8080/"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

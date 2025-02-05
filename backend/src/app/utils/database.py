@@ -7,7 +7,7 @@ from app.config import settings
 
 @contextmanager
 def get_db_connection(
-    connection_string: str = settings.MONGO_URI,
+    connection_string: str = settings.MONGODB_URI,
 ) -> Generator[MongoDB, None, None]:
     db = MongoDB(connection_string)
     try:
