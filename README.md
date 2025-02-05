@@ -20,10 +20,10 @@ GryBoty to webowa aplikacja do organizowania i zarządzania turniejami botów w 
 
 
 ```bash
-one-line command
+docker-compose up --build
 ```
 
-Aplikacja będzie dostępna pod adresem `tutaj adres`.
+Aplikacja będzie dostępna pod adresem `localhost`.
 
 ---
 
