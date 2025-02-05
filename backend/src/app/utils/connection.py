@@ -2,6 +2,8 @@ from fastapi import HTTPException, status
 from typing import Any
 import requests
 
+from app.config import settings
+
 
 def validate_bot(game_name: str, code: bytes) -> bool:
     """
@@ -11,7 +13,7 @@ def validate_bot(game_name: str, code: bytes) -> bool:
 
     files = {"file": code}
     data = {"game": game_name}
-    url = "http://localhost:8080/validate"
+    url = settings.BOT_ENV + "validate"
     response = requests.post(url, data=data, files=files)
 
     if response.status_code == 200:
@@ -41,7 +43,7 @@ def run_match(game_name: str, bot1_code: bytes, bot2_code: bytes) -> dict[str, A
 
     files = {"file1": bot1_code, "file2": bot2_code}
     data = {"game": game_name}
-    url = "http://localhost:8080/run-match"
+    url = settings.BOT_ENV + "run-match"
     response = requests.post(url, data=data, files=files)
 
     if response.status_code == 200:
