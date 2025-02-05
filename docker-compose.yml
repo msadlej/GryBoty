@@ -30,3 +30,16 @@ services:
       - BOT_ENV=http://bot_env:8080/
     depends_on:
       - mongodb
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/public:/app/public
+      - ./frontend/src:/app/src
+      - ./frontend/tests:/app/tests
+    environment:
+      - IN_DOCKER=true
+    depends_on:
+      - backend
